@@ -1,0 +1,152 @@
+:root {
+    --primary-color: #1a202c;
+    --secondary-color: #2d3748;
+    --accent-color: #4a5568;
+    --text-color: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-バランス: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #000;
+    color: var(--text-color);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+.screen-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-areas:
+        "video sidebar"
+        "footer footer";
+    grid-template-columns: 1fr 350px;
+    grid-template-rows: 1fr 60px;
+}
+
+.video-background {
+    grid-area: video;
+    background: #000;
+}
+
+.ui-overlay {
+    grid-area: sidebar;
+    background: var(--primary-color);
+    border-left: 2px solid var(--accent-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    z-index: 10;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+#company-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+#company-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.sidebar {
+    flex: 1;
+    overflow: hidden;
+}
+
+.promo-item {
+    background: var(--secondary-color);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.footer {
+    grid-area: footer;
+    background: var(--accent-color);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.ticker {
+    width: 100%;
+    white-space: nowrap;
+}
+
+.ticker-text {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 20s linear infinite;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+@keyframes ticker {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(-100%, 0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Suspended Screen */
+.suspended-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.suspended-msg {
+    text-align: center;
+    color: #f56565;
+}
+
+.uuid-label {
+    margin-top: 20px;
+    font-family: monospace;
+    opacity: 0.5;
+    color: #fff;
+}
+
+.hidden {
+    display: none !important;
+}
