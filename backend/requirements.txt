@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+aioredis
+python-jose[cryptography]
+passlib
+argon2-cffi
+python-multipart
+requests
+beautifulsoup4
+colorgram.py
+Pillow
+pydantic-settings

@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: venrides_db
+    environment:
+      POSTGRES_USER: venrides_user
+      POSTGRES_PASSWORD: venrides_password
+      POSTGRES_DB: venrides_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Use 5433 to avoid conflict with host's 5432 (Odoo)
+    networks:
+      - venrides_network
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: venrides_cache
+    networks:
+      - venrides_network
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: venrides_api
+    volumes:
+      - ./backend:/app
+      - ./logos:/logos # Sync logos with host and nginx
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://venrides_user:venrides_password@db/venrides_db
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=info
+    depends_on:
+      - db
+      - redis
+    networks:
+      - venrides_network
+    restart: always
+
+  frontend-admin:
+    build: ./frontend-admin
+    container_name: venrides_admin
+    volumes:
+      - ./frontend-admin:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    networks:
+      - venrides_network
+    restart: always
+
+  frontend-tv:
+    build: ./frontend-tv
+    container_name: venrides_tv
+    volumes:
+      - ./frontend-tv:/usr/share/nginx/html
+    depends_on:
+      - backend
+    networks:
+      - venrides_network
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: venrides_proxy
+    ports:
+      - "8080:80"
+      - "8081:81"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/html:/usr/share/nginx/html
+      - ./logos:/app/logos
+    depends_on:
+      - backend
+      - frontend-admin
+      - frontend-tv
+    networks:
+      - venrides_network
+    restart: always
+
+networks:
+  venrides_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
