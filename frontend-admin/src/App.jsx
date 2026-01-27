@@ -191,17 +191,19 @@ function App() {
                 return;
             }
 
+            let targetView = 'login';
             if (role === 'admin_master' || role === 'operador_master') {
-                setView('superadmin');
+                targetView = 'superadmin';
             } else if (role === 'admin_empresa' || role === 'user_basic') {
-                setView('client');
+                targetView = 'client';
             } else if (role === 'operador_empresa') {
-                setView('operator');
+                targetView = 'operator';
             } else {
-                setView('login');
                 localStorage.clear();
             }
-            fetchInitialData();
+
+            setView(targetView);
+            fetchInitialData(targetView);
         } else {
             setView('login');
         }
@@ -917,7 +919,12 @@ function App() {
     }
 
     if (view === 'client' && !company) {
-        return <div className="loading">Cargando...</div>;
+        return (
+            <div className="loading" style={{ flexDirection: 'column', gap: '1rem' }}>
+                <div>Cargando datos de empresa...</div>
+                <button onClick={handleLogout} className="btn" style={{ marginTop: '1rem', background: 'white', color: 'black', padding: '0.6rem 1.2rem', borderRadius: '8px', zIndex: 1000 }}>Cerrar Sesión</button>
+            </div>
+        );
     }
 
     // CLIENT VIEW
