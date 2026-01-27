@@ -97,7 +97,6 @@ function App() {
 
     // Local State for Client Editor (Explicit Save)
     const [localCompany, setLocalCompany] = useState(null);
-    const [clientTab, setClientTab] = useState('dashboard');
     const [unsavedChanges, setUnsavedChanges] = useState(false);
     const [showCompanyForm, setShowCompanyForm] = useState(false);
     const [showAdminPassModal, setShowAdminPassModal] = useState(false);
