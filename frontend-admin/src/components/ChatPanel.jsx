@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, Users, Clock, Check, CheckCheck } from 'lucide-react';
+import { MessageSquare, Send, Users, Clock, Check, CheckCheck, ShieldOff, Trash2, X } from 'lucide-react';
 
 const API_BASE = "/api";
 
@@ -84,6 +84,41 @@ const ChatPanel = ({ token, currentUser }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Block user
+    const blockUser = async () => {
+        if (!selectedPartner) return;
+        if (!window.confirm(`¿Seguro que deseas bloquear a ${selectedPartner.username}?`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/chat/block?blocked_id=${selectedPartner.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert("Usuario bloqueado");
+                setSelectedPartner(null);
+                fetchConversations();
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    // Delete conversation
+    const deleteConversation = async () => {
+        if (!selectedPartner) return;
+        if (!window.confirm("¿Deseas eliminar el historial con este usuario?")) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/chat/conversation/${selectedPartner.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setSelectedPartner(null);
+                fetchConversations();
+            }
+        } catch (err) { console.error(err); }
     };
 
     // Initial load
@@ -201,12 +236,18 @@ const ChatPanel = ({ token, currentUser }) => {
             <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {selectedPartner ? (
                     <>
-                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                            <h3 style={{ margin: 0 }}>{selectedPartner.username}</h3>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '0.25rem' }}>
-                                {selectedPartner.role === 'admin_master' ? 'Administrador Master' :
-                                    selectedPartner.role === 'operador_master' ? 'Operador Master' :
+                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ margin: 0 }}>{selectedPartner.username}</h3>
+                                <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '0.25rem' }}>
+                                    {selectedPartner.role === 'admin_master' ? 'Administrador Master' :
                                         selectedPartner.role === 'admin_empresa' ? 'Admin Empresa' : 'Operador'}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button className="action-btn suspend" onClick={blockUser} title="Bloquear Usuario"><ShieldOff size={18} /></button>
+                                <button className="action-btn delete" onClick={deleteConversation} title="Eliminar Conversación"><Trash2 size={18} /></button>
+                                <button className="action-btn" onClick={() => setSelectedPartner(null)} title="Cerrar"><X size={18} /></button>
                             </div>
                         </div>
 

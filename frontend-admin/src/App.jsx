@@ -25,9 +25,9 @@ const getContrastColor = (hex) => {
     } catch { return '#ffffff'; }
 };
 
-const Tooltip = ({ text }) => (
-    <div className="tooltip-container">
-        <Info size={14} className="info-icon" />
+const Tooltip = ({ text, children }) => (
+    <div className="premium-tooltip">
+        {children || <Info size={14} className="info-icon" style={{ opacity: 0.5 }} />}
         <span className="tooltip-text">{text}</span>
     </div>
 );
@@ -36,9 +36,9 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()} style={{ border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>{title}</h2>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>{title}</h2>
                     <button onClick={onClose} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
                 </div>
                 {children}
@@ -46,6 +46,54 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         </div>
     );
 };
+
+// Global Tooltip Styles
+const GlobalStyles = () => (
+    <style>{`
+        .premium-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .premium-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 180px;
+            background-color: rgba(15, 23, 42, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -90px;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+            transform: translateY(10px);
+            font-size: 0.75rem;
+            line-height: 1.4;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+        .premium-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .premium-tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+        }
+    `}</style>
+);
 
 
 // Helper for Drive Images
@@ -88,9 +136,14 @@ function App() {
     const [showCompanyModal, setShowCompanyModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [codeModalData, setCodeModalData] = useState(null); // Nuevo estado para el modal de código
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [companyDevices, setCompanyDevices] = useState([]);
     const [detailsPayments, setDetailsPayments] = useState([]);
+
+    // New Modals State (to replace native confirms/alerts)
+    const [confirmModalData, setConfirmModalData] = useState(null); // { title, message, onConfirm, confirmText, cancelText, type: 'danger'|'info' }
+    const [alertModalData, setAlertModalData] = useState(null); // { title, message, type: 'success'|'error'|'info' }
 
     // Admin Impersonation State
     const [impersonatingCompanyId, setImpersonatingCompanyId] = useState(null);
@@ -100,6 +153,8 @@ function App() {
     const [unsavedChanges, setUnsavedChanges] = useState(false);
     const [showCompanyForm, setShowCompanyForm] = useState(false);
     const [showAdminPassModal, setShowAdminPassModal] = useState(false);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
     const [bcvRate, setBcvRate] = useState(null);
     const [ytReady, setYtReady] = useState(false);
 
@@ -192,7 +247,7 @@ function App() {
             }
 
             let targetView = 'login';
-            if (role === 'admin_master' || role === 'operador_master') {
+            if (role === 'admin_master') {
                 targetView = 'superadmin';
             } else if (role === 'admin_empresa' || role === 'user_basic') {
                 targetView = 'client';
@@ -296,22 +351,79 @@ function App() {
     }, [token, view, impersonatingCompanyId]);
 
 
-    const deleteDevice = async (uuid) => {
-        if (!window.confirm("¿Seguro que deseas eliminar este dispositivo?")) return;
+    const deleteDevice = async (uuid, force = false) => {
+        if (!force) {
+            setConfirmModalData({
+                title: "Eliminar Dispositivo",
+                message: "¿Seguro que deseas eliminar este dispositivo? Esta acción no se puede deshacer.",
+                confirmText: "Eliminar",
+                type: "danger",
+                onConfirm: () => deleteDevice(uuid, true)
+            });
+            return;
+        }
+
         try {
             const res = await fetch(`${API_BASE}/admin/devices/${uuid}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
             if (res.ok) {
                 setAllDevices(allDevices.filter(d => d.uuid !== uuid));
-                fetchInitialData();
+                await fetchInitialData();
+                setAlertModalData({ title: "Éxito", message: "Dispositivo eliminado", type: "success" });
+            } else {
+                const data = await res.json();
+                throw new Error(data.detail || "Error al eliminar");
             }
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error('deleteDevice error:', err);
+            setAlertModalData({ title: "Error", message: err.message, type: "error" });
+        }
     };
 
-    const deletePayment = async (id) => {
-        if (!window.confirm("¿Seguro que deseas eliminar este registro de pago?")) return;
+    const toggleDeviceStatus = async (device, force = false) => {
+        if (!force && device.is_active) {
+            setConfirmModalData({
+                title: "Suspender Pantalla",
+                message: "¿Desea suspender esta pantalla? Dejará de mostrar contenido.",
+                confirmText: "Suspender",
+                type: "danger",
+                onConfirm: () => toggleDeviceStatus(device, true)
+            });
+            return;
+        }
+
+        try {
+            const newStatus = !device.is_active;
+            const res = await fetch(`${API_BASE}/admin/devices/${device.uuid}/status?is_active=${newStatus}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                await fetchInitialData();
+            } else {
+                const data = await res.json();
+                setAlertModalData({ title: "Error", message: data.detail || "Error al cambiar estado", type: "error" });
+            }
+        } catch (e) {
+            setAlertModalData({ title: "Error", message: "Error al cambiar estado: " + e.message, type: "error" });
+        }
+    };
+
+    const deletePayment = async (id, force = false) => {
+        if (!force) {
+            setConfirmModalData({
+                title: "Eliminar Pago",
+                message: "¿Seguro que deseas eliminar este registro de pago?",
+                confirmText: "Eliminar",
+                type: "danger",
+                onConfirm: () => deletePayment(id, true)
+            });
+            return;
+        }
+
         try {
             const res = await fetch(`${API_BASE}/admin/payments/${id}`, {
                 method: 'DELETE',
@@ -319,6 +431,7 @@ function App() {
             });
             if (res.ok) {
                 setPayments(payments.filter(p => p.id !== id));
+                setAlertModalData({ title: "Éxito", message: "Pago eliminado", type: "success" });
             }
         } catch (err) { console.error(err); }
     };
@@ -358,17 +471,17 @@ function App() {
                 }
 
                 let targetView = 'client';
-                if (data.user.role === 'admin_master' || data.user.role === 'operador_master') targetView = 'superadmin';
+                if (data.user.role === 'admin_master') targetView = 'superadmin';
                 else if (data.user.role === 'operador_empresa') targetView = 'operator';
                 else if (data.user.role === 'admin_empresa') targetView = 'client';
 
                 setView(targetView);
                 fetchInitialData(targetView);
             } else {
-                alert(data.detail || "Error al iniciar sesión");
+                setAlertModalData({ title: "Error", message: data.detail || "Error al iniciar sesión", type: "error" });
             }
         } catch (err) {
-            alert("Error de conexión");
+            setAlertModalData({ title: "Error", message: "Error de conexión", type: "error" });
         } finally {
             setLoading(false);
         }
@@ -422,10 +535,10 @@ function App() {
             setCompany(data);
             setLocalCompany(data);
             setUnsavedChanges(false);
-            alert("Cambios guardados correctamente");
+            setAlertModalData({ title: "Guardado", message: "Cambios guardados correctamente", type: "success" });
         } catch (err) {
             console.error("Save Error:", err);
-            alert("Error al guardar: " + err.message);
+            setAlertModalData({ title: "Error", message: "Error al guardar: " + err.message, type: "error" });
         }
     };
 
@@ -484,8 +597,17 @@ function App() {
         }
     };
 
-    const deleteCompany = async (id) => {
-        if (!window.confirm("¿Está seguro de eliminar esta empresa? Se perderán todos sus datos y dispositivos.")) return;
+    const deleteCompany = async (id, force = false) => {
+        if (!force) {
+            setConfirmModalData({
+                title: "Eliminar Empresa",
+                message: "¿Está seguro de eliminar esta empresa? Se perderán todos sus datos y dispositivos.",
+                confirmText: "Eliminar",
+                type: "danger",
+                onConfirm: () => deleteCompany(id, true)
+            });
+            return;
+        }
         try {
             const res = await fetch(`${API_BASE}/admin/companies/${id}`, {
                 method: 'DELETE',
@@ -493,24 +615,38 @@ function App() {
             });
             if (!res.ok) throw new Error("Error al eliminar");
             setCompanies(companies.filter(c => c.id !== id));
-            alert("Empresa eliminada");
-        } catch (err) { alert(err.message); }
+            setAlertModalData({ title: "Éxito", message: "Empresa eliminada", type: "success" });
+        } catch (err) { setAlertModalData({ title: "Error", message: err.message, type: "error" }); }
     };
 
-    const deleteUser = async (id) => {
-        if (!window.confirm("¿Eliminar usuario?")) return;
+    const deleteUser = async (id, force = false) => {
+        if (!force) {
+            setConfirmModalData({
+                title: "Eliminar Usuario",
+                message: "¿Seguro que deseas eliminar este usuario?",
+                confirmText: "Eliminar",
+                type: "danger",
+                onConfirm: () => deleteUser(id, true)
+            });
+            return;
+        }
+
         try {
             const res = await fetch(`${API_BASE}/admin/users/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.detail || "Error al eliminar");
             }
-            fetchInitialData();
-            alert("Usuario eliminado");
-        } catch (err) { alert(err.message); }
+            await fetchInitialData();
+            setAlertModalData({ title: "Éxito", message: "Usuario eliminado", type: "success" });
+        } catch (err) {
+            console.error('deleteUser error:', err);
+            setAlertModalData({ title: "Error", message: err.message, type: "error" });
+        }
     };
 
     const saveCompany = async (companyData) => {
@@ -552,8 +688,9 @@ function App() {
             setShowCompanyModal(false);
             setSelectedCompany(null);
             fetchInitialData();
+            setAlertModalData({ title: "Éxito", message: "Empresa guardada correctamente", type: "success" });
         } catch (err) {
-            alert("Error al guardar empresa: " + err.message);
+            setAlertModalData({ title: "Error", message: "Error al guardar empresa: " + err.message, type: "error" });
         }
     };
 
@@ -569,10 +706,10 @@ function App() {
                 const errData = await res.json();
                 throw new Error(errData.detail || "Error al actualizar perfil");
             }
-            alert("Perfil actualizado correctamente");
+            setAlertModalData({ title: "Éxito", message: "Perfil actualizado correctamente", type: "success" });
             setShowAdminPassModal(false);
         } catch (err) {
-            alert(err.message);
+            setAlertModalData({ title: "Error", message: err.message, type: "error" });
         }
     };
 
@@ -607,15 +744,44 @@ function App() {
     };
 
     const generateRegistrationCode = async (cid) => {
+        console.log('generateRegistrationCode called with cid:', cid);
+        console.log('Current state - company:', company, 'localCompany:', localCompany, 'impersonatingCompanyId:', impersonatingCompanyId);
+
+        if (!cid) {
+            alert('Error: ID de empresa no disponible');
+            console.error('No company ID provided to generateRegistrationCode');
+            return;
+        }
+
         try {
             const headers = { 'Authorization': `Bearer ${token}` };
+            console.log('Sending request to:', `${API_BASE}/devices/generate-code?company_id=${cid}`);
             const res = await fetch(`${API_BASE}/devices/generate-code?company_id=${cid}`, { method: 'POST', headers });
             const data = await res.json();
-            const tvUrl = window.location.origin.replace('8081', '8080');
-            alert(`CÓDIGO: ${data.code}\n\nIngresa este código en:\n${tvUrl}/register.html`);
-        } catch (err) { alert('Error'); }
-    };
+            console.log('Response Details:', JSON.stringify(data, null, 2));
 
+            if (!res.ok) {
+                console.error('Server returned error:', data);
+                throw new Error(data.detail || JSON.stringify(data) || 'Error desconocido del servidor');
+            }
+
+            const tvUrl = window.location.origin.replace('8081', '8080'); // Ajuste temporal para dev
+            const message = `¡CÓDIGO GENERADO CON ÉXITO!\n\nCÓDIGO: ${data.code}\nEXPIRA EN: ${data.expires_in_minutes} minutos\n\nInstrucciones:\n1. Ve a la TV\n2. Ingresa este código en la pantalla de registro`;
+
+            // Reemplazado alert por modal visual
+            setCodeModalData(data);
+
+            // También intentar copiar al portapapeles
+            try {
+                await navigator.clipboard.writeText(data.code);
+                console.log('Código copiado al portapapeles');
+            } catch (e) { console.error('No se pudo copiar al portapapeles', e); }
+
+        } catch (err) {
+            console.error('CRITICAL Error generating code:', err);
+            alert(`ERROR AL VINCULAR:\n${err.message}\n\nRevisa la consola para más detalles.`);
+        }
+    };
     const dashboardIsPermitted = (field) => {
         if (view === 'superadmin' || impersonatingCompanyId) return true;
         const perms = company?.client_editable_fields ? company.client_editable_fields.split(',') : [];
@@ -625,9 +791,7 @@ function App() {
     const isSuperAdmin = view === 'superadmin' || impersonatingCompanyId !== null;
 
     const hasPermission = (section, action = 'view') => {
-        if (userRole === 'admin_master' || isAdmin) return true;
-        if (userRole !== 'operador_master') return false;
-        return userPermissions[section]?.[action] || false;
+        return isAdmin || userRole === 'admin_master';
     };
 
     if (view === 'login') {
@@ -635,9 +799,8 @@ function App() {
             <div className="login-screen">
                 <div className="glass-card login-card">
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <Layout size={48} color="#6366f1" />
-                        <h1 style={{ marginTop: '1rem' }}>VenrideScreenS</h1>
-                        <p style={{ opacity: 0.6 }}>Panel de Gestión</p>
+                        <img src="/venrides_logo.png" alt="VenridesScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
+                        <p style={{ opacity: 0.6, fontSize: '1.2rem', marginTop: '-20px' }}>Panel de Gestión</p>
                     </div>
                     <form onSubmit={handleLogin}>
                         <label>Correo Electrónico (Email)</label>
@@ -667,6 +830,23 @@ function App() {
                         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>Entrar</button>
                     </form>
                 </div>
+                {/* GLOBAL REPLACEMENT MODALS */}
+                {confirmModalData && <Modal isOpen={!!confirmModalData} onClose={() => setConfirmModalData(null)} title={confirmModalData.title || "Confirmación"}>
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{confirmModalData.message}</p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button onClick={() => setConfirmModalData(null)} className="btn btn-secondary" style={{ flex: 1 }}>{confirmModalData.cancelText || "Cancelar"}</button>
+                            <button onClick={() => { if (confirmModalData.onConfirm) confirmModalData.onConfirm(); setConfirmModalData(null); }} className={`btn btn-${confirmModalData.type === 'danger' ? 'danger' : 'primary'}`} style={{ flex: 1 }}>{confirmModalData.confirmText || "Confirmar"}</button>
+                        </div>
+                    </div>
+                </Modal>}
+                {alertModalData && <Modal isOpen={!!alertModalData} onClose={() => setAlertModalData(null)} title={alertModalData.title || "Aviso"}>
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <div style={{ marginBottom: '1rem' }}>{alertModalData.type === 'error' ? <XCircle size={40} color="var(--error)" /> : <CheckCircle size={40} color="var(--success)" />}</div>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{alertModalData.message}</p>
+                        <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
+                    </div>
+                </Modal>}
             </div>
         );
     }
@@ -674,23 +854,33 @@ function App() {
     if (view === 'superadmin') {
         return (
             <div className="dashboard-container">
+                <GlobalStyles />
                 <header className="dash-header">
-                    <h1><ShieldCheck size={28} /> Panel Master</h1>
+                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <img src="/venrides_logo.png" alt="Admin" className="app-logo" />
+                        <span>Panel Master</span>
+                    </h1>
                     <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                         <ThemeSwitch theme={theme} toggle={toggleTheme} />
-                        <button onClick={() => setShowAdminPassModal(true)} className="btn" title="Contraseña Admin"><Key size={18} /></button>
-                        <button onClick={handleLogout} className="btn" style={{ background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}><LogOut size={18} /></button>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <button onClick={() => setShowAdminPassModal(true)} className="btn" title="Contraseña Admin"><Key size={18} /></button>
+                            <Tooltip text="Cambiar contraseña del Administrador Maestro" />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <button onClick={handleLogout} className="btn" style={{ background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}><LogOut size={18} /></button>
+                            <Tooltip text="Cerrar sesión de forma segura" />
+                        </div>
                     </div>
                 </header>
-                <div className="admin-tabs" style={{ background: 'var(--card-bg)', padding: '0.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', overflowX: 'auto', border: '1px solid var(--border-color)' }}>
-                    {hasPermission('companies') && <button className={`admin-tab ${adminTab === 'companies' ? 'active' : ''}`} onClick={() => setAdminTab('companies')}><Building size={16} /> Empresas</button>}
-                    {hasPermission('users') && <button className={`admin-tab ${adminTab === 'users' ? 'active' : ''}`} onClick={() => setAdminTab('users')}><Users size={16} /> Usuarios</button>}
-                    {hasPermission('devices') && <button className={`admin-tab ${adminTab === 'devices' ? 'active' : ''}`} onClick={() => setAdminTab('devices')}><Monitor size={16} /> Dispositivos</button>}
-                    {hasPermission('payments') && <button className={`admin-tab ${adminTab === 'payments' ? 'active' : ''}`} onClick={() => setAdminTab('payments')}><DollarSign size={16} /> Pagos</button>}
-                    {hasPermission('global_ad') && <button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button>}
-                    {hasPermission('stats') && <button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button>}
-                    <button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button>
-                    <button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')}><LifeBuoy size={16} /> Soporte</button>
+                <div className="admin-tabs" style={{ background: 'var(--card-bg)', padding: '0.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', overflowX: 'visible', border: '1px solid var(--border-color)' }}>
+                    {hasPermission('companies') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'companies' ? 'active' : ''}`} onClick={() => setAdminTab('companies')}><Building size={16} /> Empresas</button><Tooltip text="Gestionar clientes, planes y vigencia" /></div>}
+                    {hasPermission('users') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'users' ? 'active' : ''}`} onClick={() => setAdminTab('users')}><Users size={16} /> Usuarios</button><Tooltip text="Administrar accesos de operadores" /></div>}
+                    {hasPermission('devices') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'devices' ? 'active' : ''}`} onClick={() => setAdminTab('devices')}><Monitor size={16} /> Dispositivos</button><Tooltip text="Monitoreo y control de pantallas activas" /></div>}
+                    {hasPermission('payments') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'payments' ? 'active' : ''}`} onClick={() => setAdminTab('payments')}><DollarSign size={16} /> Pagos</button><Tooltip text="Registro y control de ingresos por planes" /></div>}
+                    {hasPermission('global_ad') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button><Tooltip text="Configurar contenido masivo para planes FREE" /></div>}
+                    {hasPermission('stats') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button><Tooltip text="Estadísticas generales del sistema" /></div>}
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button><Tooltip text="Comunicación directa con soporte y clientes" /></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')}><LifeBuoy size={16} /> Soporte</button><Tooltip text="Centro de tickets y ayuda técnica" /></div>
                 </div>
 
                 {adminTab === 'helpdesk' && <Helpdesk token={token} userRole={userRole} />}
@@ -699,7 +889,7 @@ function App() {
                     <div className="glass-card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
                             <div>
-                                <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#6366f1' }}>Empresas Registradas</h1>
+                                <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>Empresas Registradas</h1>
                                 <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestione los clientes y sus planes activos</p>
                             </div>
                             {hasPermission('companies', 'create') && (
@@ -708,24 +898,25 @@ function App() {
                         </div>
                         <div className="table-responsive">
                             <table className="admin-table">
-                                <thead><tr><th>Empresa</th><th>Screens</th><th>Estado</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Empresa</th><th>Plan</th><th>Screens</th><th>Estado</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
                                 <tbody>
                                     {companies.map(c => (
                                         <tr key={c.id}>
                                             <td style={{ fontWeight: '600' }}>{c.name}</td>
-                                            <td><span className="badge-screens">{c.max_screens} TV</span></td>
+                                            <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{c.plan}</td>
+                                            <td><span className="badge-screens">{c.active_screens} / {c.max_screens} TV</span></td>
                                             <td>
                                                 <span className={`badge-status ${c.is_active ? 'active' : 'inactive'}`}>
                                                     {c.is_active ? '✓ Activo' : '✗ Suspendido'}
                                                 </span>
                                             </td>
                                             <td style={{ fontSize: '0.8rem' }}>{c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'N/A'}</td>
-                                            <td>
+                                            <td style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                                 <div className="action-buttons">
-                                                    <button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit" title="Editar Configuración"><Edit size={16} /></button>
-                                                    <button onClick={() => handleImpersonate(c)} className="action-btn impersonate" title="Gestionar Contenido TV"><Monitor size={16} /></button>
-                                                    <button onClick={() => viewDetails(c)} className="action-btn view" title="Estadísticas / Detalles"><Eye size={16} /></button>
-                                                    <button onClick={() => deleteCompany(c.id)} className="action-btn suspend" title="Eliminar Empresa"><Trash2 size={16} /></button>
+                                                    <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
+                                                    <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
+                                                    <Tooltip text="Estadísticas / Detalles"><button onClick={() => viewDetails(c)} className="action-btn view"><Eye size={16} /></button></Tooltip>
+                                                    <Tooltip text="Eliminar Empresa"><button onClick={() => deleteCompany(c.id)} className="action-btn suspend"><Trash2 size={16} /></button></Tooltip>
                                                 </div>
                                             </td>
                                         </tr>
@@ -740,6 +931,7 @@ function App() {
                     <div className="full-page-form">
                         <div className="form-container">
                             <CompanyForm
+                                onGenerateCode={generateRegistrationCode}
                                 company={selectedCompany}
                                 isSuperAdmin={true}
                                 activeUsers={users.filter(u => u.company_id === selectedCompany?.id)}
@@ -757,10 +949,17 @@ function App() {
 
                 {adminTab === 'users' && (
                     <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={20} /> Gestión de Usuarios</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={20} /> Gestión de Usuarios</h2>
+                            {isMaster && (
+                                <button className="btn btn-primary" onClick={() => setShowUserModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <Plus size={18} /> Crear Usuario
+                                </button>
+                            )}
+                        </div>
                         <div className="table-responsive">
                             <table className="admin-table">
-                                <thead><tr><th>Usuario</th><th>Empresa</th><th>Rol</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Usuario</th><th>Empresa</th><th>Rol</th><th>Estatus</th><th>Acciones</th></tr></thead>
                                 <tbody>
                                     {users.map(u => (
                                         <tr key={u.id}>
@@ -770,13 +969,41 @@ function App() {
                                                 <span className={`badge-role ${u.role}`}>
                                                     {u.role === 'admin_master' && 'Super Admin'}
                                                     {u.role === 'admin_empresa' && 'Admin Empresa'}
-                                                    {u.role === 'operador_empresa' && 'Operador'}
-                                                    {u.role === 'user_basic' && 'Básico'}
-                                                    {u.role === 'operador_master' && 'Operador Master'}
+                                                    {u.role === 'operador_empresa' && 'Operador Empresa'}
                                                 </span>
                                             </td>
                                             <td>
-                                                <button onClick={() => deleteUser(u.id)} className="action-btn suspend" title="Eliminar Usuario"><Trash2 size={16} /></button>
+                                                <span className={`badge-status ${u.is_active !== false ? 'active' : 'inactive'}`}>
+                                                    {u.is_active !== false ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            </td>
+                                            <td style={{ display: 'flex', gap: '5px' }}>
+                                                <Tooltip text="Editar Usuario">
+                                                    <button onClick={() => {
+                                                        setEditingUser(u);
+                                                        setShowUserModal(true);
+                                                    }} className="action-btn edit">
+                                                        <Edit size={16} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip text={u.is_active !== false ? "Suspender Usuario" : "Activar Usuario"}>
+                                                    <button onClick={async () => {
+                                                        try {
+                                                            const newStatus = u.is_active === false;
+                                                            const res = await fetch(`${API_BASE}/admin/users/${u.id}/status?is_active=${newStatus}`, {
+                                                                method: 'PATCH',
+                                                                headers: { 'Authorization': `Bearer ${token}` }
+                                                            });
+                                                            if (res.ok) fetchInitialData();
+                                                            else alert("Error al cambiar estado");
+                                                        } catch (e) { alert("Error"); }
+                                                    }} className={`action-btn ${u.is_active !== false ? 'suspend' : 'activate'}`}>
+                                                        {u.is_active !== false ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip text="Eliminar Usuario">
+                                                    <button onClick={() => deleteUser(u.id)} className="action-btn delete"><Trash2 size={16} /></button>
+                                                </Tooltip>
                                             </td>
                                         </tr>
                                     ))}
@@ -788,54 +1015,77 @@ function App() {
 
                 {adminTab === 'devices' && (
                     <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Monitor size={20} /> Gestión de Dispositivos</h2>
-
-                        <div className="table-responsive">
-                            <table className="admin-table">
-                                <thead><tr><th>Nombre</th><th>Empresa</th><th>Conexión</th><th>Estatus Admin</th><th>Acciones</th></tr></thead>
-                                <tbody>
-                                    {allDevices.map(d => (
-                                        <tr key={d.id}>
-                                            <td>
-                                                <div style={{ fontWeight: 'bold' }}>{d.name}</div>
-                                                <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{d.uuid}</div>
-                                            </td>
-                                            <td>{d.company_name || companies.find(c => c.id === d.company_id)?.name || 'N/A'}</td>
-                                            <td>
-                                                <span className={`badge-status ${d.is_online ? 'active' : 'inactive'}`}>
-                                                    {d.is_online ? '● Online' : '○ Offline'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`badge-status ${d.is_active ? 'active' : 'inactive'}`} style={{ background: d.is_active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)' }}>
-                                                    {d.is_active ? 'HABILITADO' : 'SUSPENDIDO'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="action-buttons">
-                                                    <button
-                                                        onClick={async () => {
-                                                            try {
-                                                                const res = await fetch(`${API_BASE}/admin/devices/${d.uuid}/status?is_active=${!d.is_active}`, {
-                                                                    method: 'PATCH',
-                                                                    headers: { 'Authorization': `Bearer ${token}` }
-                                                                });
-                                                                if (res.ok) fetchInitialData();
-                                                            } catch (e) { alert("Error"); }
-                                                        }}
-                                                        className={`action-btn ${d.is_active ? 'suspend' : 'activate'}`}
-                                                        title={d.is_active ? "Suspender Pantalla" : "Reactivar Pantalla"}
-                                                    >
-                                                        {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
-                                                    </button>
-                                                    <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete" title="Eliminar Dispositivo"><Trash2 size={16} /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Monitor size={20} /> Gestión de Dispositivos</h2>
                         </div>
+
+                        {allDevices.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
+                                <Monitor size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                <p>No se encontraron pantallas vinculadas.</p>
+                            </div>
+                        ) : (
+                            Object.entries(allDevices.reduce((acc, d) => {
+                                const cName = d.company_name || companies.find(c => c.id === d.company_id)?.name || 'Sin Asignar';
+                                if (!acc[cName]) acc[cName] = [];
+                                acc[cName].push(d);
+                                return acc;
+                            }, {})).map(([compName, devs]) => (
+                                <div key={compName} className="company-group" style={{ marginBottom: '2rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                        <Building size={16} color="var(--primary-color)" />
+                                        <h3 style={{ fontSize: '1rem', flex: 1, margin: 0, color: '#f3f4f6' }}>{compName} <span style={{ fontSize: '0.7rem', opacity: 0.6, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', marginLeft: '0.5rem' }}>{devs.length} Pantallas</span></h3>
+                                        <button
+                                            onClick={() => generateRegistrationCode(devs[0]?.company_id)}
+                                            style={{ background: 'var(--primary-color)', border: 'none', borderRadius: '4px', color: 'white', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                        >
+                                            <Monitor size={12} /> Vincular
+                                        </button>
+                                    </div>
+                                    <div className="table-responsive">
+                                        <table className="admin-table">
+                                            <thead><tr><th>Nombre</th><th>Empresa</th><th>UUID</th><th>Estado</th><th>Acciones</th></tr></thead>
+                                            <tbody>
+                                                {devs.map(d => (
+                                                    <tr key={d.id}>
+                                                        <td>
+                                                            <div style={{ fontWeight: 'bold' }}>{d.name}</div>
+                                                        </td>
+                                                        <td style={{ fontSize: '0.85rem', opacity: 0.7 }}>{compName}</td>
+                                                        <td style={{ fontSize: '0.7rem', opacity: 0.5, fontFamily: 'monospace' }}>{d.uuid}</td>
+                                                        <td>
+                                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                <span className={`badge-status ${d.is_online ? 'active' : 'inactive'}`} style={{ fontSize: '0.7rem' }}>
+                                                                    {d.is_online ? '● Online' : '○ Offline'}
+                                                                </span>
+                                                                <span className={`badge-status ${d.is_active ? 'active' : 'inactive'}`} style={{ background: d.is_active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)', color: d.is_active ? '#10b981' : '#f43f5e', fontSize: '0.7rem' }}>
+                                                                    {d.is_active ? 'HABILITADO' : 'SUSPENDIDO'}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div className="action-buttons">
+                                                                <Tooltip text={d.is_active ? "Suspender Pantalla" : "Reactivar Pantalla"}>
+                                                                    <button
+                                                                        onClick={() => toggleDeviceStatus(d)}
+                                                                        className={`action-btn ${d.is_active ? 'suspend' : 'activate'}`}
+                                                                    >
+                                                                        {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                                                    </button>
+                                                                </Tooltip>
+                                                                <Tooltip text="Eliminar Dispositivo">
+                                                                    <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete"><Trash2 size={16} /></button>
+                                                                </Tooltip>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 )}
 
@@ -896,20 +1146,108 @@ function App() {
                     <AdminProfileForm onSave={saveAdminProfile} onCancel={() => setShowAdminPassModal(false)} />
                 </Modal>
                 <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title={selectedCompany ? 'Editar' : 'Nueva'}>
-                    <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={true} />
+                    <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={true} onGenerateCode={generateRegistrationCode} />
                 </Modal>
                 <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Nuevo Pago">
                     <PaymentForm companies={companies} onSave={savePayment} onCancel={() => setShowPaymentModal(false)} />
+                </Modal>
+                <Modal isOpen={showUserModal} onClose={() => { setShowUserModal(false); setEditingUser(null); }} title={editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}>
+                    <UserForm
+                        companies={companies}
+                        initialData={editingUser}
+                        onSave={async (u) => {
+                            const url = editingUser
+                                ? `${API_BASE}/admin/users/${editingUser.id}`
+                                : `${API_BASE}/admin/users/`;
+                            const method = editingUser ? 'PATCH' : 'POST';
+
+                            const res = await fetch(url, {
+                                method,
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify(u)
+                            });
+                            if (res.ok) {
+                                alert(editingUser ? "Usuario actualizado" : "Usuario creado");
+                                setShowUserModal(false);
+                                setEditingUser(null);
+                                fetchInitialData();
+                            } else {
+                                const err = await res.json();
+                                alert("Error: " + (err.detail || "No se pudo guardar"));
+                            }
+                        }}
+                        onCancel={() => { setShowUserModal(false); setEditingUser(null); }}
+                    />
                 </Modal>
                 <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title="Detalles Empresa">
                     {selectedCompany && (
                         <div>
                             <h3>Dispositivos ({companyDevices.length}/{selectedCompany.max_screens})</h3>
-                            <button onClick={() => generateRegistrationCode(selectedCompany.id)} className="btn btn-primary" style={{ margin: '1rem 0' }}>Generar Código</button>
                             <ul>{companyDevices.map(d => <li key={d.id}>{d.name}</li>)}</ul>
                         </div>
                     )}
                 </Modal>
+
+                <Modal isOpen={!!codeModalData} onClose={() => setCodeModalData(null)} title="Vincular Nueva Pantalla">
+                    {codeModalData && (
+                        <div style={{ textAlign: 'center', padding: '1rem' }}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <Monitor size={48} color="var(--primary-color)" style={{ opacity: 0.8 }} />
+                            </div>
+                            <h3 style={{ margin: '0 0 1rem 0' }}>Código de Vinculación</h3>
+                            <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Ingresa el siguiente código en tu TV:</p>
+
+                            <div style={{
+                                background: 'rgba(0,0,0,0.3)',
+                                padding: '1.5rem',
+                                borderRadius: '16px',
+                                marginBottom: '1.5rem',
+                                border: '2px dashed var(--primary-color)',
+                                display: 'inline-block',
+                                minWidth: '280px'
+                            }}>
+                                <div style={{
+                                    fontSize: '3.5rem',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '8px',
+                                    color: '#10b981',
+                                    fontFamily: 'monospace',
+                                    lineHeight: 1
+                                }}>
+                                    {codeModalData.code}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Clock size={16} /> Expira en {codeModalData.expires_in_minutes} minutos
+                                </div>
+                                <div>El código fue copiado al portapapeles</div>
+                            </div>
+
+                            <button onClick={() => setCodeModalData(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '2rem', justifyContent: 'center', padding: '1rem', fontSize: '1.1rem' }}>
+                                Entendido
+                            </button>
+                        </div>
+                    )}
+                </Modal>
+                {/* GLOBAL REPLACEMENT MODALS */}
+                {confirmModalData && <Modal isOpen={!!confirmModalData} onClose={() => setConfirmModalData(null)} title={confirmModalData.title || "Confirmación"}>
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{confirmModalData.message}</p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button onClick={() => setConfirmModalData(null)} className="btn btn-secondary" style={{ flex: 1 }}>{confirmModalData.cancelText || "Cancelar"}</button>
+                            <button onClick={() => { if (confirmModalData.onConfirm) confirmModalData.onConfirm(); setConfirmModalData(null); }} className={`btn btn-${confirmModalData.type === 'danger' ? 'danger' : 'primary'}`} style={{ flex: 1 }}>{confirmModalData.confirmText || "Confirmar"}</button>
+                        </div>
+                    </div>
+                </Modal>}
+                {alertModalData && <Modal isOpen={!!alertModalData} onClose={() => setAlertModalData(null)} title={alertModalData.title || "Aviso"}>
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <div style={{ marginBottom: '1rem' }}>{alertModalData.type === 'error' ? <XCircle size={40} color="var(--error)" /> : <CheckCircle size={40} color="var(--success)" />}</div>
+                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{alertModalData.message}</p>
+                        <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
+                    </div>
+                </Modal>}
             </div>
         );
     }
@@ -930,11 +1268,10 @@ function App() {
     // CLIENT VIEW
     return (
         <div className="dashboard-container">
+            <GlobalStyles />
             <header className="dash-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ background: 'var(--primary-color)', padding: '0.5rem', borderRadius: '10px' }}>
-                        <Monitor size={24} color="#fff" />
-                    </div>
+                    <img src="/venrides_logo.png" alt="Venrides" className="app-logo" style={{ height: '125px' }} />
                     <div>
                         <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenrideScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
@@ -1028,7 +1365,11 @@ function App() {
                                                 </div>
                                                 <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.2rem', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>
                                                     <button
-                                                        onClick={() => generateRegistrationCode(localCompany.id)}
+                                                        onClick={() => {
+                                                            const companyId = impersonatingCompanyId || company?.id || localCompany?.id;
+                                                            console.log('Vincular button clicked. Using company ID:', companyId);
+                                                            generateRegistrationCode(companyId);
+                                                        }}
                                                         className="btn btn-primary"
                                                         style={{ width: '100%', padding: '1rem' }}
                                                         disabled={companyDevices.length >= localCompany?.max_screens}
@@ -1146,8 +1487,28 @@ function App() {
             </div>
 
             <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title="Actualizar Perfil de Empresa">
-                <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={view === 'superadmin'} />
+                <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={view === 'superadmin'} onGenerateCode={generateRegistrationCode} />
             </Modal>
+
+            <ChatWidget token={token} currentUser={userObj} plan={localCompany?.plan} />
+
+            {/* GLOBAL REPLACEMENT MODALS */}
+            {confirmModalData && <Modal isOpen={!!confirmModalData} onClose={() => setConfirmModalData(null)} title={confirmModalData.title || "Confirmación"}>
+                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                    <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{confirmModalData.message}</p>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        <button onClick={() => setConfirmModalData(null)} className="btn btn-secondary" style={{ flex: 1 }}>{confirmModalData.cancelText || "Cancelar"}</button>
+                        <button onClick={() => { if (confirmModalData.onConfirm) confirmModalData.onConfirm(); setConfirmModalData(null); }} className={`btn btn-${confirmModalData.type === 'danger' ? 'danger' : 'primary'}`} style={{ flex: 1 }}>{confirmModalData.confirmText || "Confirmar"}</button>
+                    </div>
+                </div>
+            </Modal>}
+            {alertModalData && <Modal isOpen={!!alertModalData} onClose={() => setAlertModalData(null)} title={alertModalData.title || "Aviso"}>
+                <div style={{ textAlign: 'center', padding: '1rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>{alertModalData.type === 'error' ? <XCircle size={40} color="var(--error)" /> : <CheckCircle size={40} color="var(--success)" />}</div>
+                    <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{alertModalData.message}</p>
+                    <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
+                </div>
+            </Modal>}
         </div>
     );
 }
@@ -1318,7 +1679,7 @@ const BrandingEditor = ({ company, onChange }) => {
     );
 };
 
-const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave, onCancel, onChange }) => {
+const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave, onCancel, onChange, onGenerateCode }) => {
     const [formData, setFormData] = useState({
         name: '', username: '', password: '', max_screens: 2, is_active: true,
         valid_until: '', client_editable_fields: 'name,layout_type,logo_url,sidebar_content,bottom_bar_content,pause_duration',
@@ -1464,8 +1825,7 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                                                     alert(`Límite de pantallas alcanzado para el plan ${formData.plan} (${formData.max_screens} max). Actualice el plan para vincular más.`);
                                                     return;
                                                 }
-                                                // Function to generate code logic would need to be passed down or handled here
-                                                alert("Para vincular, use el botón 'Generar Código' en el panel principal o actualice esta lógica.");
+                                                if (onGenerateCode) onGenerateCode(formData.id);
                                             }}
                                         >
                                             + Vincular
@@ -1543,13 +1903,21 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
 };
 
 const MasterAdManager = ({ token }) => {
-    const [ad, setAd] = useState({ video_url: '', ticker_text: '' });
+    const [ad, setAd] = useState({ video_playlist: ['', '', ''], ticker_messages: [], ad_scripts: [] });
     const [loading, setLoading] = useState(false);
+    const [newTicker, setNewTicker] = useState('');
+    const [newScript, setNewScript] = useState('');
 
     useEffect(() => {
         fetch(`${API_BASE}/admin/global-ad`, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
-            .then(data => setAd(data))
+            .then(data => {
+                setAd({
+                    video_playlist: Array.isArray(data.video_playlist) ? data.video_playlist : [data.video_url || '', '', ''],
+                    ticker_messages: Array.isArray(data.ticker_messages) ? data.ticker_messages : [],
+                    ad_scripts: Array.isArray(data.ad_scripts) ? data.ad_scripts : []
+                });
+            })
             .catch(err => console.error("Error loading global ad:", err));
     }, []);
 
@@ -1566,23 +1934,87 @@ const MasterAdManager = ({ token }) => {
         setLoading(false);
     };
 
+    const addTicker = () => {
+        if (!newTicker.trim()) return;
+        setAd({ ...ad, ticker_messages: [...ad.ticker_messages, newTicker.trim()] });
+        setNewTicker('');
+    };
+
+    const addScript = () => {
+        if (!newScript.trim()) return;
+        setAd({ ...ad, ad_scripts: [...ad.ad_scripts, newScript.trim()] });
+        setNewScript('');
+    };
+
+    const updateVideo = (idx, val) => {
+        const next = [...ad.video_playlist];
+        while (next.length < 3) next.push('');
+        next[idx] = val;
+        setAd({ ...ad, video_playlist: next });
+    };
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className="grid-2">
-                <div>
-                    <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlaySquare size={14} /> Video Publicitario (Drive/URL)</label>
-                    <input value={ad.video_url} onChange={e => setAd({ ...ad, video_url: e.target.value })} placeholder="https://drive.google.com/..." />
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <PlayCircle size={18} color="var(--primary-color)" /> Playlist Publicitaria (Max 3)
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        {[0, 1, 2].map(idx => (
+                            <div key={idx}>
+                                <label style={{ fontSize: '0.65rem', opacity: 0.6 }}>URL Video {idx + 1}</label>
+                                <input value={ad.video_playlist[idx] || ''} onChange={e => updateVideo(idx, e.target.value)} placeholder="https://youtube.com/..." />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div>
-                    <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={14} /> Texto de Cintillo Global</label>
-                    <input value={ad.ticker_text} onChange={e => setAd({ ...ad, ticker_text: e.target.value })} placeholder="Ej: Síguenos en @venrides | Publicidad aquí..." />
+
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Type size={18} color="var(--primary-color)" /> Cintillo Rotativo
+                    </h3>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input value={newTicker} onChange={e => setNewTicker(e.target.value)} placeholder="Nuevo mensaje..." style={{ marginBottom: 0 }} />
+                        <button className="btn" onClick={addTicker}><Plus size={16} /></button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {ad.ticker_messages.map((m, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem' }}>
+                                <span>{m}</span>
+                                <button style={{ border: 'none', background: 'none', color: '#f43f5e', cursor: 'pointer' }} onClick={() => setAd({ ...ad, ticker_messages: ad.ticker_messages.filter((_, idx) => idx !== i) })}><Trash2 size={14} /></button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
-            <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ alignSelf: 'flex-end', padding: '0.7rem 2rem' }}>
-                {loading ? 'Guardando...' : 'Aplicar Publicidad Masiva'}
-            </button>
-            <div style={{ padding: '1rem', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '10px', fontSize: '0.75rem', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
-                <strong>Aviso:</strong> Este contenido se mostrará automáticamente en todos los clientes con plan <strong>FREE</strong>. Los clientes BASIC o superiores no verán esta publicidad.
+
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ShieldCheck size={18} color="var(--primary-color)" /> Scripts Publicitarios (Scripts Google/Meta)
+                </h3>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <textarea value={newScript} onChange={e => setNewScript(e.target.value)} placeholder="Pega el código del script aquí..." rows={2} style={{ flex: 1, marginBottom: 0 }} />
+                    <button className="btn" onClick={addScript} style={{ alignSelf: 'flex-end' }}><Plus size={16} /></button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {ad.ad_scripts.map((s, i) => (
+                        <div key={i} style={{ position: 'relative', background: '#000', padding: '0.5rem', borderRadius: '6px', fontSize: '0.7rem', maxHeight: '100px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <code style={{ opacity: 0.5 }}>{s.substring(0, 100)}...</code>
+                            <button style={{ position: 'absolute', top: '5px', right: '5px', border: 'none', background: 'rgba(244, 63, 94, 0.8)', color: 'white', borderRadius: '4px', cursor: 'pointer', padding: '2px' }} onClick={() => setAd({ ...ad, ad_scripts: ad.ad_scripts.filter((_, idx) => idx !== i) })}><X size={12} /></button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: '#fbbf24', fontSize: '0.8rem' }}>
+                    <AlertCircle size={16} />
+                    <span>Solo visible en planes <strong>FREE</strong>.</span>
+                </div>
+                <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ padding: '0.8rem 2.5rem' }}>
+                    {loading ? 'Guardando...' : 'Publicar Cambios Masivos'}
+                </button>
             </div>
         </div>
     );
@@ -1919,6 +2351,55 @@ const MenuEditor = ({ companyId, token }) => {
     );
 };
 
+const UserForm = ({ companies, onSave, onCancel, initialData }) => {
+    const [u, setU] = useState(initialData || { username: '', password: '', role: 'operador_empresa', company_id: '' });
+
+    // Update form when initialData changes
+    useEffect(() => {
+        if (initialData) {
+            setU({ ...initialData, password: '' }); // Don't pre-fill password for security
+        }
+    }, [initialData]);
+
+    const isEditing = !!initialData;
+
+    return (
+        <div className="form-section">
+            <label>Email / Usuario</label>
+            <input
+                value={u.username}
+                onChange={e => setU({ ...u, username: e.target.value })}
+                placeholder="email@ejemplo.com"
+                disabled={isEditing} // Email shouldn't change when editing
+            />
+            <label>{isEditing ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}</label>
+            <input
+                type="password"
+                value={u.password}
+                onChange={e => setU({ ...u, password: e.target.value })}
+                placeholder={isEditing ? "Dejar vacío para mantener actual" : "********"}
+            />
+            <label>Rol</label>
+            <select value={u.role} onChange={e => setU({ ...u, role: e.target.value })}>
+                <option value="operador_empresa">Operador Empresa</option>
+                <option value="admin_empresa">Admin Empresa</option>
+                <option value="admin_master">Admin Master</option>
+            </select>
+            <label>Empresa (Opcional)</label>
+            <select value={u.company_id || ''} onChange={e => setU({ ...u, company_id: e.target.value })}>
+                <option value="">Ninguna / Master</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button onClick={() => onSave(u)} className="btn btn-primary" style={{ flex: 1 }}>
+                    Guardar
+                </button>
+                <button onClick={onCancel} className="btn" style={{ flex: 1 }}>Cancelar</button>
+            </div>
+        </div>
+    );
+};
+
 const AdminProfileForm = ({ onSave, onCancel }) => {
     const [config, setConfig] = useState({ username: '', password: '' });
     return (
@@ -2171,7 +2652,7 @@ const Helpdesk = ({ token, userRole }) => {
                     <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <h3>#{selectedTicket.id} - {selectedTicket.subject}</h3>
-                            {['admin_master', 'operador_master'].includes(userRole) && (
+                            {userRole === 'admin_master' && (
                                 <select value={selectedTicket.status} onChange={e => updateStatus(e.target.value)} style={{ width: 'auto' }}>
                                     <option value="open">Abierto</option>
                                     <option value="in_progress">En Progreso</option>
@@ -2200,6 +2681,117 @@ const Helpdesk = ({ token, userRole }) => {
                             <button className="btn btn-primary" onClick={sendReply} disabled={!replyBody}><Send size={18} /></button>
                         </div>
                     )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ChatWidget = ({ token, currentUser, plan }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [masterAdmin, setMasterAdmin] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (token) {
+            fetch(`${API_BASE}/admin/master-info`, { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => { if (data.id) setMasterAdmin(data); })
+                .catch(e => console.error("ChatWidget: no master", e));
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (isOpen && masterAdmin && token) {
+            fetchMessages();
+            const interval = setInterval(fetchMessages, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [isOpen, masterAdmin, token]);
+
+    const fetchMessages = async () => {
+        if (!masterAdmin || !token) return;
+        try {
+            const res = await fetch(`${API_BASE}/admin/chat/messages/${masterAdmin.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setMessages(Array.isArray(data) ? data : []);
+            }
+        } catch (e) { }
+    };
+
+    const sendMessage = async () => {
+        if (!newMessage.trim() || !masterAdmin || !token) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/chat/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ receiver_id: masterAdmin.id, body: newMessage })
+            });
+            if (res.ok) {
+                setNewMessage('');
+                fetchMessages();
+            }
+        } catch (e) { }
+        setLoading(false);
+    };
+
+    const isMaster = currentUser?.role === 'admin_master';
+    if (!token || !currentUser || isMaster) return null;
+    if (plan === 'free') return null;
+
+    return (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999 }}>
+            {!isOpen ? (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="btn btn-primary"
+                    style={{ borderRadius: '50%', width: '60px', height: '60px', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.4)', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                >
+                    <MessageSquare size={28} />
+                </button>
+            ) : (
+                <div className="glass-card" style={{ width: '350px', height: '450px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', border: '1px solid var(--primary-color)', borderRadius: '16px' }}>
+                    <div style={{ padding: '1rem', background: 'var(--primary-color)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <Shield size={18} />
+                            <div>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Soporte Master</div>
+                                <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>En línea ahora</div>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={20} /></button>
+                    </div>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', background: 'var(--bg-app)' }}>
+                        {messages.length === 0 && <div style={{ textAlign: 'center', marginTop: '20%', opacity: 0.5, fontSize: '0.8rem' }}>¡Hola! Cuéntanos en qué podemos ayudarte. Escribe tu mensaje y el Administrador Maestro te responderá pronto.</div>}
+                        {messages.map(msg => (
+                            <div key={msg.id} style={{
+                                alignSelf: msg.sender_id === currentUser.id ? 'flex-end' : 'flex-start',
+                                background: msg.sender_id === currentUser.id ? 'var(--primary-color)' : 'var(--bg-surface)',
+                                color: msg.sender_id === currentUser.id ? 'white' : 'var(--text-main)',
+                                padding: '0.6rem 0.8rem',
+                                borderRadius: '12px',
+                                fontSize: '0.8rem',
+                                maxWidth: '85%',
+                                border: msg.sender_id === currentUser.id ? 'none' : '1px solid var(--border-color)',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                            }}>
+                                {msg.body}
+                                <div style={{ fontSize: '0.6rem', opacity: 0.5, textAlign: 'right', marginTop: '0.2rem' }}>
+                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', background: 'var(--bg-surface)' }}>
+                        <input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && sendMessage()} placeholder="Escribe tu mensaje..." style={{ flex: 1, marginBottom: 0, fontSize: '0.8rem' }} />
+                        <button onClick={sendMessage} className="btn btn-primary" disabled={loading || !newMessage.trim()} style={{ padding: '0.5rem 1rem' }}><Send size={18} /></button>
+                    </div>
                 </div>
             )}
         </div>

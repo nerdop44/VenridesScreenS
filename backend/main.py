@@ -6,13 +6,13 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 from utils.email_sender import send_password_recovery_email
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, delete, desc
+from sqlalchemy import func, delete, desc, and_, or_, update
 from sqlalchemy.orm import selectinload
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -77,8 +77,15 @@ class DesignSettings(BaseModel):
     show_bcv: Optional[bool] = True
 
 class GlobalAdSchema(BaseModel):
-    video_url: Optional[str] = None
+    video_url: Optional[str] = None # Deprecated
+    video_playlist: Optional[List[str]] = [] # Multiple videos
     ticker_text: Optional[str] = None
+    ticker_messages: Optional[List[str]] = []
+    ad_scripts: Optional[List[str]] = []
+
+class ChatMessageSchema(BaseModel):
+    receiver_id: int
+    body: str
 
 class MessageSchema(BaseModel):
     receiver_id: Optional[int] = None
@@ -335,14 +342,14 @@ async def kill_switch_middleware(request: Request, call_next):
 def check_permission(user: User, resource: str, action: str):
     if user.is_admin or user.role == "admin_master":
         return True
-    if user.role != "operador_master":
+    if user.role != "admin_master":
         return False
     # permissions = {"users": {"create": True, "view": True}, "companies": {...}}
     perms = user.permissions or {}
     return perms.get(resource, {}).get(action, False)
 
 async def master_access_only(user: User = Depends(get_current_user)):
-    if user.role not in ["admin_master", "operador_master"]:
+    if user.role not in ["admin_master"]:
         raise HTTPException(403, "Acceso solo para nivel Maestro")
     return user
 
@@ -434,7 +441,7 @@ class CompanyUpdate(BaseModel):
 class UserCreate(BaseModel):
     username: str # email
     password: str
-    role: Literal["operador_master", "admin_empresa", "operador_empresa"]
+    role: Literal["admin_empresa", "operador_empresa"] # Master only via admin_master
     company_id: Optional[int] = None
     permissions: Optional[dict] = {}
 
@@ -474,6 +481,10 @@ async def login(request: Request, login_data: LoginRequest, db: AsyncSession = D
     # Search by email (username column)
     result = await db.execute(select(User).where(User.username == login_data.username))
     user = result.scalar_one_or_none()
+    
+    # Check Active
+    if user and not user.is_active:
+        raise HTTPException(status_code=403, detail="Cuenta suspendida o inactiva")
     
     # Check password (hashed or temp)
     if not user or (not verify_password(login_data.password, user.hashed_password) and \
@@ -609,12 +620,6 @@ async def get_all_users_admin(db: AsyncSession = Depends(get_db), current_user: 
         "is_active": True # User model doesn't have is_active yet, assume true or add later
     } for u in users]
 
-@app.patch("/admin/users/{user_id}/status")
-async def toggle_user_status(user_id: int, status: bool, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
-    # For now, we don't have is_active on User, so we might skip or Implement later. 
-    # User request asked for Suspend/Active, so let's stick to deleting for now or just acknowledge command.
-    # Actually, let's implement Delete since that was requested.
-     pass
 
 @app.delete("/admin/users/{user_id}")
 async def delete_user_admin(user_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
@@ -650,7 +655,12 @@ async def get_all_devices(db: AsyncSession = Depends(get_db), current_user: User
     } for d in devices]
 
 @app.patch("/admin/devices/{device_uuid}/status")
-async def toggle_device_status(device_uuid: str, is_active: bool, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
+async def toggle_device_status(
+    device_uuid: str, 
+    is_active: bool = Query(...), 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(require_role(["admin_master"]))
+):
     result = await db.execute(select(Device).where(Device.uuid == device_uuid))
     device = result.scalar_one_or_none()
     if not device:
@@ -757,11 +767,11 @@ async def create_company(data: CompanyCreate, db: AsyncSession = Depends(get_db)
 @app.get("/companies/{company_id}")
 async def get_company(company_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Master or own company
-    if current_user.role not in ["admin_master", "operador_master"] and current_user.company_id != company_id:
+    if current_user.role != "admin_master" and current_user.company_id != company_id:
         raise HTTPException(403, "No tiene acceso a los datos de esta empresa")
 
-    if current_user.role == "operador_master" and not check_permission(current_user, "companies", "view"):
-        raise HTTPException(403, "No tiene permiso para ver detalles de empresa")
+    # Master sees all details
+    pass
 
     res = await db.execute(select(Company).where(Company.id == company_id))
     company = res.scalar_one_or_none()
@@ -780,7 +790,7 @@ async def update_company(company_id: int, update: CompanyUpdate, request: Reques
     data_dict = update.dict(exclude_unset=True)
     
     # Check perfil Restricted Logic
-    if current_user.role not in ["admin_master", "operador_master"]:
+    if current_user.role != "admin_master":
         # Client trying to update
         if not company.can_edit_profile:
              raise HTTPException(403, "Edición de perfil deshabilitada. Contacte al administrador.")
@@ -1128,13 +1138,23 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
             # FREE users don't control bottom bar or priority videos
             if gad.video_url:
                 config["priority_content_url"] = gad.video_url
-            if gad.ticker_text:
+            
+            # Use ticker messages if available, else fallback to ticker_text
+            ticker_msgs = gad.ticker_messages or []
+            if not ticker_msgs and gad.ticker_text:
+                ticker_msgs = [gad.ticker_text]
+            
+            if ticker_msgs:
                 config["bottom_bar_content"] = {
-                    "static": gad.ticker_text,
+                    "static": ticker_msgs[0], # Legacy support
+                    "messages": ticker_msgs,   # New support
                     "font_size": "1.5rem",
                     "color": "#fbbf24",
                     "weight": "bold"
                 }
+            
+            if gad.ad_scripts:
+                config["ad_scripts"] = gad.ad_scripts
         else:
             # Fallback if no global ad
             config["bottom_bar_content"] = {"static": "Venrides Pantallas Inteligentes"}
@@ -1188,25 +1208,55 @@ async def get_company_preview_config(company_id: int, db: AsyncSession = Depends
 
     # -- Overrides for FREE plan --
     if company.plan == 'free':
+        # Get latest Global Ad
         gad_res = await db.execute(select(GlobalAd).order_by(GlobalAd.updated_at.desc()).limit(1))
         gad = gad_res.scalar_one_or_none()
         if gad:
-            if gad.video_url:
-                config["priority_content_url"] = gad.video_url
-            if gad.ticker_text:
+            # FREE users don't control bottom bar or priority videos
+            # Clean playlist: remove empty strings
+            playlist = [v for v in (gad.video_playlist or []) if v.strip()]
+            
+            # Fallback to video_url if playlist is empty
+            if not playlist and gad.video_url:
+                playlist = [gad.video_url]
+                
+            if playlist:
+                config["priority_content_url"] = playlist[0]
+                config["priority_playlist"] = playlist
+            else:
+                # Absolute fallback to filler keywords/nature
+                config["priority_content_url"] = None
+                config["filler_keywords"] = "nature, coffee"
+            
+            # Use ticker messages if available, else fallback to ticker_text
+            ticker_msgs = gad.ticker_messages or []
+            if not ticker_msgs and gad.ticker_text:
+                ticker_msgs = [gad.ticker_text]
+            
+            if ticker_msgs:
                 config["bottom_bar_content"] = {
-                    "static": gad.ticker_text,
+                    "static": ticker_msgs[0], # Legacy support
+                    "messages": ticker_msgs,   # New support
                     "font_size": "1.5rem",
                     "color": "#fbbf24",
                     "weight": "bold"
                 }
+            
+            if gad.ad_scripts:
+                config["ad_scripts"] = gad.ad_scripts
+        else:
+            # Fallback if no global ad
+            config["bottom_bar_content"] = {"static": "Venrides Pantallas Inteligentes"}
 
     return config
 
 @app.get("/admin/global-ad")
 async def get_global_ad(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(GlobalAd).order_by(GlobalAd.updated_at.desc()).limit(1))
-    return res.scalar_one_or_none() or {"video_url": "", "ticker_text": ""}
+    gad = res.scalar_one_or_none()
+    if not gad:
+        return {"video_url": "", "video_playlist": [], "ticker_text": "", "ticker_messages": [], "ad_scripts": []}
+    return gad
 
 @app.post("/admin/global-ad")
 async def update_global_ad(ad: GlobalAdSchema, db: AsyncSession = Depends(get_db)):
@@ -1215,9 +1265,18 @@ async def update_global_ad(ad: GlobalAdSchema, db: AsyncSession = Depends(get_db
     gad = res.scalar_one_or_none()
     if gad:
         gad.video_url = ad.video_url
+        gad.video_playlist = ad.video_playlist
         gad.ticker_text = ad.ticker_text
+        gad.ticker_messages = ad.ticker_messages
+        gad.ad_scripts = ad.ad_scripts
     else:
-        gad = GlobalAd(video_url=ad.video_url, ticker_text=ad.ticker_text)
+        gad = GlobalAd(
+            video_url=ad.video_url, 
+            video_playlist=ad.video_playlist,
+            ticker_text=ad.ticker_text, 
+            ticker_messages=ad.ticker_messages,
+            ad_scripts=ad.ad_scripts
+        )
         db.add(gad)
     await db.commit()
     return gad
@@ -1226,15 +1285,28 @@ async def update_global_ad(ad: GlobalAdSchema, db: AsyncSession = Depends(get_db
 
 # --- Admin Management Endpoints ---
 
+@app.get("/admin/master-info")
+async def get_master_info(db: AsyncSession = Depends(get_db)):
+    """Obtener info del Admin Maestro (para el widget de chat)"""
+    res = await db.execute(select(User).where(User.role == "admin_master"))
+    master = res.scalar_one_or_none()
+    if not master:
+        # Fallback to any master admin if exists
+        res = await db.execute(select(User).where(User.role == "admin_master"))
+        master = res.scalar_one_or_none()
+        
+    if not master:
+        raise HTTPException(404, "Administrador Maestro no encontrado")
+        
+    return {"id": master.id, "username": master.username}
+
 @app.get("/admin/users/")
 async def list_users(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Listar usuarios con filtros de rol"""
     query = select(User)
     
-    if current_user.role in ["admin_master", "operador_master"]:
-        if current_user.role == "operador_master" and not check_permission(current_user, "users", "view"):
-             raise HTTPException(403, "No tiene permiso para ver usuarios")
-        # Master roles see all
+    if current_user.role == "admin_master":
+        # Master role sees all
         pass
     elif current_user.role == "admin_empresa":
         # Empresa admin only sees users of their company
@@ -1245,7 +1317,7 @@ async def list_users(db: AsyncSession = Depends(get_db), current_user: User = De
     result = await db.execute(query)
     users = result.scalars().all()
     # Map for response
-    return [{"id": u.id, "username": u.username, "role": u.role, "company_id": u.company_id, "permissions": u.permissions} for u in users]
+    return [{"id": u.id, "username": u.username, "role": u.role, "company_id": u.company_id, "permissions": u.permissions, "is_active": u.is_active} for u in users]
 
 @app.post("/admin/users/")
 async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -1255,13 +1327,9 @@ async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), curr
     if current_user.role == "admin_master":
         # Can create any role
         pass
-    elif current_user.role == "operador_master":
-        if not check_permission(current_user, "users", "create"):
-            raise HTTPException(403, "No tiene permiso para crear usuarios")
-        if data.role in ["admin_master", "operador_master"]:
-            raise HTTPException(403, "Un operador no puede crear roles Maestros")
     else:
-        raise HTTPException(403, "No tiene permiso para crear usuarios manualmente")
+        # Prevent non-masters from creating admins
+        raise HTTPException(403, "No tiene permiso para crear usuarios")
 
     # 2. Duplicate Check
     res = await db.execute(select(User).where(User.username == data.username))
@@ -1281,6 +1349,32 @@ async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), curr
     await db.refresh(new_user)
     return {"id": new_user.id, "username": new_user.username, "role": new_user.role}
 
+@app.patch("/admin/users/{user_id}")
+async def update_user(user_id: int, data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Actualizar usuario (rol, empresa, contraseña opcional)"""
+    
+    # Permission Check
+    if current_user.role != "admin_master":
+        raise HTTPException(403, "No tiene permiso para editar usuarios")
+    
+    # Get user
+    res = await db.execute(select(User).where(User.id == user_id))
+    target_user = res.scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(404, "Usuario no encontrado")
+    
+    # Update fields
+    if "role" in data and data["role"]:
+        target_user.role = data["role"]
+    if "company_id" in data:
+        target_user.company_id = data["company_id"] if data["company_id"] else None
+    if "password" in data and data["password"]:  # Only update if password is provided
+        target_user.hashed_password = get_password_hash(data["password"])
+    
+    await db.commit()
+    await db.refresh(target_user)
+    return {"id": target_user.id, "username": target_user.username, "role": target_user.role}
+
 @app.patch("/admin/users/{user_id}/password")
 async def update_user_password(user_id: int, data: UserPasswordUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Cambio de contraseña con restricciones de rol"""
@@ -1293,10 +1387,7 @@ async def update_user_password(user_id: int, data: UserPasswordUpdate, db: Async
     can_edit = False
     if current_user.role == "admin_master":
         can_edit = True
-    elif current_user.role == "operador_master":
-        if check_permission(current_user, "users", "edit"):
-             if target_user.role not in ["admin_master", "operador_master"] or target_user.id == current_user.id:
-                 can_edit = True
+    # Master roles simplified to admin_master only
     elif current_user.role == "admin_empresa":
         # Can only edit their company's operator
         if target_user.company_id == current_user.company_id and target_user.role == "operador_empresa":
@@ -1330,14 +1421,79 @@ async def update_my_profile(data: UserProfileUpdate, db: AsyncSession = Depends(
     await db.refresh(current_user)
     return {"id": current_user.id, "username": current_user.username, "role": current_user.role}
 
+@app.patch("/admin/users/{user_id}/status")
+async def toggle_user_status(
+    user_id: int, 
+    is_active: bool = Query(...), 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Activar/Suspender Usuario"""
+    # Permission Check
+    can_manage = False
+    if current_user.role == "admin_master":
+        can_manage = True
+    elif current_user.role == "admin_empresa":
+        can_manage = True # Will scope to company
+        
+    if not can_manage:
+        raise HTTPException(403, "No autorizado")
+        
+    res = await db.execute(select(User).where(User.id == user_id))
+    target = res.scalar_one_or_none()
+    if not target:
+        raise HTTPException(404, "Usuario no encontrado")
+        
+    # Scope Check for non-master
+    if current_user.role == "admin_empresa" and target.company_id != current_user.company_id:
+        raise HTTPException(403, "No autorizado")
+        
+    # Prevent self-deactivation
+    if target.id == current_user.id:
+        raise HTTPException(400, "No puedes desactivar tu propia cuenta")
+        
+    target.is_active = is_active
+    await db.commit()
+    return {"message": "Estado actualizado", "is_active": is_active}
+
+@app.post("/admin/users/")
+async def create_user_admin(
+    user_data: dict, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Crear un nuevo usuario (Restringido a Administrador Maestro)"""
+    if current_user.role != "admin_master":
+        raise HTTPException(403, "Solo el Administrador Maestro puede crear usuarios")
+    
+    # Validations
+    if not user_data.get("username") or not user_data.get("password"):
+        raise HTTPException(400, "Username y password son obligatorios")
+    
+    # Check if exists
+    res = await db.execute(select(User).where(User.username == user_data["username"]))
+    if res.scalar_one_or_none():
+        raise HTTPException(400, "El usuario ya existe")
+    
+    new_user = User(
+        username=user_data["username"],
+        hashed_password=get_password_hash(user_data["password"]),
+        role=user_data.get("role", "operador_empresa"),
+        company_id=user_data.get("company_id"),
+        is_active=True
+    )
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return {"message": "Usuario creado", "id": new_user.id}
+
 @app.delete("/admin/users/{id}")
 async def delete_user(id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Eliminar usuario (Nivel Maestro únicamente)"""
-    if current_user.role not in ["admin_master", "operador_master"]:
+    if current_user.role != "admin_master":
         raise HTTPException(403, "Solo roles Maestros pueden eliminar usuarios")
     
-    if current_user.role == "operador_master" and not check_permission(current_user, "users", "delete"):
-        raise HTTPException(403, "No tiene permiso de eliminación")
+    # Master roles simplified to admin_master only
 
     result = await db.execute(select(User).where(User.id == id))
     user = result.scalar_one_or_none()
@@ -1350,6 +1506,31 @@ async def delete_user(id: int, db: AsyncSession = Depends(get_db), current_user:
     await db.delete(user)
     await db.commit()
     return {"message": "Usuario eliminado correctamente"}
+
+@app.get("/admin/devices/")
+async def list_all_devices(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Listar todos los dispositivos (para Gestión de Panel Master)"""
+    if current_user.role == "admin_master":
+        query = select(Device).options(selectinload(Device.company))
+    elif current_user.role == "admin_empresa":
+        query = select(Device).where(Device.company_id == current_user.company_id).options(selectinload(Device.company))
+    else:
+        raise HTTPException(403, "No tiene permiso")
+        
+    result = await db.execute(query)
+    devices = result.scalars().all()
+    
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
+    return [{
+        "id": d.id,
+        "uuid": d.uuid,
+        "name": d.name,
+        "company_id": d.company_id,
+        "company_name": d.company.name if d.company else "Sin Asignar",
+        "is_active": d.is_active,
+        "is_online": (now - d.last_ping).total_seconds() < 300 if d.last_ping else False
+    } for d in devices]
 
 @app.patch("/admin/devices/{uuid}")
 async def update_device_name(uuid: str, name: str, db: AsyncSession = Depends(get_db)):
@@ -1491,41 +1672,40 @@ async def get_chat_conversations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all chat conversations for current user"""
-    # Get messages where user is sender or receiver (excluding alerts)
-    query = select(Message).where(
-        and_(
-            Message.is_alert == False,
-            or_(
-                Message.sender_id == current_user.id,
-                Message.receiver_id == current_user.id
-            )
+    """Get all chat conversations for current user (Internal Messaging 2.0)"""
+    # Fetch threads where user is participant and not hidden
+    query = select(ChatThread).where(
+        or_(
+            and_(ChatThread.participant_1_id == current_user.id, ChatThread.is_hidden_by_1 == False),
+            and_(ChatThread.participant_2_id == current_user.id, ChatThread.is_hidden_by_2 == False)
         )
-    ).order_by(Message.created_at.desc())
+    ).order_by(ChatThread.last_message_at.desc())
     
     result = await db.execute(query)
-    messages = result.scalars().all()
+    threads = result.scalars().all()
     
-    # Group by conversation partner
-    conversations = {}
-    for msg in messages:
-        partner_id = msg.receiver_id if msg.sender_id == current_user.id else msg.sender_id
-        if partner_id not in conversations:
-            conversations[partner_id] = {
-                'partner_id': partner_id,
-                'messages': [],
-                'unread_count': 0,
-                'last_message_at': msg.created_at
-            }
-        conversations[partner_id]['messages'].append(msg)
-        if msg.receiver_id == current_user.id and not msg.is_read:
-            conversations[partner_id]['unread_count'] += 1
-    
-    # Get partner details
     result_list = []
-    for partner_id, conv in conversations.items():
-        partner_result = await db.execute(select(User).where(User.id == partner_id))
-        partner = partner_result.scalar_one_or_none()
+    for thread in threads:
+        partner_id = thread.participant_2_id if thread.participant_1_id == current_user.id else thread.participant_1_id
+        
+        partner_res = await db.execute(select(User).where(User.id == partner_id))
+        partner = partner_res.scalar_one_or_none()
+        
+        # Calculate real unread count for this partner
+        unread_res = await db.execute(
+            select(func.count(Message.id)).where(
+                and_(
+                    Message.sender_id == partner_id,
+                    Message.receiver_id == current_user.id,
+                    Message.is_read == False
+                )
+            )
+        )
+        real_unread_count = unread_res.scalar_one()
+
+        # Get last message body from cache or fetch if missing
+        last_msg = thread.last_subject or "S/M"
+        
         if partner:
             result_list.append({
                 'partner': {
@@ -1533,9 +1713,9 @@ async def get_chat_conversations(
                     'username': partner.username,
                     'role': partner.role
                 },
-                'last_message': conv['messages'][0].body[:100],
-                'last_message_at': conv['last_message_at'].isoformat(),
-                'unread_count': conv['unread_count']
+                'last_message': last_msg,
+                'last_message_at': thread.last_message_at.isoformat() if thread.last_message_at else thread.created_at.isoformat(),
+                'unread_count': real_unread_count
             })
     
     return result_list
@@ -1546,7 +1726,7 @@ async def get_chat_messages(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all messages with a specific user"""
+    """Get all messages with partner and mark as read"""
     query = select(Message).where(
         and_(
             Message.is_alert == False,
@@ -1560,86 +1740,158 @@ async def get_chat_messages(
     result = await db.execute(query)
     messages = result.scalars().all()
     
-    # Mark received messages as read
-    for msg in messages:
-        if msg.receiver_id == current_user.id and not msg.is_read:
-            msg.is_read = True
-    await db.commit()
+    # Mark as read in Thread
+    p1 = min(current_user.id, partner_id)
+    p2 = max(current_user.id, partner_id)
+    t_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
+    thread = t_res.scalar_one_or_none()
+    if thread:
+        if thread.participant_1_id == current_user.id:
+            thread.is_read_by_1 = True
+        else:
+            thread.is_read_by_2 = True
+            
+    # Mark individual messages as read
+    await db.execute(
+        update(Message)
+        .where(and_(
+            Message.sender_id == partner_id,
+            Message.receiver_id == current_user.id,
+            Message.is_read == False
+        ))
+        .values(is_read=True)
+    )
     
-    return [{
-        'id': msg.id,
-        'sender_id': msg.sender_id,
-        'receiver_id': msg.receiver_id,
-        'subject': msg.subject,
-        'body': msg.body,
-        'created_at': msg.created_at.isoformat(),
-        'is_read': msg.is_read
-    } for msg in messages]
+    await db.commit()
+    return messages
 
 @app.post("/admin/chat/send")
 async def send_chat_message(
-    receiver_id: int,
-    body: str,
+    chat_data: ChatMessageSchema,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Send a chat message to another user"""
-    # Verify receiver exists
-    receiver_result = await db.execute(select(User).where(User.id == receiver_id))
-    receiver = receiver_result.scalar_one_or_none()
-    if not receiver:
-        raise HTTPException(404, "Usuario destinatario no encontrado")
+    """Send a chat message (Internal Messaging 2.0)"""
+    receiver_id = chat_data.receiver_id
+    body = chat_data.body
+
+    # Verify receiver
+    receiver_res = await db.execute(select(User).where(User.id == receiver_id))
+    receiver = receiver_res.scalar_one_or_none()
+    if not receiver: raise HTTPException(404, "Destinatario no encontrado")
     
-    # Check Block Status
+    # Check Blocks
     from models import BlockedUser
-    block_check = await db.execute(select(BlockedUser).where(
+    block = await db.execute(select(BlockedUser).where(
         or_(
-            and_(BlockedUser.blocker_id == receiver_id, BlockedUser.blocked_id == current_user.id), # Receiver blocked sender
-            and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == receiver_id)  # Sender blocked receiver
+            and_(BlockedUser.blocker_id == receiver_id, BlockedUser.blocked_id == current_user.id),
+            and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == receiver_id)
         )
     ))
-    if block_check.scalar_one_or_none():
-        raise HTTPException(403, "No puedes enviar mensajes a este usuario (Bloqueo activo)")
+    if block.scalar_one_or_none():
+        raise HTTPException(403, "Comunicación bloqueada entre estos usuarios")
 
-    # Create message
-    new_msg = Message(
+    # Handle Thread
+    p1 = min(current_user.id, receiver_id)
+    p2 = max(current_user.id, receiver_id)
+    
+    thread_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
+    thread = thread_res.scalar_one_or_none()
+    
+    if not thread:
+        thread = ChatThread(
+            participant_1_id=p1,
+            participant_2_id=p2,
+            last_message_at=datetime.utcnow(),
+            last_subject=body[:100]
+        )
+        db.add(thread)
+    
+    # Update thread
+    thread.last_message_at = datetime.utcnow()
+    thread.last_subject = body[:100]
+    if thread.participant_1_id == receiver_id:
+        thread.is_read_by_1 = False
+        thread.is_hidden_by_1 = False
+        thread.is_read_by_2 = True
+        thread.is_hidden_by_2 = False
+    else:
+        thread.is_read_by_2 = False
+        thread.is_hidden_by_2 = False
+        thread.is_read_by_1 = True
+        thread.is_hidden_by_1 = False
+
+    # Save Message
+    msg = Message(
         sender_id=current_user.id,
         receiver_id=receiver_id,
         subject="Chat Interno",
         body=body,
         is_alert=False,
-        is_read=False
+        created_at=datetime.utcnow()
     )
-    db.add(new_msg)
+    db.add(msg)
     await db.commit()
-    await db.refresh(new_msg)
+    await db.refresh(msg)
+    return msg
+
+@app.delete("/admin/chat/conversation/{partner_id}")
+async def delete_chat_conversation(
+    partner_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Soft delete conversation (Mark as hidden)"""
+    p1 = min(current_user.id, partner_id)
+    p2 = max(current_user.id, partner_id)
     
-    return {
-        'id': new_msg.id,
-        'sender_id': new_msg.sender_id,
-        'receiver_id': new_msg.receiver_id,
-        'body': new_msg.body,
-        'created_at': new_msg.created_at.isoformat()
-    }
+    res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
+    thread = res.scalar_one_or_none()
+    if thread:
+        if thread.participant_1_id == current_user.id:
+            thread.is_hidden_by_1 = True
+        else:
+            thread.is_hidden_by_2 = True
+        await db.commit()
+    return {"message": "Conversación eliminada (vista local)"}
 
 @app.post("/admin/chat/block")
-async def block_user(blocked_id: int, reason: str = None, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def block_chat_user(
+    blocked_id: int,
+    reason: str = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Bloquear un usuario"""
     from models import BlockedUser
     # Prevent self-block
     if blocked_id == current_user.id:
         raise HTTPException(400, "No te puedes bloquear a ti mismo")
         
-    # Check if already blocked
-    existing = await db.execute(select(BlockedUser).where(
-        and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == blocked_id)
-    ))
-    if existing.scalar_one_or_none():
-        return {"message": "Usuario ya está bloqueado"}
-        
-    block = BlockedUser(blocker_id=current_user.id, blocked_id=blocked_id, reason=reason)
-    db.add(block)
+    res = await db.execute(select(BlockedUser).where(and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == blocked_id)))
+    if res.scalar_one_or_none():
+        return {"message": "Ya está bloqueado"}
+    
+    blocked = BlockedUser(blocker_id=current_user.id, blocked_id=blocked_id, reason=reason)
+    db.add(blocked)
     await db.commit()
     return {"message": "Usuario bloqueado"}
+
+@app.get("/admin/chat/unread-count")
+async def get_chat_unread_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get total unread conversations"""
+    query = select(func.count(ChatThread.id)).where(
+        or_(
+            and_(ChatThread.participant_1_id == current_user.id, ChatThread.is_read_by_1 == False, ChatThread.is_hidden_by_1 == False),
+            and_(ChatThread.participant_2_id == current_user.id, ChatThread.is_read_by_2 == False, ChatThread.is_hidden_by_2 == False)
+        )
+    )
+    result = await db.execute(query)
+    count = result.scalar() or 0
+    return {"unread_count": count}
 
 @app.post("/admin/chat/unblock")
 async def unblock_user(blocked_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -1654,6 +1906,19 @@ async def unblock_user(blocked_id: int, db: AsyncSession = Depends(get_db), curr
     await db.delete(b)
     await db.commit()
     return {"message": "Usuario desbloqueado"}
+
+@app.delete("/admin/chat/conversation/{partner_id}")
+async def delete_conversation(partner_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Borrar historial de conversación (Hard delete por ahora)"""
+    query = delete(Message).where(
+        or_(
+            and_(Message.sender_id == current_user.id, Message.receiver_id == partner_id),
+            and_(Message.sender_id == partner_id, Message.receiver_id == current_user.id)
+        )
+    )
+    await db.execute(query)
+    await db.commit()
+    return {"message": "Conversación eliminada"}
 
 @app.get("/admin/chat/unread-count")
 async def get_unread_chat_count(
@@ -1681,10 +1946,10 @@ async def send_live_alert(
     current_user: User = Depends(get_current_user)
 ):
     # Authorization: Master or Company Admin of same company
-    if current_user.role not in ["admin_master", "operador_master"]:
+    if current_user.role != "admin_master":
         if current_user.role == "admin_empresa" and current_user.company_id != company_id:
             raise HTTPException(403, "No tiene permiso para enviar mensajes a esta empresa")
-        elif current_user.role not in ["admin_master", "operador_master", "admin_empresa"]:
+        elif current_user.role not in ["admin_master", "admin_empresa"]:
             raise HTTPException(403, "No tiene permisos suficientes")
     
     new_msg = Message(
@@ -1746,7 +2011,7 @@ async def list_tickets(db: AsyncSession = Depends(get_db), current_user: User = 
     query = select(SupportTicket).options(selectinload(SupportTicket.user)).order_by(SupportTicket.updated_at.desc())
     
     # Filters
-    if current_user.role not in ["admin_master", "operador_master"]:
+    if current_user.role != "admin_master":
         # Regular users see only their tickets
         query = query.where(SupportTicket.user_id == current_user.id)
         
@@ -1776,7 +2041,7 @@ async def get_ticket_details(id: int, db: AsyncSession = Depends(get_db), curren
         raise HTTPException(404, "Ticket no encontrado")
         
     # Permission Check
-    if current_user.role not in ["admin_master", "operador_master"] and ticket.user_id != current_user.id:
+    if current_user.role != "admin_master" and ticket.user_id != current_user.id:
         raise HTTPException(403, "No tiene permiso para ver este ticket")
         
     return {
@@ -1792,7 +2057,7 @@ async def get_ticket_details(id: int, db: AsyncSession = Depends(get_db), curren
             "body": m.body,
             "created_at": m.created_at,
             "sender_email": m.sender.username if m.sender else "Sistema",
-            "is_staff": m.sender and m.sender.role in ["admin_master", "operador_master"]
+            "is_staff": m.sender and m.sender.role == "admin_master"
         } for m in ticket.messages]
     }
 
@@ -1806,7 +2071,7 @@ async def reply_ticket(id: int, reply: TicketReply, db: AsyncSession = Depends(g
         raise HTTPException(404, "Ticket no encontrado")
         
     # Permission Check
-    if current_user.role not in ["admin_master", "operador_master"] and ticket.user_id != current_user.id:
+    if current_user.role != "admin_master" and ticket.user_id != current_user.id:
         raise HTTPException(403, "No tiene permiso para responder a este ticket")
         
     new_msg = TicketMessage(
@@ -1818,7 +2083,7 @@ async def reply_ticket(id: int, reply: TicketReply, db: AsyncSession = Depends(g
     
     # Update Ticket Timestamp & Status logic
     ticket.updated_at = datetime.utcnow()
-    if current_user.role in ["admin_master", "operador_master"]:
+    if current_user.role == "admin_master":
         if ticket.status == "open":
             ticket.status = "in_progress"
     else:
@@ -1829,7 +2094,7 @@ async def reply_ticket(id: int, reply: TicketReply, db: AsyncSession = Depends(g
     return {"message": "Respuesta enviada"}
 
 @app.patch("/admin/helpdesk/tickets/{id}/status")
-async def update_ticket_status(id: int, status: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master", "operador_master"]))):
+async def update_ticket_status(id: int, status: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     from models import SupportTicket
     
     res = await db.execute(select(SupportTicket).where(SupportTicket.id == id))

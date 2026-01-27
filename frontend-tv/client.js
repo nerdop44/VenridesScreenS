@@ -294,7 +294,7 @@ function applyBranding(data) {
     const nameEl = document.getElementById("company-name");
     nameEl.innerText = data.name;
     if (data.design_settings) {
-        const ds = data.design_settings;
+        // ds already defined above
         nameEl.style.fontFamily = ds.name_font || 'inherit';
         nameEl.style.fontSize = ds.name_size || '1.2rem';
         nameEl.style.color = ds.name_color || 'inherit';
@@ -304,7 +304,7 @@ function applyBranding(data) {
     // Logo Handling (Bottom Logo)
     const logoImg = document.getElementById("logo");
     const logoContainer = document.getElementById("logo-container");
-    const ds = data.design_settings || {};
+    // const ds = data.design_settings || {}; // Already defined
 
     // Determine which logo to show
     // Priority: sidebar_bottom_logo -> logo_url
@@ -617,16 +617,40 @@ function updateBottomBar() {
         fontFamily: ds.ticker_font || 'inherit'
     };
 
-    // 1. Static Custom Text
-    const staticText = bottomData.static || "Venrides Pantallas Inteligentes";
-    items.push({
-        type: 'text',
-        content: staticText,
-        style: {
-            ...tickerStyle,
-            marginRight: "4vw"
-        }
+    // 1. Multiple Scrolling Messages (Ticker)
+    const msgs = Array.isArray(bottomData.messages) ? bottomData.messages : [bottomData.static || "Venrides Pantallas Inteligentes"];
+
+    msgs.forEach(text => {
+        items.push({
+            type: 'text',
+            content: text,
+            style: {
+                ...tickerStyle,
+                marginRight: "6vw"
+            }
+        });
     });
+
+    // 4. Inject Ad Scripts (Google/Meta if provided)
+    if (data.ad_scripts && Array.isArray(data.ad_scripts)) {
+        data.ad_scripts.forEach(scriptCode => {
+            if (!document.querySelector(`[data-ad-script="${btoa(scriptCode).substring(0, 20)}"]`)) {
+                const container = document.createElement('div');
+                container.setAttribute('data-ad-script', btoa(scriptCode).substring(0, 20));
+                container.innerHTML = scriptCode;
+                document.body.appendChild(container);
+
+                // Re-execute scripts if any were injected via innerHTML
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(s => {
+                    const newScript = document.createElement('script');
+                    if (s.src) newScript.src = s.src;
+                    else newScript.textContent = s.textContent;
+                    document.head.appendChild(newScript);
+                });
+            }
+        });
+    }
 
     // 2. BCV Rate
     if (bcvRate > 0 && ds.show_bcv !== false) {
@@ -739,7 +763,9 @@ function showRegistrationScreen() {
     reg.classList.remove("hidden");
     reg.innerHTML = `
         <div class="registration-box">
-            <div style="font-size: 1.2rem; opacity: 0.5; margin-bottom: 1rem; letter-spacing: 3px; font-weight: bold; color: #fff;">VENRIDE SCREENS</div>
+            <div style="margin-bottom: 1rem;">
+                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 310px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
+            </div>
             <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>
             <div style="background:#222; padding:1.2rem; border-radius:12px; font-family:monospace; font-size:1.1rem; margin-bottom:1.5rem; word-break:break-all; border: 1px solid #333; color: #aaa;">

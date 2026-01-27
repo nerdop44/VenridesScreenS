@@ -3,15 +3,16 @@
 }
 
 :root {
-  /* Default Dark Theme */
-  --primary-color: #6366f1;
-  --secondary-color: #4f46e5;
-  --accent-color: #818cf8;
+  /* Default Dark Theme - Venrides Branding */
+  --primary-color: #3b82f6;
+  --secondary-color: #2563eb;
+  --accent-color: #60a5fa;
   --text-main: #f8fafc;
   --text-secondary: #94a3b8;
   --bg-app: #0f172a;
   --bg-surface: #1e293b;
-  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-bg: rgba(30, 41, 59, 0.85);
+
   --border-color: rgba(255, 255, 255, 0.1);
   --success: #10b981;
   --error: #f43f5e;
@@ -19,11 +20,17 @@
 }
 
 [data-theme='light'] {
-  --text-main: #1e293b;
-  --text-secondary: #64748b;
-  --bg-app: #f1f5f9;
+  --primary-color: #0284c7;
+  /* Sky 600 - Azul corporativo fuerte */
+  --secondary-color: #0369a1;
+  --accent-color: #0ea5e9;
+  --text-main: #0f172a;
+  /* Slate 900 */
+  --text-secondary: #475569;
+  --bg-app: #f0f9ff;
+  /* Sky 50 - Azul muy pálido de fondo */
   --bg-surface: #ffffff;
-  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-bg: rgba(255, 255, 255, 0.95);
   --border-color: rgba(0, 0, 0, 0.1);
   --input-bg: #f8fafc;
 }
@@ -198,12 +205,24 @@ body {
 
 .glass-card {
   background: var(--bg-surface);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.5rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.app-logo {
+  height: 115px;
+  width: auto;
+  transition: transform 0.2s;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.app-logo:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4));
 }
 
 .glass-card:hover {
@@ -483,7 +502,19 @@ label {
   .dash-header {
     flex-direction: column;
     gap: 1rem;
-    align-items: flex-start;
+    align-items: center;
+    /* Center align on mobile */
+    text-align: center;
+  }
+
+  .app-logo {
+    height: 35px;
+    /* Smaller logo on mobile */
+  }
+
+  .admin-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 

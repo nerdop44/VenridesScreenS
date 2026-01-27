@@ -78,6 +78,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False) # Legacy field, will keep for stability
     role = Column(String, default="operador_empresa") # admin_master, operador_master, admin_empresa, operador_empresa
     permissions = Column(JSON, default=lambda: {}) # For granular access
+    is_active = Column(Boolean, default=True)
 
     # Password Recovery
     temp_password = Column(String, nullable=True)
@@ -137,7 +138,8 @@ class RegistrationCode(Base):
 class GlobalAd(Base):
     __tablename__ = "global_ads"
     id = Column(Integer, primary_key=True, index=True)
-    video_url = Column(String, nullable=True)
+    video_url = Column(String, nullable=True) # Deprecated
+    video_playlist = Column(JSON, default=lambda: []) # List of YouTube/Video URLs
     ticker_text = Column(String, nullable=True) # Deprecated, use ticker_messages
     ticker_messages = Column(JSON, default=lambda: []) # List of strings [msg1, msg2]
     ad_scripts = Column(JSON, default=lambda: []) # List of script snippets/embed codes
@@ -186,6 +188,8 @@ class ChatThread(Base):
     last_subject = Column(String, nullable=True)  # Cache for display
     is_read_by_1 = Column(Boolean, default=True)  # Read status for participant 1
     is_read_by_2 = Column(Boolean, default=True)  # Read status for participant 2
+    is_hidden_by_1 = Column(Boolean, default=False) # Soft delete for participant 1
+    is_hidden_by_2 = Column(Boolean, default=False) # Soft delete for participant 2
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     participant_1 = relationship("User", foreign_keys=[participant_1_id])
