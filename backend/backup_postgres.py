@@ -27,7 +27,7 @@ def backup_postgres():
     
     # Command to run pg_dump inside container or via exec
     # We use docker exec to run pg_dump inside the container and pipe output to host
-    cmd = f"sudo docker exec {CONTAINER_NAME} pg_dump -U {DB_USER} {DB_NAME} | gzip > {filepath}"
+    cmd = f"docker exec {CONTAINER_NAME} pg_dump -U {DB_USER} {DB_NAME} | gzip > {filepath}"
     
     try:
         # Note: This requires sudo/docker permissions on host

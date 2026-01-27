@@ -84,6 +84,7 @@ class User(Base):
     must_change_password = Column(Boolean, default=False)
     
     company = relationship("Company", back_populates="users")
+    tickets = relationship("SupportTicket", back_populates="user", cascade="all, delete-orphan")
 
 class Device(Base):
     __tablename__ = "devices"
@@ -93,6 +94,7 @@ class Device(Base):
     name = Column(String)
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"))
     last_ping = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True) # New Phase 9
     
     company = relationship("Company", back_populates="devices")
 
@@ -136,7 +138,9 @@ class GlobalAd(Base):
     __tablename__ = "global_ads"
     id = Column(Integer, primary_key=True, index=True)
     video_url = Column(String, nullable=True)
-    ticker_text = Column(String, nullable=True)
+    ticker_text = Column(String, nullable=True) # Deprecated, use ticker_messages
+    ticker_messages = Column(JSON, default=lambda: []) # List of strings [msg1, msg2]
+    ad_scripts = Column(JSON, default=lambda: []) # List of script snippets/embed codes
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
 class Message(Base):
@@ -186,3 +190,55 @@ class ChatThread(Base):
     
     participant_1 = relationship("User", foreign_keys=[participant_1_id])
     participant_2 = relationship("User", foreign_keys=[participant_2_id])
+
+# --- Phase 10 Models ---
+
+class BlockedUser(Base):
+    __tablename__ = "blocked_users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    blocker_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    blocked_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    reason = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    blocker = relationship("User", foreign_keys=[blocker_id])
+    blocked = relationship("User", foreign_keys=[blocked_id])
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE")) # Creator
+    category = Column(String) # technical, billing, general
+    priority = Column(String, default="normal") # low, normal, high, urgent
+    status = Column(String, default="open") # open, in_progress, resolved, closed
+    subject = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    
+    user = relationship("User", back_populates="tickets")
+    messages = relationship("TicketMessage", back_populates="ticket", cascade="all, delete-orphan")
+
+class TicketMessage(Base):
+    __tablename__ = "ticket_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(Integer, ForeignKey("support_tickets.id", ondelete="CASCADE"))
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True) # Admin or User
+    body = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_internal = Column(Boolean, default=False) # Helper notes for admins
+    
+    ticket = relationship("SupportTicket", back_populates="messages")
+    sender = relationship("User")
+
+# Update User relationships (monkey-patch style for now or manual update below)
+# Note: Since User is defined above, we can't easily add relationships inside the class definition 
+# without rewriting the whole class or using assignment. 
+# Ideally, we should add `tickets = relationship("SupportTicket", ...)` inside User class.
+# I will use replace_file_content to add it to User class as well in a separate or same call? 
+# I can do it in a separate call or try to add it here if I am editing the whole file. 
+# I am editing the end of file. I will just add the classes here.
+# For User.tickets relationship, I'll need to update User class definition.
+
