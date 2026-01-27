@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock } from 'lucide-react';
+import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = "/api";
@@ -97,6 +97,7 @@ function App() {
 
     // Local State for Client Editor (Explicit Save)
     const [localCompany, setLocalCompany] = useState(null);
+    const [clientTab, setClientTab] = useState('dashboard');
     const [unsavedChanges, setUnsavedChanges] = useState(false);
     const [showCompanyForm, setShowCompanyForm] = useState(false);
     const [showAdminPassModal, setShowAdminPassModal] = useState(false);
@@ -688,7 +689,10 @@ function App() {
                     {hasPermission('global_ad') && <button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button>}
                     {hasPermission('stats') && <button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button>}
                     <button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button>
+                    <button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')}><LifeBuoy size={16} /> Soporte</button>
                 </div>
+
+                {adminTab === 'helpdesk' && <Helpdesk token={token} userRole={userRole} />}
 
                 {adminTab === 'companies' && !showCompanyForm && (
                     <div className="glass-card">
@@ -784,17 +788,47 @@ function App() {
                 {adminTab === 'devices' && (
                     <div className="glass-card">
                         <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Monitor size={20} /> Gestión de Dispositivos</h2>
+
                         <div className="table-responsive">
                             <table className="admin-table">
-                                <thead><tr><th>Nombre</th><th>UUID</th><th>Empresa</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Nombre</th><th>Empresa</th><th>Conexión</th><th>Estatus Admin</th><th>Acciones</th></tr></thead>
                                 <tbody>
                                     {allDevices.map(d => (
                                         <tr key={d.id}>
-                                            <td style={{ fontWeight: '600' }}>{d.name}</td>
-                                            <td style={{ fontSize: '0.7rem', opacity: 0.6 }}>{d.uuid}</td>
-                                            <td>{companies.find(c => c.id === d.company_id)?.name || 'N/A'}</td>
                                             <td>
-                                                <button onClick={() => deleteDevice(d.uuid)} className="action-btn suspend" title="Eliminar Dispositivo"><Trash2 size={16} /></button>
+                                                <div style={{ fontWeight: 'bold' }}>{d.name}</div>
+                                                <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{d.uuid}</div>
+                                            </td>
+                                            <td>{d.company_name || companies.find(c => c.id === d.company_id)?.name || 'N/A'}</td>
+                                            <td>
+                                                <span className={`badge-status ${d.is_online ? 'active' : 'inactive'}`}>
+                                                    {d.is_online ? '● Online' : '○ Offline'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`badge-status ${d.is_active ? 'active' : 'inactive'}`} style={{ background: d.is_active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)' }}>
+                                                    {d.is_active ? 'HABILITADO' : 'SUSPENDIDO'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await fetch(`${API_BASE}/admin/devices/${d.uuid}/status?is_active=${!d.is_active}`, {
+                                                                    method: 'PATCH',
+                                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                                });
+                                                                if (res.ok) fetchInitialData();
+                                                            } catch (e) { alert("Error"); }
+                                                        }}
+                                                        className={`action-btn ${d.is_active ? 'suspend' : 'activate'}`}
+                                                        title={d.is_active ? "Suspender Pantalla" : "Reactivar Pantalla"}
+                                                    >
+                                                        {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                                    </button>
+                                                    <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete" title="Eliminar Dispositivo"><Trash2 size={16} /></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -926,7 +960,8 @@ function App() {
                             { id: 'bottombar_tab', icon: MessageSquare, label: 'Barra Inferior' },
                             { id: 'videos', icon: PlaySquare, label: 'Videos' },
                             { id: 'messaging', icon: Mail, label: 'Mensajería' },
-                            { id: 'users', icon: Users, label: 'Usuarios' }
+                            { id: 'users', icon: Users, label: 'Usuarios' },
+                            { id: 'helpdesk', icon: LifeBuoy, label: 'Soporte' }
                         ].filter(tab => {
                             if (tab.id === 'users' && (localCompany?.plan === 'free' || userRole === 'user_basic')) return false;
                             return true;
@@ -1055,6 +1090,10 @@ function App() {
 
                         {clientTab === 'users' && (
                             <ClientUserManagement company={company} token={token} />
+                        )}
+
+                        {clientTab === 'helpdesk' && (
+                            <Helpdesk token={token} userRole={userRole} />
                         )}
 
                     </div>
@@ -1987,6 +2026,178 @@ const YouTubePlayer = ({ keywords, isActive, ytReady }) => {
     }, []);
 
     return <div style={{ width: '100%', height: '100%' }}><div ref={containerRef} style={{ width: '100%', height: '100%' }} /></div>;
+};
+
+const Helpdesk = ({ token, userRole }) => {
+    const [tickets, setTickets] = useState([]);
+    const [view, setView] = useState('list'); // list, detail, create
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [newTicket, setNewTicket] = useState({ subject: '', category: 'Technical', priority: 'normal', initial_message: '' });
+    const [replyBody, setReplyBody] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (view === 'list') fetchTickets();
+    }, [view]);
+
+    const fetchTickets = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/helpdesk/tickets`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setTickets(Array.isArray(data) ? data : []);
+        } catch (e) { }
+        setLoading(false);
+    };
+
+    const fetchTicketDetails = async (id) => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/helpdesk/tickets/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setSelectedTicket(data);
+            setView('detail');
+        } catch (e) { alert("Error al cargar ticket"); }
+        setLoading(false);
+    };
+
+    const createTicket = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/admin/helpdesk/tickets`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(newTicket)
+            });
+            if (res.ok) {
+                alert("Ticket Creado");
+                setNewTicket({ subject: '', category: 'Technical', priority: 'normal', initial_message: '' });
+                setView('list');
+            }
+        } catch (e) { alert("Error"); }
+    };
+
+    const sendReply = async () => {
+        if (!replyBody) return;
+        try {
+            await fetch(`${API_BASE}/admin/helpdesk/tickets/${selectedTicket.id}/reply`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ body: replyBody })
+            });
+            setReplyBody('');
+            fetchTicketDetails(selectedTicket.id); // Refresh
+        } catch (e) { alert("Error"); }
+    };
+
+    const updateStatus = async (status) => {
+        try {
+            await fetch(`${API_BASE}/admin/helpdesk/tickets/${selectedTicket.id}/status?status=${status}`, {
+                method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }
+            });
+            fetchTicketDetails(selectedTicket.id);
+        } catch (e) { }
+    };
+
+    return (
+        <div className="glass-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2><LifeBuoy size={24} style={{ marginRight: '0.5rem' }} /> Centro de Ayuda</h2>
+                {view === 'list' && (
+                    <button className="btn btn-primary" onClick={() => setView('create')}>+ Nuevo Ticket</button>
+                )}
+                {view !== 'list' && (
+                    <button className="btn" onClick={() => setView('list')}>← Volver</button>
+                )}
+            </div>
+
+            {view === 'list' && (
+                <div className="table-responsive">
+                    <table className="admin-table">
+                        <thead><tr><th>Asunto</th><th>Categoría</th><th>Estado</th><th>Prioridad</th><th>Actualizado</th><th>Acción</th></tr></thead>
+                        <tbody>
+                            {tickets.map(t => (
+                                <tr key={t.id}>
+                                    <td style={{ fontWeight: '600' }}>{t.subject}</td>
+                                    <td>{t.category}</td>
+                                    <td>
+                                        <span className={`badge-status ${t.status === 'open' ? 'active' : t.status === 'closed' ? 'inactive' : 'pending'}`}>
+                                            {t.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{ color: t.priority === 'urgent' ? '#ef4444' : t.priority === 'high' ? '#f59e0b' : '#10b981', fontWeight: 'bold' }}>
+                                            {t.priority.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td style={{ fontSize: '0.8rem' }}>{new Date(t.updated_at).toLocaleString()}</td>
+                                    <td><button className="action-btn view" onClick={() => fetchTicketDetails(t.id)}><Eye size={16} /></button></td>
+                                </tr>
+                            ))}
+                            {tickets.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', opacity: 0.5 }}>No hay tickets recientes</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {view === 'create' && (
+                <div className="form-section">
+                    <h3>Abriendo Nuevo Ticket</h3>
+                    <input placeholder="Asunto" value={newTicket.subject} onChange={e => setNewTicket({ ...newTicket, subject: e.target.value })} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <select value={newTicket.category} onChange={e => setNewTicket({ ...newTicket, category: e.target.value })}>
+                            <option value="Technical">Soporte Técnico</option>
+                            <option value="Billing">Facturación</option>
+                            <option value="Feature">Solicitud de Función</option>
+                            <option value="General">General</option>
+                        </select>
+                        <select value={newTicket.priority} onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}>
+                            <option value="low">Baja</option>
+                            <option value="normal">Normal</option>
+                            <option value="high">Alta</option>
+                            <option value="urgent">Urgente</option>
+                        </select>
+                    </div>
+                    <textarea placeholder="Describa su problema..." rows={5} value={newTicket.initial_message} onChange={e => setNewTicket({ ...newTicket, initial_message: e.target.value })} />
+                    <button className="btn btn-primary" onClick={createTicket} disabled={!newTicket.subject || !newTicket.initial_message}>Enviar Ticket</button>
+                </div>
+            )}
+
+            {view === 'detail' && selectedTicket && (
+                <div className="ticket-detail">
+                    <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <h3>#{selectedTicket.id} - {selectedTicket.subject}</h3>
+                            {['admin_master', 'operador_master'].includes(userRole) && (
+                                <select value={selectedTicket.status} onChange={e => updateStatus(e.target.value)} style={{ width: 'auto' }}>
+                                    <option value="open">Abierto</option>
+                                    <option value="in_progress">En Progreso</option>
+                                    <option value="resolved">Resuelto</option>
+                                    <option value="closed">Cerrado</option>
+                                </select>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                            Por: {selectedTicket.user_email} | {selectedTicket.category} | {selectedTicket.priority}
+                        </div>
+                    </div>
+
+                    <div className="chat-thread" style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '1rem' }}>
+                        {selectedTicket.messages.map(m => (
+                            <div key={m.id} className={`chat-message ${m.is_staff ? 'received' : 'sent'}`} style={{ alignSelf: m.is_staff ? 'flex-start' : 'flex-end', background: m.is_staff ? '#374151' : '#4f46e5' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.7rem', marginBottom: '0.2rem' }}>{m.sender_email} <span style={{ fontWeight: 'normal', opacity: 0.6 }}>{new Date(m.created_at).toLocaleString()}</span></div>
+                                <div>{m.body}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {selectedTicket.status !== 'closed' && (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <textarea value={replyBody} onChange={e => setReplyBody(e.target.value)} placeholder="Escribir respuesta..." style={{ flex: 1 }} />
+                            <button className="btn btn-primary" onClick={sendReply} disabled={!replyBody}><Send size={18} /></button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default App;
