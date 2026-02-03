@@ -11,7 +11,7 @@ export default defineConfig({
         cors: true,
         allowedHosts: true,
         watch: {
-            usePolling: true
+            usePolling: false
         }
     }
 })
