@@ -216,6 +216,12 @@ async function fetchConfig() {
         applyBranding(data);
     } catch (e) {
         console.error("Fetch Config Error:", e);
+        // Show offline/error state instead of hanging on "Loading..."
+        const nameEl = document.getElementById("company-name");
+        if (nameEl) nameEl.innerText = "Sin Conexión - Reintentando...";
+
+        // If it's a 404 disguised as an error or network fail on first load, we might want to suggest checking internet
+        setTimeout(fetchConfig, 10000); // Retry in 10s
     }
 }
 
@@ -230,6 +236,7 @@ function getContrastColor(hex) {
 function applyBranding(data) {
     handlePriorityContent(data.priority_content_url);
     handleAlert(data.active_alert);
+    handlePing(data.ping_command, data.name);
     const regOverlay = document.getElementById("registration-overlay");
     if (regOverlay) regOverlay.classList.add("hidden");
     const root = document.documentElement;
@@ -726,6 +733,23 @@ function handleAlert(alert) {
     showAlert(alert);
 }
 
+function handlePing(shouldPing, deviceName) {
+    if (!shouldPing) return;
+
+    const overlay = document.getElementById("ping-overlay");
+    const nameEl = document.getElementById("ping-device-name");
+
+    if (overlay && nameEl) {
+        nameEl.innerText = deviceName || "Este Dispositivo";
+        overlay.classList.remove("hidden");
+
+        // Hide after 10s
+        setTimeout(() => {
+            overlay.classList.add("hidden");
+        }, 10000);
+    }
+}
+
 function showAlert(alert) {
     const overlay = document.getElementById("alert-overlay");
     const body = document.getElementById("alert-body");
@@ -755,6 +779,30 @@ function hideAlert() {
 
 function showSuspended() {
     document.getElementById("kill-switch").classList.remove("hidden");
+}
+
+function showBlockingScreen() {
+    const reg = document.getElementById("registration-overlay");
+    if (!reg) return;
+    reg.classList.remove("hidden");
+    reg.innerHTML = `
+        <div class="registration-box" style="border-color: #ef4444;">
+            <div style="margin-bottom: 1rem;">
+                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 150px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
+            </div>
+            <h1 style="color: #ef4444; margin-bottom: 1rem; font-size: 2.5rem;">⚠️ DISPOSITIVO BLOQUEADO</h1>
+            <p style="font-size: 1.4rem; color: #fff; margin-bottom: 2rem;">
+                Este dispositivo ya agotó su prueba gratuita anteriormente.<br/>
+                Para continuar disfrutando del servicio, por favor suscríbete a un plan de pago.
+            </p>
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #ef4444; color: #ef4444; font-weight: bold;">
+                Error: FREE_TRIAL_LIMIT_REACHED
+            </div>
+            <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">
+                ID: ${deviceUuid}
+            </p>
+        </div>
+    `;
 }
 
 function showRegistrationScreen() {
@@ -787,16 +835,18 @@ function showRegistrationScreen() {
         if (code.length !== 6) return;
         try {
             const res = await fetch(`${API_URL}/devices/validate-code?code=${code}&device_uuid=${deviceUuid}`, { method: 'POST' });
-            if (res.ok) {
-                // Config immediately
-                const data = await res.json();
-                applyBranding(data);
+            applyBranding(data);
+        } else {
+            const errData = await res.json();
+            if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
+                showBlockingScreen();
             } else {
                 alert("Código inválido o expirado");
             }
-        } catch (e) {
-            console.error("Link Error:", e);
-            alert("Error de conexión");
         }
-    };
+    } catch (e) {
+        console.error("Link Error:", e);
+        alert("Error de conexión");
+    }
+};
 }

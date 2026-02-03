@@ -1,0 +1,13 @@
+{
+    "name": "venrides-tv",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "build": "rm -rf dist && mkdir -p dist && cp -r ../frontend-tv/* dist/ || true"
+    },
+    "dependencies": {
+        "@capacitor/android": "^6.2.1",
+        "@capacitor/cli": "^6.2.1",
+        "@capacitor/core": "^6.2.1"
+    }
+}

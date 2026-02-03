@@ -60,6 +60,17 @@ async def init_db():
             await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS sidebar_header_type VARCHAR DEFAULT 'text';"))
             await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS sidebar_header_value VARCHAR;"))
             
+            # Business Profile Fields
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS rif VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS address VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS phone VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS whatsapp VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS instagram VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS facebook VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS tiktok VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS contact_person VARCHAR;"))
+            await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS email VARCHAR;"))
+            
             # Users Table Migrations
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'operador_empresa';"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSON DEFAULT '{}';"))

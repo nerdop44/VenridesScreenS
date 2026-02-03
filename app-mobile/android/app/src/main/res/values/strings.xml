@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VenridesScreenS</string>
+    <string name="title_activity_main">VenridesScreenS</string>
+    <string name="package_name">com.venrides.screens</string>
+    <string name="custom_url_scheme">com.venrides.screens</string>
+</resources>

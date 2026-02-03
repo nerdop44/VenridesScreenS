@@ -1,0 +1,9 @@
+{
+  "appId": "com.venrides.screens",
+  "appName": "VenridesScreenS",
+  "webDir": "dist",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "http"
+  }
+}

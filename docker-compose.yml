@@ -8,6 +8,10 @@ services:
       POSTGRES_USER: venrides_user
       POSTGRES_PASSWORD: venrides_password
       POSTGRES_DB: venrides_db
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -29,10 +33,15 @@ services:
     volumes:
       - ./backend:/app
       - ./logos:/logos # Sync logos with host and nginx
+    ports:
+      - "8100:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://venrides_user:venrides_password@db/venrides_db
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=info
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     depends_on:
       - db
       - redis
@@ -43,11 +52,10 @@ services:
   frontend-admin:
     build: ./frontend-admin
     container_name: venrides_admin
-    volumes:
-      - ./frontend-admin:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     depends_on:
       - backend
     networks:
@@ -57,8 +65,23 @@ services:
   frontend-tv:
     build: ./frontend-tv
     container_name: venrides_tv
-    volumes:
-      - ./frontend-tv:/usr/share/nginx/html
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    depends_on:
+      - backend
+    networks:
+      - venrides_network
+    restart: always
+
+  frontend-mobile:
+    build: ./app-mobile
+    container_name: venrides_mobile
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     depends_on:
       - backend
     networks:
@@ -71,6 +94,7 @@ services:
     ports:
       - "8080:80"
       - "8081:81"
+      - "8082:82"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -80,6 +104,7 @@ services:
       - backend
       - frontend-admin
       - frontend-tv
+      - frontend-mobile
     networks:
       - venrides_network
     restart: always

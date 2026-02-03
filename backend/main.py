@@ -6,17 +6,22 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 from utils.email_sender import send_password_recovery_email
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, Query
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, Query, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, delete, desc, and_, or_, update
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import relationship, DeclarativeBase, selectinload
+from models import Device, Company, RegistrationCode, User, Payment, EmailTemplate, Base, FreePlanUsage, Menu, GlobalAd, Message
+from db_config import engine, get_db, Base, init_db, AsyncSessionLocal
+from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 import time
+import json
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Literal
 import logging
@@ -31,6 +36,9 @@ logger = logging.getLogger("VenrideScreenS")
 file_handler = RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5)
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
+
+# --- Global In-Memory State ---
+PING_TARGETS = {}
 
 # --- Pydantic Models for JSON Fields ---
 
@@ -50,6 +58,7 @@ class BottomBarContent(BaseModel):
     static: Optional[str] = ""
     whatsapp: Optional[str] = ""
     instagram: Optional[str] = ""
+    messages: Optional[List[str]] = []
     font_size: Optional[str] = "1rem"
     color: Optional[str] = "#ffffff"
     social_color: Optional[str] = None
@@ -104,11 +113,9 @@ class EmailTemplateSchema(BaseModel):
     body: str
 
 # --- Existing Pydantic Models ---
-from models import Base, Company, User, Device, Payment, Menu, RegistrationCode, GlobalAd, Message
 from utils.branding import extract_colors
 from utils.auth import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from utils.bcv import get_bcv_usd_rate
-from db_config import get_db, init_db, AsyncSessionLocal
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
@@ -155,9 +162,10 @@ app.add_middleware(
 @app.get("/diag/status")
 async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
     try:
+        from models import Company, User, Device
+        from utils.auth import get_password_hash
+        
         if repair:
-            from models import Company, User
-            from utils.auth import get_password_hash
             
             # 1. Force table sync
             await init_db()
@@ -296,7 +304,30 @@ async def logging_middleware(request: Request, call_next):
     logger.info(f"Method: {request.method} Path: {request.url.path} Status: {response.status_code} Time: {process_time:.4f}s")
     return response
 
-app.middleware("http")(logging_middleware)
+@app.post("/diag/ping")
+async def send_ping(uuid: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Trigger a visual identification ping on the TV"""
+    # Permission check: User must own the device's company or be master
+    res = await db.execute(select(Device).where(Device.uuid == uuid))
+    device = res.scalar_one_or_none()
+    
+    if not device:
+        raise HTTPException(404, "Dispositivo no encontrado")
+        
+    if current_user.role != "admin_master":
+        if device.company_id != current_user.company_id:
+            raise HTTPException(403, "No tiene permiso sobre este dispositivo")
+
+    PING_TARGETS[uuid] = time.time()
+    return {"status": "ping_sent", "uuid": uuid}
+
+@app.get("/support/unread-count")
+async def get_support_unread_count(token: str = Depends(oauth2_scheme)):
+    # Placeholder: Return 0 for now until Ticket model is confirmed
+    # Logic: query Unread Tickets for user
+    return {"count": 0}
+
+
 
 async def kill_switch_middleware(request: Request, call_next):
     bypass_paths = ["/auth", "/docs", "/openapi.json", "/logos"]
@@ -338,7 +369,27 @@ async def kill_switch_middleware(request: Request, call_next):
             print(f"Middleware Error: {e}")
 
     return await call_next(request)
-# --- Permissions Helper for Operador Master ---
+
+# --- PING CHECK AND ENDPOINTS ---
+
+@app.post("/diag/ping")
+async def send_ping(uuid: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Trigger a visual identification ping on the TV"""
+    # Permission check: User must own the device's company or be master
+    res = await db.execute(select(Device).where(Device.uuid == uuid))
+    device = res.scalar_one_or_none()
+    
+    if not device:
+        raise HTTPException(404, "Dispositivo no encontrado")
+        
+    if current_user.role != "admin_master":
+        if device.company_id != current_user.company_id:
+            raise HTTPException(403, "No tiene permiso sobre este dispositivo")
+
+    PING_TARGETS[uuid] = time.time()
+    return {"status": "ping_sent", "uuid": uuid}
+
+
 def check_permission(user: User, resource: str, action: str):
     if user.is_admin or user.role == "admin_master":
         return True
@@ -354,22 +405,58 @@ async def master_access_only(user: User = Depends(get_current_user)):
     return user
 
 # --- BCV Cache ---
+BCV_CACHE_FILE = "bcv_cache.json"
 bcv_cache = {"rate": None, "last_updated": None}
 
-@app.get("/finance/bcv")
-def get_bcv_rate_endpoint():
-    # Helper synchronous wrapper or async transformation
-    # Since scraping is sync (requests), we can run it directly or in threadpool.
-    # For simplicity, running sync is fine for low traffic, but better in thread.
-    now = datetime.now()
-    if not bcv_cache["rate"] or not bcv_cache["last_updated"] or (now - bcv_cache["last_updated"]).total_seconds() > 3600:
+def load_bcv_cache():
+    global bcv_cache
+    if os.path.exists(BCV_CACHE_FILE):
         try:
-            rate = get_bcv_usd_rate()
+            with open(BCV_CACHE_FILE, "r") as f:
+                data = json.load(f)
+                bcv_cache["rate"] = data.get("rate")
+                lu = data.get("last_updated")
+                if lu:
+                    bcv_cache["last_updated"] = datetime.fromisoformat(lu)
+        except Exception as e:
+            logger.error(f"Error loading BCV cache: {e}")
+
+def save_bcv_cache():
+    try:
+        with open(BCV_CACHE_FILE, "w") as f:
+            json.dump({
+                "rate": bcv_cache["rate"],
+                "last_updated": bcv_cache["last_updated"].isoformat() if bcv_cache["last_updated"] else None
+            }, f)
+    except Exception as e:
+        logger.error(f"Error saving BCV cache: {e}")
+
+# Load cache on startup
+load_bcv_cache()
+
+@app.get("/finance/bcv")
+async def get_bcv_rate_endpoint():
+    now = datetime.now()
+    
+    # Check if we need to update (only once a day, after midnight)
+    needs_update = False
+    if not bcv_cache["rate"] or not bcv_cache["last_updated"]:
+        needs_update = True
+    else:
+        # If last update was on a different day than today, we can update
+        if bcv_cache["last_updated"].date() < now.date():
+            needs_update = True
+            
+    if needs_update:
+        try:
+            # Run blocking scraping in threadpool
+            rate = await run_in_threadpool(get_bcv_usd_rate)
             if rate:
                 bcv_cache["rate"] = rate
                 bcv_cache["last_updated"] = now
-        except Exception:
-            pass
+                await run_in_threadpool(save_bcv_cache)
+        except Exception as e:
+            logger.error(f"BCV Update Error: {e}")
             
     return {
         "usd_to_ves": bcv_cache["rate"] or 0,
@@ -393,9 +480,16 @@ class CompanyBase(BaseModel):
     rif: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
+    whatsapp: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    tiktok: Optional[str] = None
     contact_person: Optional[str] = None
     email: Optional[str] = None
     client_editable_fields: Optional[str] = ""
+    
+    total_screens: Optional[int] = 0
+    active_screens: Optional[int] = 0
     
     priority_content_url: Optional[str] = None
     video_playlist: Optional[List[str]] = []
@@ -425,7 +519,20 @@ class CompanyUpdate(BaseModel):
     plan: Optional[Literal["free", "basic", "plus", "ultra"]] = None
     can_edit_profile: Optional[bool] = None
     has_edited_profile: Optional[bool] = None
-    max_screens: Optional[int] = None
+    
+    rif: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    whatsapp: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    tiktok: Optional[str] = None
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    client_editable_fields: Optional[str] = None
+    
+    total_screens: Optional[int] = None
+    active_screens: Optional[int] = None
 
     # Header Extension
     sidebar_header_type: Optional[Literal["text", "banner"]] = None
@@ -434,9 +541,12 @@ class CompanyUpdate(BaseModel):
 
     priority_content_url: Optional[str] = None
     ad_frequency: Optional[int] = None
-    sidebar_content: Optional[List[SidebarGroup]] = None
+    sidebar_content: Optional[List[dict]] = None
     bottom_bar_content: Optional[BottomBarContent] = None
     design_settings: Optional[DesignSettings] = None
+    
+    logo_url: Optional[str] = None
+    pause_duration: Optional[int] = None
 
 class UserCreate(BaseModel):
     username: str # email
@@ -601,7 +711,8 @@ async def get_companies(db: AsyncSession = Depends(get_db), current_user: User =
         "plan": c.plan or "free", 
         "is_active": c.is_active,
         "max_screens": c.max_screens or 2,
-        "active_screens": len([d for d in c.devices if d.is_active])
+        "active_screens": c.active_screens,
+        "total_screens": c.total_screens
     } for c in companies]
 
 # --- Phase 9: Admin Enhancements Endpoints ---
@@ -764,7 +875,7 @@ async def create_company(data: CompanyCreate, db: AsyncSession = Depends(get_db)
     
     return new_company
 
-@app.get("/companies/{company_id}")
+@app.get("/companies/{company_id}", response_model=CompanyBase)
 async def get_company(company_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Master or own company
     if current_user.role != "admin_master" and current_user.company_id != company_id:
@@ -773,15 +884,15 @@ async def get_company(company_id: int, db: AsyncSession = Depends(get_db), curre
     # Master sees all details
     pass
 
-    res = await db.execute(select(Company).where(Company.id == company_id))
+    res = await db.execute(select(Company).options(selectinload(Company.devices)).where(Company.id == company_id))
     company = res.scalar_one_or_none()
     if not company:
         raise HTTPException(404, "Empresa no encontrada")
     return company
 
-@app.patch("/companies/{company_id}")
+@app.patch("/companies/{company_id}", response_model=CompanyBase)
 async def update_company(company_id: int, update: CompanyUpdate, request: Request, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    res = await db.execute(select(Company).where(Company.id == company_id))
+    res = await db.execute(select(Company).options(selectinload(Company.devices)).where(Company.id == company_id))
     company = res.scalar_one_or_none()
     if not company:
         raise HTTPException(404, "Empresa no encontrada")
@@ -791,15 +902,25 @@ async def update_company(company_id: int, update: CompanyUpdate, request: Reques
     
     # Check perfil Restricted Logic
     if current_user.role != "admin_master":
-        # Client trying to update
-        if not company.can_edit_profile:
-             raise HTTPException(403, "Edición de perfil deshabilitada. Contacte al administrador.")
-        
-        # If editing branding/profile fields, mark as edited
         profile_fields = {'name', 'rif', 'address', 'phone', 'contact_person', 'email'}
+        
+        # If trying to edit profile fields while locked
+        if not company.can_edit_profile and any(f in data_dict for f in profile_fields):
+             raise HTTPException(403, "Edición de perfil (Datos de Empresa) deshabilitada. Contacte al administrador.")
+        
+        # If editing profile fields (while allowed), lock it after this update
         if any(f in data_dict for f in profile_fields):
             company.can_edit_profile = False
             company.has_edited_profile = True
+
+    # Operator Check (Restricted Access)
+    if current_user.role == "operador_empresa":
+        # Operators can ONLY modify playlist AND source
+        allowed_fields = {'video_playlist', 'priority_content_url', 'video_source'}
+        # Filter data_dict to remove any unauthorized fields
+        keys_to_remove = [k for k in data_dict.keys() if k not in allowed_fields]
+        for k in keys_to_remove:
+            del data_dict[k]
 
     for key, val in data_dict.items():
         if key == 'design_settings' and val is not None:
@@ -810,7 +931,7 @@ async def update_company(company_id: int, update: CompanyUpdate, request: Reques
                 company.design_settings = dict(current_settings)  # Force SQLAlchemy to detect change
             else:
                 company.design_settings = val
-        else:
+        elif hasattr(company, key) and key not in ['id', 'total_screens', 'active_screens']:
             setattr(company, key, val)
     
     await db.commit()
@@ -831,8 +952,8 @@ async def upload_logo(company_id: int, file: UploadFile = File(...), db: AsyncSe
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
         
-    # Extract colors
-    colors = extract_colors(file_path)
+    # Extract colors (Now non-blocking)
+    colors = await run_in_threadpool(extract_colors, file_path)
     
     company.logo_url = f"/api/logos/{filename}"
     company.primary_color = colors["primary"]
@@ -896,8 +1017,15 @@ async def generate_code(company_id: int, db: AsyncSession = Depends(get_db)):
     
     code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
     # Check uniqueness in DB
-    while (await db.execute(select(RegistrationCode).where(RegistrationCode.code == code))).scalar_one_or_none():
+    attempts = 0
+    while attempts < 100:
+        attempts += 1
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        existing = await db.execute(select(RegistrationCode).where(RegistrationCode.code == code))
+        if not existing.scalar_one_or_none():
+            break
+    else:
+        raise HTTPException(500, "No se pudo generar un código único después de muchos intentos")
         
     new_code = RegistrationCode(
         code=code,
@@ -941,6 +1069,29 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
     
     if count >= company.max_screens:
         raise HTTPException(400, "Límite de pantallas alcanzado")
+    
+    # Check Free Plan Usage (Block Reuse)
+    if company.plan == 'free':
+        usage_res = await db.execute(select(FreePlanUsage).where(FreePlanUsage.uuid == device_uuid))
+        existing_usage = usage_res.scalar_one_or_none()
+        if existing_usage:
+             # Check if it is the same company? The user said "no se pueda volver a vincular a otro plan free".
+             # If it's the same company, maybe it's a re-link (e.g. WiFi reset)? 
+             # User said: "los planes free debe ser de un solo uso". Strict interpretation: Once used, never again on another free plan.
+             # But if I unlink and re-link to SAME company, should it block? 
+             # "importante el tiempo de vencimiento no se reinicia pos las vinculaciones nuevas" -> implies re-linking is allowed.
+             # So: If UUID used previously on Company A (Free), and now trying to link to Company B (Free) -> BLOCK.
+             # If linking back to Company A -> ALLOW (but time continues).
+             
+             if existing_usage.company_id != company_id:
+                  # USED ON ANOTHER COMPANY -> BLOCK
+                  raise HTTPException(403, "DEVICE_BLOCKED_FREE_TRIAL_USED")
+             else:
+                  # SAME COMPANY -> ALLOW (Time continues from first_screen_connected_at)
+                  pass
+        else:
+             # First time usage, will register at end
+             pass
         
     # Link Device
     dev_res = await db.execute(select(Device).where(Device.uuid == device_uuid))
@@ -952,7 +1103,40 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
     else:
         device = Device(uuid=device_uuid, company_id=company_id, name=f"TV-{device_uuid[:8]}")
         db.add(device)
+    
+    # Free Plan Trial Logic (Phase 10 Supervisor)
+    if company.plan == 'free' and not company.first_screen_connected_at:
+        company.first_screen_connected_at = now_utc
+        company.valid_until = now_utc + timedelta(days=60)
+        db.add(company) # Ensure update
+        print(f"DEBUG SUPERVISOR: Started Free Trial for {company.name}. Valid until {company.valid_until}")
         
+    # Free Plan Blocking Logic (One-Time Use)
+    if company.plan == 'free':
+        # Check if UUID exists in FreePlanUsage
+        usage_res = await db.execute(select(FreePlanUsage).where(FreePlanUsage.uuid == device_uuid))
+        usage = usage_res.scalar_one_or_none()
+        
+        # If it exists and belongs to a DIFFERENT company (or even same, to be strict), block.
+        # Requirement: "no se pueda volver a vincular a otro plan free... un solo uso".
+        if usage:
+             # If it was used before, we MUST BLOCK IT.
+             await db.commit() # Create device transaction might have passed, rollback?
+             # Actually, we should check this BEFORE linking. Moving logic up.
+             pass 
+        else:
+             # Register usage
+             new_usage = FreePlanUsage(uuid=device_uuid, company_id=company_id)
+             db.add(new_usage)
+
+    
+    # Register Usage if Free and not existing
+    if company.plan == 'free':
+         # Idempotency check handled by logic above or insert ignore
+         # We already checked 'existing_usage'. If it didn't exist, create it.
+         if not existing_usage:
+             db.add(FreePlanUsage(uuid=device_uuid, company_id=company_id))
+
     await db.commit()
     await db.delete(reg_code)
     await db.commit()
@@ -1023,6 +1207,24 @@ async def update_credentials(company_id: int, update: UserPasswordUpdate, db: As
         user.hashed_password = get_password_hash(update.password)
     await db.commit()
     return {"message": "Credenciales actualizadas correctamente"}
+
+@app.patch("/devices/{uuid}/rename")
+async def rename_device_endpoint(uuid: str, data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    res = await db.execute(select(Device).where(Device.uuid == uuid))
+    device = res.scalar_one_or_none()
+    if not device:
+        raise HTTPException(404, "Dispositivo no encontrado")
+        
+    # Permission Check
+    if current_user.role != "admin_master":
+        if device.company_id != current_user.company_id:
+             raise HTTPException(403, "No autorizado")
+             
+    if "name" in data:
+        device.name = data["name"]
+        
+    await db.commit()
+    return {"status": "success", "name": device.name}
 
 # --- Credentials ---
 @app.get("/devices/{uuid}/config")
@@ -1096,12 +1298,8 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
             "body": active_alert.body,
             "duration": active_alert.alert_duration or 15
         }
-    rate = 0
-    try:
-        from utils.bcv import get_bcv_usd_rate
-        rate = get_bcv_usd_rate()
-    except:
-        pass
+    # Get BCV Rate (Non-blocking from cache only)
+    rate = bcv_cache["rate"] or 0
 
     # Build config
     config = {
@@ -1126,8 +1324,14 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
         "plan": company.plan,
         "sidebar_header_type": company.sidebar_header_type,
         "sidebar_header_value": company.sidebar_header_value or company.name,
-        "menus": [ {"name": i.name, "price": i.price, "category": i.category} for i in company.menus ]
+        "menus": [ {"name": i.name, "price": i.price, "category": i.category} for i in company.menus ],
+        "ping_command": False
     }
+
+    # Internal Ping Check (Low Level)
+    if device.uuid in PING_TARGETS:
+         if time.time() - PING_TARGETS[device.uuid] < 15:
+             config["ping_command"] = True
     
     # -- Overrides for FREE plan --
     if company.plan == 'free':
@@ -1159,6 +1363,22 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
             # Fallback if no global ad
             config["bottom_bar_content"] = {"static": "Venrides Pantallas Inteligentes"}
 
+        # Trial Expiration Alert (Supervisor)
+        if company.valid_until:
+             days = (company.valid_until.replace(tzinfo=None) - datetime.utcnow()).days
+             if 0 <= days <= 15:
+                  alert_msg = f"⚠️ Tu prueba gratuita vence en {days} días. ¡Suscríbete en venrides.com!"
+                  if config.get("bottom_bar_content") and "messages" in config["bottom_bar_content"]:
+                       config["bottom_bar_content"]["messages"].append(alert_msg)
+                  else:
+                       config["bottom_bar_content"] = {
+                           "static": alert_msg,
+                           "messages": [alert_msg],
+                           "font_size": "1.4rem",
+                           "color": "#ef4444", 
+                           "weight": "bold"
+                       }
+
     return config
 
 @app.get("/companies/{company_id}/preview-config")
@@ -1173,13 +1393,8 @@ async def get_company_preview_config(company_id: int, db: AsyncSession = Depends
     if not company:
         raise HTTPException(404, "Empresa no encontrada")
 
-    # Get BCV Rate
-    rate = 0
-    try:
-        from utils.bcv import get_bcv_usd_rate
-        rate = get_bcv_usd_rate()
-    except:
-        pass
+    # Get BCV Rate (Non-blocking from cache only)
+    rate = bcv_cache["rate"] or 0
 
     # Build config
     config = {
@@ -1327,8 +1542,14 @@ async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db), curr
     if current_user.role == "admin_master":
         # Can create any role
         pass
+    elif current_user.role == "admin_empresa":
+        # Can ONLY create operators for THEIR OWN company
+        if data.role != "operador_empresa":
+            raise HTTPException(403, "Solo puede crear operadores")
+        # Force company_id to match their own
+        data.company_id = current_user.company_id
     else:
-        # Prevent non-masters from creating admins
+        # Prevent non-admins from creating users
         raise HTTPException(403, "No tiene permiso para crear usuarios")
 
     # 2. Duplicate Check
@@ -1354,7 +1575,13 @@ async def update_user(user_id: int, data: dict, db: AsyncSession = Depends(get_d
     """Actualizar usuario (rol, empresa, contraseña opcional)"""
     
     # Permission Check
-    if current_user.role != "admin_master":
+    if current_user.role == "admin_master":
+        pass # Master can do anything
+    elif current_user.role == "admin_empresa":
+        # Can only update operators from their OWN company
+        # Validation happens below in Scope Check
+        pass 
+    else:
         raise HTTPException(403, "No tiene permiso para editar usuarios")
     
     # Get user
@@ -1363,11 +1590,22 @@ async def update_user(user_id: int, data: dict, db: AsyncSession = Depends(get_d
     if not target_user:
         raise HTTPException(404, "Usuario no encontrado")
     
+    # Scope Check for non-master
+    if current_user.role == "admin_empresa":
+        if target_user.company_id != current_user.company_id:
+             raise HTTPException(403, "No autorizado")
+        if target_user.role != "operador_empresa":
+             raise HTTPException(403, "Solo puede editar operadores")
+
     # Update fields
     if "role" in data and data["role"]:
-        target_user.role = data["role"]
+        # Admin Empresa cannot change role
+        if current_user.role == "admin_master":
+            target_user.role = data["role"]
     if "company_id" in data:
-        target_user.company_id = data["company_id"] if data["company_id"] else None
+        # Admin Empresa cannot change company_id
+        if current_user.role == "admin_master":
+            target_user.company_id = data["company_id"] if data["company_id"] else None
     if "password" in data and data["password"]:  # Only update if password is provided
         target_user.hashed_password = get_password_hash(data["password"])
     
@@ -1407,6 +1645,10 @@ async def update_my_profile(data: UserProfileUpdate, db: AsyncSession = Depends(
     """Actualizar perfil propio (Usuario/Password)"""
     # Update Username
     if data.username and data.username != current_user.username:
+        # Restriction: ONLY Admin Master can change username
+        if current_user.role != "admin_master":
+             raise HTTPException(403, "Solo el Administrador Maestro puede cambiar nombres de usuario")
+
         # Check duplicate
         res = await db.execute(select(User).where(User.username == data.username))
         if res.scalar_one_or_none():
@@ -1463,8 +1705,17 @@ async def create_user_admin(
     current_user: User = Depends(get_current_user)
 ):
     """Crear un nuevo usuario (Restringido a Administrador Maestro)"""
-    if current_user.role != "admin_master":
-        raise HTTPException(403, "Solo el Administrador Maestro puede crear usuarios")
+    """Crear un nuevo usuario"""
+    
+    # Permission Logic
+    if current_user.role == "admin_master":
+        pass # OK
+    elif current_user.role == "admin_empresa":
+        # Force assignments for security
+        user_data["role"] = "operador_empresa"
+        user_data["company_id"] = current_user.company_id
+    else:
+        raise HTTPException(403, "No tiene permisos para crear usuarios")
     
     # Validations
     if not user_data.get("username") or not user_data.get("password"):
@@ -1489,17 +1740,29 @@ async def create_user_admin(
 
 @app.delete("/admin/users/{id}")
 async def delete_user(id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Eliminar usuario (Nivel Maestro únicamente)"""
-    if current_user.role != "admin_master":
-        raise HTTPException(403, "Solo roles Maestros pueden eliminar usuarios")
+    """Eliminar usuario"""
     
-    # Master roles simplified to admin_master only
+    # Permission Logic
+    if current_user.role == "admin_master":
+        pass # OK
+    elif current_user.role == "admin_empresa":
+        # Will check scope below
+        pass
+    else:
+        raise HTTPException(403, "Solo roles Maestros pueden eliminar usuarios")
 
     result = await db.execute(select(User).where(User.id == id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
     
+    # Scope Check
+    if current_user.role == "admin_empresa":
+        if user.company_id != current_user.company_id:
+             raise HTTPException(403, "No autorizado")
+        if user.role != "operador_empresa":
+             raise HTTPException(403, "Solo puede eliminar operadores")
+
     if user.role == "admin_master":
         raise HTTPException(403, "No se puede eliminar al Administrador Maestro")
 
@@ -1533,15 +1796,40 @@ async def list_all_devices(db: AsyncSession = Depends(get_db), current_user: Use
     } for d in devices]
 
 @app.patch("/admin/devices/{uuid}")
-async def update_device_name(uuid: str, name: str, db: AsyncSession = Depends(get_db)):
+async def update_device_name(uuid: str, device_data: dict = Body(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Actualizar nombre de un dispositivo"""
+    # Optional: Verify ownership if not master admin
+    if current_user.role != "admin_master":
+        # Check if device belongs to user's company
+        dev_check = await db.execute(select(Device).where(Device.uuid == uuid))
+        d_check = dev_check.scalar_one_or_none()
+        if not d_check or d_check.company_id != current_user.company_id:
+             raise HTTPException(403, "No tiene permiso para editar este dispositivo")
+
+    new_name = device_data.get("name")
+    if not new_name:
+         raise HTTPException(400, "Nombre requerido")
+         
     result = await db.execute(select(Device).where(Device.uuid == uuid))
     device = result.scalar_one_or_none()
     if not device:
         raise HTTPException(404, "Dispositivo no encontrado")
-    device.name = name
+    device.name = new_name
     await db.commit()
     return {"message": "Dispositivo actualizado correctamente"}
+
+@app.delete("/admin/companies/{company_id}/devices")
+async def delete_company_devices(company_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Eliminar TODOS los dispositivos de una empresa (Desvinculación Masiva)"""
+    # Verify permissions: Admin Master or Admin of target company
+    if current_user.role != "admin_master":
+        if current_user.company_id != company_id:
+             raise HTTPException(403, "No tiene permiso para gestionar esta empresa")
+    
+    # Execute Mass Delete
+    await db.execute(delete(Device).where(Device.company_id == company_id))
+    await db.commit()
+    return {"message": "Todos los dispositivos han sido desvinculados correctamente"}
 
 @app.post("/admin/devices/")
 async def create_admin_device(device_data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
@@ -1920,22 +2208,6 @@ async def delete_conversation(partner_id: int, db: AsyncSession = Depends(get_db
     await db.commit()
     return {"message": "Conversación eliminada"}
 
-@app.get("/admin/chat/unread-count")
-async def get_unread_chat_count(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get count of unread chat messages"""
-    query = select(func.count(Message.id)).where(
-        and_(
-            Message.receiver_id == current_user.id,
-            Message.is_read == False,
-            Message.is_alert == False
-        )
-    )
-    result = await db.execute(query)
-    count = result.scalar()
-    return {'unread_count': count}
 
 
 @app.post("/companies/{company_id}/message")
@@ -2112,6 +2384,17 @@ async def update_ticket_status(id: int, status: str, db: AsyncSession = Depends(
 # --- Email Templates ---
 
 @app.post("/admin/email-templates/")
+async def create_email_template(template: EmailTemplateSchema, db: AsyncSession = Depends(get_db)):
+    pass # Implementation TBD
+
+@app.post("/admin/run-supervisor")
+async def manual_run_supervisor(current_user: User = Depends(require_role(["admin_master"]))):
+    try:
+        from supervisor import run_supervisor
+        await run_supervisor()
+        return {"message": "Supervisor ejecutado correctamente. Revise supervisor.log"}
+    except Exception as e:
+        raise HTTPException(500, f"Error ejecutando supervisor: {e}")
 async def upsert_template(template: EmailTemplateSchema, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(EmailTemplate).where(EmailTemplate.name == template.name))
     db_template = res.scalar_one_or_none()

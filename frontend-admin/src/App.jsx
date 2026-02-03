@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send } from 'lucide-react';
+import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = "/api";
@@ -165,10 +165,77 @@ function App() {
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [passwordChange, setPasswordChange] = useState({ old: '', new: '', confirm: '' });
 
+    // Device Management State
+    const [editingDevice, setEditingDevice] = useState(null);
+    const [renameDeviceName, setRenameDeviceName] = useState('');
+    const [supportUnreadCount, setSupportUnreadCount] = useState(0);
+
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
+
+    const handleLogout = () => {
+        localStorage.clear();
+        setToken(null);
+        setView('login');
+        setCompany(null);
+        setLocalCompany(null);
+        setUserRole('');
+        setUserPermissions({});
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/login/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ username: credentials.username, password: credentials.password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                // Save credentials if remember me is checked
+                if (rememberMe) {
+                    localStorage.setItem('remembered_username', credentials.username);
+                    localStorage.setItem('remembered_password', btoa(credentials.password));
+                } else {
+                    localStorage.removeItem('remembered_username');
+                    localStorage.removeItem('remembered_password');
+                }
+
+                localStorage.setItem('token', data.access_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('user_role', data.user.role);
+                localStorage.setItem('user_permissions', JSON.stringify(data.user.permissions || {}));
+
+                setToken(data.access_token);
+                setUserRole(data.user.role);
+                setUserPermissions(data.user.permissions || {});
+
+                // Check if must change password
+                if (data.user.must_change_password) {
+                    setShowChangePassword(true);
+                }
+
+                let targetView = 'client';
+                if (data.user.role === 'admin_master') targetView = 'superadmin';
+                else if (data.user.role === 'operador_empresa') targetView = 'operator';
+                else if (data.user.role === 'admin_empresa') targetView = 'client';
+
+                setView(targetView);
+                fetchInitialData(targetView);
+            } else {
+                setAlertModalData({ title: "Error", message: data.detail || "Error al iniciar sesión", type: "error" });
+            }
+        } catch (err) {
+            setAlertModalData({ title: "Error", message: "Error de conexión", type: "error" });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
@@ -236,32 +303,24 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (token) {
-            const storedUser = safeParse(localStorage.getItem('user'), {});
-            const role = localStorage.getItem('user_role');
-
-            if (!role || !storedUser) {
-                console.warn("Incomplete session detected. Clearing storage.");
-                handleLogout();
-                return;
+        if (!token) return;
+        const fetchUnread = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/support/unread-count`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setSupportUnreadCount(data.count || 0);
+                }
+            } catch (e) {
+                console.error("Error fetching unread count", e);
             }
+        };
 
-            let targetView = 'login';
-            if (role === 'admin_master') {
-                targetView = 'superadmin';
-            } else if (role === 'admin_empresa' || role === 'user_basic') {
-                targetView = 'client';
-            } else if (role === 'operador_empresa') {
-                targetView = 'operator';
-            } else {
-                localStorage.clear();
-            }
-
-            setView(targetView);
-            fetchInitialData(targetView);
-        } else {
-            setView('login');
-        }
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 60000); // 1 min pulse
+        return () => clearInterval(interval);
     }, [token]);
 
     const fetchInitialData = async (roleOverride = null) => {
@@ -307,9 +366,15 @@ function App() {
                 setLocalCompany(data);
                 setUnsavedChanges(false);
 
+                // Fetch devices
                 const devRes = await fetch(`${API_BASE}/admin/companies/${targetId}/devices`, { headers });
                 const devData = await devRes.json();
                 setCompanyDevices(Array.isArray(devData) ? devData : []);
+
+                // Fetch users for this company (scoped by backend)
+                const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
+                const usersData = await usersRes.json();
+                if (Array.isArray(usersData)) setUsers(usersData);
             }
         } catch (err) {
             console.error("Fetch Error:", err);
@@ -318,6 +383,35 @@ function App() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (token) {
+            const storedUser = safeParse(localStorage.getItem('user'), {});
+            const role = localStorage.getItem('user_role');
+
+            if (!role || !storedUser) {
+                console.warn("Incomplete session detected. Clearing storage.");
+                handleLogout();
+                return;
+            }
+
+            let targetView = 'login';
+            if (role === 'admin_master') {
+                targetView = 'superadmin';
+            } else if (role === 'admin_empresa' || role === 'user_basic') {
+                targetView = 'client';
+            } else if (role === 'operador_empresa') {
+                targetView = 'operator';
+            } else {
+                localStorage.clear();
+            }
+
+            setView(targetView);
+            fetchInitialData(targetView);
+        } else {
+            setView('login');
+        }
+    }, [token]);
 
     // Silent Refresh for Devices (Polling)
     const refreshDevices = async () => {
@@ -436,66 +530,64 @@ function App() {
         } catch (err) { console.error(err); }
     };
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const handleRenameClick = (device) => {
+        setEditingDevice(device);
+        setRenameDeviceName(device.name);
+    };
+
+    const handleRenameSubmit = async () => {
+        if (!editingDevice || !renameDeviceName.trim()) return;
         try {
-            const res = await fetch(`${API_BASE}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(credentials)
+            const res = await fetch(`${API_BASE}/devices/${editingDevice.uuid}/rename`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name: renameDeviceName })
             });
-            const data = await res.json();
-            if (res.ok) {
-                // Save credentials if remember me is checked
-                if (rememberMe) {
-                    localStorage.setItem('remembered_username', credentials.username);
-                    localStorage.setItem('remembered_password', btoa(credentials.password));
-                } else {
-                    localStorage.removeItem('remembered_username');
-                    localStorage.removeItem('remembered_password');
-                }
+            if (!res.ok) throw new Error("Error al renombrar");
 
-                localStorage.setItem('token', data.access_token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.setItem('user_role', data.user.role);
-                localStorage.setItem('user_permissions', JSON.stringify(data.user.permissions || {}));
+            // Update local state
+            const updateState = (list) => list.map(d => d.uuid === editingDevice.uuid ? { ...d, name: renameDeviceName } : d);
+            setAllDevices(updateState(allDevices));
+            if (companyDevices.length > 0) setCompanyDevices(updateState(companyDevices));
 
-                setToken(data.access_token);
-                setUserRole(data.user.role);
-                setUserPermissions(data.user.permissions || {});
-
-                // Check if must change password
-                if (data.user.must_change_password) {
-                    setShowChangePassword(true);
-                }
-
-                let targetView = 'client';
-                if (data.user.role === 'admin_master') targetView = 'superadmin';
-                else if (data.user.role === 'operador_empresa') targetView = 'operator';
-                else if (data.user.role === 'admin_empresa') targetView = 'client';
-
-                setView(targetView);
-                fetchInitialData(targetView);
-            } else {
-                setAlertModalData({ title: "Error", message: data.detail || "Error al iniciar sesión", type: "error" });
-            }
-        } catch (err) {
-            setAlertModalData({ title: "Error", message: "Error de conexión", type: "error" });
-        } finally {
-            setLoading(false);
+            setEditingDevice(null);
+            setAlertModalData({ title: "Éxito", message: "Dispositivo renombrado", type: "success" });
+        } catch (e) {
+            setAlertModalData({ title: "Error", message: e.message, type: "error" });
         }
     };
 
-    const handleLogout = () => {
-        localStorage.clear();
-        setToken(null);
-        setView('login');
-        setCompany(null);
-        setLocalCompany(null);
-        setUserRole('');
-        setUserPermissions({});
+    const unlinkAllDevices = async (targetCompanyId) => {
+        setConfirmModalData({
+            title: "Desvincular TODAS las Pantallas",
+            message: "⚠️ ¿ESTÁ SEGURO? Esta acción eliminará y desvinculará TODAS las pantallas de esta empresa. Tendrán que ser registradas nuevamente. Esta acción es irreversible.",
+            confirmText: "DESVINCULAR TODO",
+            type: "danger",
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/admin/companies/${targetCompanyId}/devices`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!res.ok) throw new Error("Error al desvincular");
+
+                    if (view === 'superadmin') {
+                        setAllDevices(allDevices.filter(d => d.company_id !== targetCompanyId));
+                        fetchInitialData();
+                    } else {
+                        setCompanyDevices([]);
+                        // Update local company capacity if needed
+                        if (localCompany) setLocalCompany({ ...localCompany, active_screens: 0 });
+                        await fetchInitialData();
+                    }
+                    setAlertModalData({ title: "Éxito", message: "Todas las pantallas han sido desvinculadas.", type: "success" });
+                } catch (e) {
+                    setAlertModalData({ title: "Error", message: e.message, type: "error" });
+                }
+            }
+        });
     };
+
 
     const saveAllChanges = async () => {
         try {
@@ -503,13 +595,24 @@ function App() {
             const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
             const targetId = impersonatingCompanyId || storedUser.company_id;
 
-            // Prepare payload with explicit JSON handling
-            const payload = { ...localCompany };
+            // Prepare payload - EXPLICITLY filter for allowed fields only
+            const allowedFields = [
+                'name', 'layout_type', 'primary_color', 'secondary_color', 'accent_color',
+                'logo_url', 'filler_keywords', 'google_drive_link', 'video_source', 'video_playlist',
+                'sidebar_content', 'bottom_bar_content', 'design_settings', 'pause_duration',
+                'priority_content_url', 'ad_frequency', 'rif', 'address', 'phone', 'whatsapp',
+                'instagram', 'facebook', 'tiktok', 'sidebar_header_type', 'sidebar_header_value'
+            ];
+
+            const payload = {};
+            allowedFields.forEach(f => {
+                if (localCompany[f] !== undefined) {
+                    payload[f] = localCompany[f];
+                }
+            });
+
+            // Ensure JSON objects are ready for serialization
             ['sidebar_content', 'bottom_bar_content', 'design_settings'].forEach(field => {
-                // Ensure we send objects, not strings, if the backend expects JSON body in PATCH
-                // But wait, our backend expects Pydantic models. 
-                // If the state is an object, JSON.stringify(payload) handles it successfully.
-                // The issue is if the state BECAME a string double-encoded.
                 if (typeof payload[field] === 'string') {
                     try { payload[field] = JSON.parse(payload[field]); } catch (e) { }
                 }
@@ -567,7 +670,7 @@ function App() {
         setLoading(true);
         try {
             const headers = { 'Authorization': `Bearer ${token}` };
-            const res = await fetch(`${API_BASE}/admin/companies/${targetCompany.id}`, { headers });
+            const res = await fetch(`${API_BASE}/companies/${targetCompany.id}`, { headers });
             const fullComp = await res.json();
             setImpersonatingCompanyId(targetCompany.id);
             setCompany(fullComp);
@@ -597,6 +700,22 @@ function App() {
         }
     };
 
+    const handlePingTV = async (deviceUuid) => {
+        try {
+            const res = await fetch(`${API_BASE}/diag/ping?uuid=${deviceUuid}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setAlertModalData({ title: "Ping Enviado", message: "La pantalla recibirá la señal de identificación en unos segundos.", type: "success" });
+            } else {
+                alert("Error al enviar ping");
+            }
+        } catch (e) {
+            console.error("Ping Error", e);
+        }
+    };
+
     const deleteCompany = async (id, force = false) => {
         if (!force) {
             setConfirmModalData({
@@ -617,6 +736,40 @@ function App() {
             setCompanies(companies.filter(c => c.id !== id));
             setAlertModalData({ title: "Éxito", message: "Empresa eliminada", type: "success" });
         } catch (err) { setAlertModalData({ title: "Error", message: err.message, type: "error" }); }
+    };
+
+    const toggleCompanyStatus = async (company, force = false) => {
+        if (!force) {
+            const isSuspending = company.is_active;
+            setConfirmModalData({
+                title: isSuspending ? "Suspender Empresa" : "Reactivar Empresa",
+                message: isSuspending
+                    ? `¿Seguro que desea suspender a ${company.name}? Todas sus pantallas dejarán de transmitir inmediatamente.`
+                    : `¿Desea reactivar el servicio para ${company.name}?`,
+                confirmText: isSuspending ? "Suspender" : "Activar",
+                type: isSuspending ? "danger" : "primary",
+                onConfirm: () => toggleCompanyStatus(company, true)
+            });
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/companies/${company.id}/toggle`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Error al cambiar estado");
+
+            setCompanies(companies.map(c => c.id === company.id ? { ...c, is_active: !c.is_active } : c));
+            setAlertModalData({
+                title: "Éxito",
+                message: `Empresa ${company.is_active ? 'suspendida' : 'activada'} correctamente`,
+                type: "success"
+            });
+        } catch (err) {
+            setAlertModalData({ title: "Error", message: err.message, type: "error" });
+        }
     };
 
     const deleteUser = async (id, force = false) => {
@@ -880,7 +1033,17 @@ function App() {
                     {hasPermission('global_ad') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button><Tooltip text="Configurar contenido masivo para planes FREE" /></div>}
                     {hasPermission('stats') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button><Tooltip text="Estadísticas generales del sistema" /></div>}
                     <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button><Tooltip text="Comunicación directa con soporte y clientes" /></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')}><LifeBuoy size={16} /> Soporte</button><Tooltip text="Centro de tickets y ayuda técnica" /></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')} style={{ position: 'relative' }}>
+                            <LifeBuoy size={16} /> Soporte
+                            {supportUnreadCount > 0 && (
+                                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--card-bg)' }}>
+                                    {supportUnreadCount}
+                                </span>
+                            )}
+                        </button>
+                        <Tooltip text="Centro de tickets y ayuda técnica" />
+                    </div>
                 </div>
 
                 {adminTab === 'helpdesk' && <Helpdesk token={token} userRole={userRole} />}
@@ -904,7 +1067,7 @@ function App() {
                                         <tr key={c.id}>
                                             <td style={{ fontWeight: '600' }}>{c.name}</td>
                                             <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{c.plan}</td>
-                                            <td><span className="badge-screens">{c.active_screens} / {c.max_screens} TV</span></td>
+                                            <td><span className="badge-screens">{c.total_screens} / {c.max_screens} TV</span></td>
                                             <td>
                                                 <span className={`badge-status ${c.is_active ? 'active' : 'inactive'}`}>
                                                     {c.is_active ? '✓ Activo' : '✗ Suspendido'}
@@ -915,6 +1078,11 @@ function App() {
                                                 <div className="action-buttons">
                                                     <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
                                                     <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
+                                                    <Tooltip text={c.is_active ? "Suspender Servicio" : "Reactivar Servicio"}>
+                                                        <button onClick={() => toggleCompanyStatus(c)} className={`action-btn ${c.is_active ? 'suspend' : 'activate'}`} style={{ color: c.is_active ? 'var(--error)' : 'var(--success)' }}>
+                                                            <Power size={16} />
+                                                        </button>
+                                                    </Tooltip>
                                                     <Tooltip text="Estadísticas / Detalles"><button onClick={() => viewDetails(c)} className="action-btn view"><Eye size={16} /></button></Tooltip>
                                                     <Tooltip text="Eliminar Empresa"><button onClick={() => deleteCompany(c.id)} className="action-btn suspend"><Trash2 size={16} /></button></Tooltip>
                                                 </div>
@@ -1072,6 +1240,14 @@ function App() {
                                                                     >
                                                                         {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
                                                                     </button>
+                                                                </Tooltip>
+                                                                <Tooltip text="Identificar Pantalla (Ping)">
+                                                                    <button onClick={() => handlePingTV(d.uuid)} className="action-btn" style={{ color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)' }}>
+                                                                        <Wifi size={16} />
+                                                                    </button>
+                                                                </Tooltip>
+                                                                <Tooltip text="Renombrar / Editar">
+                                                                    <button onClick={() => handleRenameClick(d)} className="action-btn edit"><Edit size={16} /></button>
                                                                 </Tooltip>
                                                                 <Tooltip text="Eliminar Dispositivo">
                                                                     <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete"><Trash2 size={16} /></button>
@@ -1248,6 +1424,23 @@ function App() {
                         <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
                     </div>
                 </Modal>}
+                <Modal isOpen={!!editingDevice} onClose={() => setEditingDevice(null)} title="Renombrar Dispositivo">
+                    <div style={{ padding: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nuevo Nombre</label>
+                        <input
+                            type="text"
+                            value={renameDeviceName}
+                            onChange={e => setRenameDeviceName(e.target.value)}
+                            className="form-control"
+                            style={{ width: '100%', padding: '0.8rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                            autoFocus
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button onClick={() => setEditingDevice(null)} className="btn btn-secondary">Cancelar</button>
+                            <button onClick={handleRenameSubmit} className="btn btn-primary">Guardar Cambios</button>
+                        </div>
+                    </div>
+                </Modal>
             </div>
         );
     }
@@ -1304,7 +1497,7 @@ function App() {
                             { id: 'videos', icon: PlaySquare, label: 'Videos' },
                             { id: 'messaging', icon: Mail, label: 'Mensajería' },
                             { id: 'users', icon: Users, label: 'Usuarios' },
-                            { id: 'helpdesk', icon: LifeBuoy, label: 'Soporte' }
+                            { id: 'helpdesk', icon: LifeBuoy, label: 'Soporte', badge: supportUnreadCount }
                         ].filter(tab => {
                             if (tab.id === 'users' && (localCompany?.plan === 'free' || userRole === 'user_basic')) return false;
                             return true;
@@ -1313,9 +1506,30 @@ function App() {
                                 key={tab.id}
                                 onClick={() => setClientTab(tab.id)}
                                 className={`btn ${clientTab === tab.id ? 'btn-primary' : ''}`}
-                                style={{ flex: 1, fontSize: '0.7rem', whiteSpace: 'nowrap', padding: '0.6rem 0.3rem' }}
+                                style={{ flex: 1, fontSize: '0.7rem', whiteSpace: 'nowrap', padding: '0.6rem 0.3rem', position: 'relative' }}
                             >
                                 <tab.icon size={14} /> {tab.label}
+                                {tab.badge > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: '2px',
+                                        right: '2px',
+                                        background: '#f43f5e',
+                                        color: 'white',
+                                        borderRadius: '50%',
+                                        width: '16px',
+                                        height: '16px',
+                                        fontSize: '0.65rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 'bold',
+                                        border: '2px solid var(--card-bg)',
+                                        boxShadow: '0 0 5px rgba(244, 63, 94, 0.5)'
+                                    }}>
+                                        {tab.badge}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -1345,6 +1559,22 @@ function App() {
                                                 <div className="field-group">
                                                     <label>Email de Contacto</label>
                                                     <input value={localCompany?.email || ''} onChange={e => handleLocalChange({ email: e.target.value })} disabled={!isEditable('email')} />
+                                                </div>
+                                                <div className="field-group">
+                                                    <label>WhatsApp (Link o Número)</label>
+                                                    <input value={localCompany?.whatsapp || ''} onChange={e => handleLocalChange({ whatsapp: e.target.value })} disabled={!isEditable('whatsapp')} placeholder="+58412..." />
+                                                </div>
+                                                <div className="field-group">
+                                                    <label>Instagram (@usuario)</label>
+                                                    <input value={localCompany?.instagram || ''} onChange={e => handleLocalChange({ instagram: e.target.value })} disabled={!isEditable('instagram')} placeholder="@comercio" />
+                                                </div>
+                                                <div className="field-group">
+                                                    <label>Facebook / Otros</label>
+                                                    <input value={localCompany?.facebook || ''} onChange={e => handleLocalChange({ facebook: e.target.value })} disabled={!isEditable('facebook')} />
+                                                </div>
+                                                <div className="field-group">
+                                                    <label>TikTok</label>
+                                                    <input value={localCompany?.tiktok || ''} onChange={e => handleLocalChange({ tiktok: e.target.value })} disabled={!isEditable('tiktok')} />
                                                 </div>
                                                 <div className="field-group full">
                                                     <label>Dirección Física</label>
@@ -1376,6 +1606,15 @@ function App() {
                                                     >
                                                         <Monitor size={18} /> Vincular Nueva Pantalla
                                                     </button>
+                                                    {companyDevices.length > 0 && (
+                                                        <button
+                                                            onClick={() => unlinkAllDevices(localCompany?.id)}
+                                                            className="btn btn-secondary"
+                                                            style={{ width: '100%', marginTop: '0.5rem', color: 'var(--error)', borderColor: 'var(--error)' }}
+                                                        >
+                                                            <Trash2 size={18} /> Desvincular Todo
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="devices-list" style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -1389,6 +1628,13 @@ function App() {
                                                             </div>
                                                         </div>
                                                         <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '4px' }}>Online</span>
+                                                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+                                                            <Tooltip text="Identificar esta Pantalla">
+                                                                <button onClick={() => handlePingTV(d.uuid)} className="action-btn" style={{ background: 'rgba(251, 191, 36, 0.1)', border: 'none', color: '#fbbf24', cursor: 'pointer' }}><Wifi size={16} /></button>
+                                                            </Tooltip>
+                                                            <button onClick={() => handleRenameClick(d)} className="action-btn edit" style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}><Edit size={16} /></button>
+                                                            <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete" style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                                        </div>
                                                     </div>
                                                 )) : (
                                                     <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--bg-app)', borderRadius: '12px', opacity: 0.5 }}>
@@ -1488,6 +1734,24 @@ function App() {
 
             <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title="Actualizar Perfil de Empresa">
                 <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={view === 'superadmin'} onGenerateCode={generateRegistrationCode} />
+            </Modal>
+
+            <Modal isOpen={!!editingDevice} onClose={() => setEditingDevice(null)} title="Renombrar Dispositivo">
+                <div style={{ padding: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nuevo Nombre</label>
+                    <input
+                        type="text"
+                        value={renameDeviceName}
+                        onChange={e => setRenameDeviceName(e.target.value)}
+                        className="form-control"
+                        style={{ width: '100%', padding: '0.8rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                        autoFocus
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                        <button onClick={() => setEditingDevice(null)} className="btn btn-secondary">Cancelar</button>
+                        <button onClick={handleRenameSubmit} className="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </div>
             </Modal>
 
             <ChatWidget token={token} currentUser={userObj} plan={localCompany?.plan} />
@@ -1735,11 +1999,43 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
             <div className="form-sections-grid">
                 <div className="form-main-content">
                     <section className="form-section">
-                        <div className="section-title"><Building size={18} /> Información Comercial</div>
+                        <div className="section-title"><Building size={18} /> Información Comercial y Contacto</div>
                         <div className="section-fields">
-                            <div className="field-group full">
-                                <label>Nombre Comercial / Razón Social</label>
+                            <div className="field-group">
+                                <label>Nombre Comercial</label>
                                 <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Venrides C.A." />
+                            </div>
+                            <div className="field-group">
+                                <label>RIF / Documento</label>
+                                <input value={formData.rif || ''} onChange={e => setFormData({ ...formData, rif: e.target.value })} placeholder="J-12345678-9" />
+                            </div>
+                            <div className="field-group">
+                                <label>Email Público</label>
+                                <input value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="contacto@empresa.com" />
+                            </div>
+                            <div className="field-group">
+                                <label>Teléfono Principal</label>
+                                <input value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+58..." />
+                            </div>
+                            <div className="field-group">
+                                <label>WhatsApp</label>
+                                <input value={formData.whatsapp || ''} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} />
+                            </div>
+                            <div className="field-group">
+                                <label>Instagram</label>
+                                <input value={formData.instagram || ''} onChange={e => setFormData({ ...formData, instagram: e.target.value })} />
+                            </div>
+                            <div className="field-group">
+                                <label>Facebook</label>
+                                <input value={formData.facebook || ''} onChange={e => setFormData({ ...formData, facebook: e.target.value })} />
+                            </div>
+                            <div className="field-group">
+                                <label>TikTok</label>
+                                <input value={formData.tiktok || ''} onChange={e => setFormData({ ...formData, tiktok: e.target.value })} />
+                            </div>
+                            <div className="field-group full">
+                                <label>Dirección</label>
+                                <textarea value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2}></textarea>
                             </div>
                         </div>
                     </section>
@@ -1882,6 +2178,14 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                         <div className="permissions-list">
                             {[
                                 { id: 'name', label: 'Nombre Social' },
+                                { id: 'rif', label: 'RIF / Documento' },
+                                { id: 'address', label: 'Dirección' },
+                                { id: 'phone', label: 'Teléfono' },
+                                { id: 'whatsapp', label: 'WhatsApp' },
+                                { id: 'instagram', label: 'Instagram' },
+                                { id: 'facebook', label: 'Facebook' },
+                                { id: 'tiktok', label: 'TikTok' },
+                                { id: 'email', label: 'Email' },
                                 { id: 'layout_type', label: 'Diseño Pantalla' },
                                 { id: 'logo_url', label: 'Marca / Logo' },
                                 { id: 'sidebar_content', label: 'Barra Lateral' },
@@ -2683,6 +2987,8 @@ const Helpdesk = ({ token, userRole }) => {
                     )}
                 </div>
             )}
+
+
         </div>
     );
 };

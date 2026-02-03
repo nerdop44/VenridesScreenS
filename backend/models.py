@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, JSON
 from sqlalchemy.orm import relationship, DeclarativeBase
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, select
+from sqlalchemy.ext.hybrid import hybrid_property
 
 class Base(DeclarativeBase):
     pass
@@ -52,20 +53,34 @@ class Company(Base):
     rif = Column(String, nullable=True)
     address = Column(String, nullable=True)
     phone = Column(String, nullable=True)
+    whatsapp = Column(String, nullable=True)
+    instagram = Column(String, nullable=True)
+    facebook = Column(String, nullable=True)
+    tiktok = Column(String, nullable=True)
     contact_person = Column(String, nullable=True)
     email = Column(String, nullable=True)
     
     # Permisos
     client_editable_fields = Column(String, default="")
+    first_screen_connected_at = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @hybrid_property
+    def total_screens(self):
+        return len(self.devices)
+
+    @hybrid_property
+    def active_screens(self):
+        return len([d for d in self.devices if d.is_active])
 
     # Relaciones
     users = relationship("User", back_populates="company", cascade="all, delete-orphan")
     devices = relationship("Device", back_populates="company", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="company", cascade="all, delete-orphan")
     menus = relationship("Menu", back_populates="company", cascade="all, delete-orphan")
+    free_plan_usages = relationship("FreePlanUsage", back_populates="company", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="company", cascade="all, delete-orphan")
 
 class User(Base):
@@ -123,6 +138,17 @@ class Menu(Base):
     is_available = Column(Boolean, default=True)
     
     company = relationship("Company", back_populates="menus")
+
+class FreePlanUsage(Base):
+    __tablename__ = "free_plan_usages"
+    
+    uuid = Column(String, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=True) # First company that used it
+    used_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    company = relationship("Company", back_populates="free_plan_usages")
 
 class RegistrationCode(Base):
     __tablename__ = "registration_codes"
