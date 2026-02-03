@@ -1,4 +1,4 @@
-const API_URL = "http://192.168.1.182:8000/api";
+const API_URL = "https://apitv.venrides.com/api";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
 
 const urlParams = new URLSearchParams(window.location.search);

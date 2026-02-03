@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-const API_BASE = localStorage.getItem('server_url') || 'http://192.168.1.182:8000';
+const API_BASE = localStorage.getItem('server_url') || 'https://apitv.venrides.com';
 
 const MobileApp = ({ token, userObj, onLogout }) => {
     // Derived State
