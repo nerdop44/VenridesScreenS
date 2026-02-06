@@ -14,7 +14,10 @@ const Hero = () => {
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-50 pointer-events-none">
-                    <div className="absolute inset-0 bg-radial-gradient from-transparent to-background-light dark:to-background-dark pointer-events-none z-10"></div>
+                    <div
+                        className="absolute inset-0 pointer-events-none z-10"
+                        style={{ background: 'radial-gradient(circle, transparent 0%, var(--bg-surface) 70%, var(--bg-surface) 100%)' }}
+                    ></div>
                     <img
                         src={fondo2}
                         alt="Background Decorative"
