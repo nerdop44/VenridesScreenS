@@ -13,7 +13,7 @@ const Hero = () => {
                 />
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-50 pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-20 pointer-events-none">
                     <div
                         className="absolute inset-0 pointer-events-none z-10"
                         style={{ background: 'radial-gradient(circle, transparent 0%, var(--bg-surface) 70%, var(--bg-surface) 100%)' }}
@@ -33,11 +33,11 @@ const Hero = () => {
                 <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto mb-12 font-light">
                     Señalizador Digital simple y sincronizado. Gestiona contenidos Publicitario de forma inteligente en todas tus pantallas, en cualquier lugar.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button className="bg-primary text-black text-lg px-10 py-4 rounded-xl font-extrabold hover:shadow-[0_0_30px_rgba(0,204,255,0.5)] transition-all flex items-center justify-center gap-2">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-20">
+                    <button className="bg-primary opacity-100 text-black text-lg px-10 py-4 rounded-xl font-extrabold hover:shadow-[0_0_30px_rgba(0,204,255,0.6)] transition-all flex items-center justify-center gap-2">
                         COMENZAR GRATIS <span className="material-symbols-outlined">arrow_forward</span>
                     </button>
-                    <button className="glass text-white text-lg px-10 py-4 rounded-xl font-bold hover:bg-white/10 transition-all border border-white/20">
+                    <button className="glass opacity-100 text-white text-lg px-10 py-4 rounded-xl font-bold hover:bg-white/10 transition-all border border-white/20">
                         VER DEMOSTRACIÓN
                     </button>
                 </div>
