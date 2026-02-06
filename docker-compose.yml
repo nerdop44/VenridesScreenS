@@ -108,7 +108,6 @@ services:
       - "8081:81"
       - "8082:82"
       - "8090:83"
-      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/html:/usr/share/nginx/html
