@@ -2,7 +2,7 @@ import React from 'react';
 import fondo2 from '../assets/fondo2.png';
 import fija1 from '../assets/fija1.png';
 
-const Hero = () => {
+const Hero = ({ onOpenContact }) => {
     return (
         <section className="relative min-h-screen pt-32 pb-20 flex flex-col items-center justify-center overflow-hidden hero-gradient">
             <div className="absolute inset-0 z-0 opacity-40">
@@ -38,7 +38,10 @@ const Hero = () => {
                         <button className="bg-[#00CCFF] !opacity-100 text-black text-lg px-10 py-4 rounded-xl font-black hover:shadow-[0_0_30px_rgba(0,204,255,0.8)] transition-all flex items-center justify-center gap-2 border-2 border-[#00CCFF]">
                             COMENZAR GRATIS <span className="material-symbols-outlined font-black">arrow_forward</span>
                         </button>
-                        <button className="glass !opacity-100 text-white text-lg px-10 py-4 rounded-xl font-bold hover:bg-white/10 transition-all border border-white/20">
+                        <button
+                            onClick={onOpenContact}
+                            className="glass !opacity-100 text-white text-lg px-10 py-4 rounded-xl font-bold hover:bg-white/10 transition-all border border-white/20"
+                        >
                             VER DEMOSTRACIÓN
                         </button>
                     </div>

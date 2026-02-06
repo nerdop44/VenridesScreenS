@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PlanSignupModal from './PlanSignupModal';
 
-const Pricing = () => {
+const Pricing = ({ onOpenContact }) => {
     const [isAnnual, setIsAnnual] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,7 +175,7 @@ const Pricing = () => {
                         </ul>
 
                         <button
-                            onClick={() => handlePlanSelect(plan.id)}
+                            onClick={() => plan.id === 'empresarial' ? onOpenContact() : handlePlanSelect(plan.id)}
                             className={`w-full py-3 rounded-xl font-bold transition-all uppercase text-sm ${plan.popular
                                 ? 'bg-primary text-black hover:brightness-110'
                                 : plan.id === 'empresarial'
