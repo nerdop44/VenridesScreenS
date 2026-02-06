@@ -32,7 +32,7 @@ services:
       - ./backend:/app
       - ./logos:/logos # Sync logos with host and nginx
     ports:
-      - "8000:8000"
+      - "8005:8000" # Changed from 8000 to 8005 to avoid conflict with Portainer on VPS
     environment:
       - DATABASE_URL=postgresql+asyncpg://venrides_user:venrides_password@db/venrides_db
       - REDIS_URL=redis://redis:6379/0
