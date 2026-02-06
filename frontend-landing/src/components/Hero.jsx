@@ -1,4 +1,6 @@
 import React from 'react';
+import fondo2 from '../assets/fondo2.png';
+import fija1 from '../assets/fija1.png';
 
 const Hero = () => {
     return (
@@ -11,11 +13,10 @@ const Hero = () => {
                 />
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-30 pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-r from-background-light via-transparent to-background-light dark:from-background-dark dark:to-background-dark z-10"></div>
-                    <div className="absolute inset-0 bg-gradient-to-b from-background-light via-transparent to-background-light dark:from-background-dark dark:to-background-dark z-10"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-50 pointer-events-none">
+                    <div className="absolute inset-0 bg-radial-gradient from-transparent to-background-light dark:to-background-dark pointer-events-none z-10"></div>
                     <img
-                        src="/src/assets/fondo2.png"
+                        src={fondo2}
                         alt="Background Decorative"
                         className="w-full h-full object-contain"
                     />
@@ -41,9 +42,9 @@ const Hero = () => {
             <div className="relative z-10 mt-20 w-full max-w-6xl px-6">
                 <div className="glass rounded-2xl p-2 border border-white/20 neon-glow">
                     <img
-                        alt="Application interface dashboard"
+                        alt="Señalización Fija"
                         className="rounded-xl w-full h-auto"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDqftoI0KnRY__l6yburXbx4u2iTU9bYiq2vobgWQfe2XHlKrcmja2z_Ef1aUNh4Zk-NZ3L6HhiawkUQYhUGskseq--PAHOF4Yq24G6fYg9hgsT29C1R9CO2el365Wxzl7SiD5OlUFce9MXcnJUKHKP5nc2ivcf1pxQumKbZLgdZSd66apTZ-kE3QincGPFjWYhYHWs7iTdX14ZgqKC1nVP8xSd5Y7FqHxjgMGYA9riH77LXw-Jso4vbimz6b_LvxAL61mhLgBmg"
+                        src={fija1}
                     />
                 </div>
             </div>
