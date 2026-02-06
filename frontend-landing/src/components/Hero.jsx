@@ -11,7 +11,16 @@ const Hero = () => {
                 />
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-                <h1 className="text-6xl md:text-9xl font-black uppercase italic tracking-tighter mb-2 leading-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[600px] z-0 opacity-30 pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-r from-background-light via-transparent to-background-light dark:from-background-dark dark:to-background-dark z-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-background-light via-transparent to-background-light dark:from-background-dark dark:to-background-dark z-10"></div>
+                    <img
+                        src="/src/assets/fondo2.png"
+                        alt="Background Decorative"
+                        className="w-full h-full object-contain"
+                    />
+                </div>
+                <h1 className="text-6xl md:text-9xl font-black uppercase italic tracking-tighter mb-2 leading-none relative z-10">
                     PANTALLAS QUE <span className="text-primary italic">VENDEN</span>
                 </h1>
                 <p className="text-primary font-mono text-sm tracking-[0.3em] uppercase mb-12">

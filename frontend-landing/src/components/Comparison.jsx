@@ -1,4 +1,5 @@
 import React from 'react';
+import Carousel from './Carousel';
 
 const Comparison = () => {
     return (
@@ -35,15 +36,11 @@ const Comparison = () => {
                     </div>
                     <div className="relative">
                         <div className="aspect-square glass rounded-3xl overflow-hidden neon-border">
-                            <img
-                                alt="Digital signage in a corporate environment"
-                                className="w-full h-full object-cover"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8YORZPg1Kt7ufK_ug8s7hBuHHwHsB7-dCN9vn7HgDdc5Jt_DzFdGGrbOk_DSobQrKclckGanADNkPw32V8fnOUgZXLypoX04B2GdXIHB4NwD1gYA7Q8hhODDDQal-czp6YV5t1mF43maK349Jh9kpDWjpwxdBpJUvXLygR3IvttYv0osVmOBV6-x21o7ndTSRxeanXiY8L6ggjBiEDpz4LOPin1EJyAPKDFno4VbDbFqqxU8NZIF9CkEqncMc9Ms4T31z4KDpw"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                            <Carousel />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
                             <div className="absolute bottom-8 left-8">
                                 <span className="bg-primary text-black font-mono text-xs px-3 py-1 rounded-full font-bold mb-2 inline-block uppercase tracking-widest">Live Status</span>
-                                <p className="text-2xl font-bold">Retail Mall Central</p>
+                                <p className="text-2xl font-bold">Instalaciones Reales</p>
                             </div>
                         </div>
                     </div>
