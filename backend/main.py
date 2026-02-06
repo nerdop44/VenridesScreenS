@@ -22,10 +22,53 @@ from jose import JWTError, jwt
 import time
 import json
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import logging
 from logging.handlers import RotatingFileHandler
+import urllib3
+
+# --- GLOBAL SSL/TLS DISABLER ---
+# Use this only if specifically requested by user due to infrastructure/proxy issues.
+# This disables certificate verification for ALL requests made by this process.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Patch requests if available
+try:
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    # Monkey patch requests to default verify=False
+    _orig_request = requests.Session.request
+    def _patched_request(self, method, url, **kwargs):
+        kwargs.setdefault('verify', False)
+        return _orig_request(self, method, url, **kwargs)
+    requests.Session.request = _patched_request
+    requests.request = lambda method, url, **kwargs: requests.Session().request(method, url, **kwargs)
+    requests.get = lambda url, **kwargs: requests.request('GET', url, **kwargs)
+    requests.post = lambda url, **kwargs: requests.request('POST', url, **kwargs)
+except ImportError:
+    pass
+
+# Patch httpx if available
+try:
+    import httpx
+    # Patch httpx.AsyncClient and httpx.Client to default verify=False
+    _orig_async_init = httpx.AsyncClient.__init__
+    def _patched_async_init(self, *args, **kwargs):
+        if 'verify' not in kwargs:
+            kwargs['verify'] = False
+        _orig_async_init(self, *args, **kwargs)
+    httpx.AsyncClient.__init__ = _patched_async_init
+
+    _orig_sync_init = httpx.Client.__init__
+    def _patched_sync_init(self, *args, **kwargs):
+        if 'verify' not in kwargs:
+            kwargs['verify'] = False
+        _orig_sync_init(self, *args, **kwargs)
+    httpx.Client.__init__ = _patched_sync_init
+except ImportError:
+    pass
 
 # --- LOGGING CONFIGURATION ---
 LOG_FILE = "venridesscreens.log"
@@ -159,6 +202,10 @@ app.add_middleware(
 
 # --- Diagnostics ---
 # --- Diagnostics ---
+@app.get("/")
+async def root():
+    return {"message": "Venrides Screens API is running", "status": "active"}
+
 @app.get("/diag/status")
 async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
     try:
@@ -221,52 +268,55 @@ async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
 # --- Startup ---
 @app.on_event("startup")
 async def on_startup():
-    await init_db()
-    
-    # Seed Master Admin
-    async with AsyncSessionLocal() as db:
-        try:
-            # 1. Ensure a company exists for the admin
-            res_comp = await db.execute(select(Company).limit(1))
-            company = res_comp.scalar_one_or_none()
-            if not company:
-                logger.info("--- Creating Default Company ---")
-                company = Company(
-                    name="Venrides Admin", 
-                    plan="ultra", 
-                    is_active=True,
-                    valid_until=datetime.utcnow() + timedelta(days=3650)
-                )
-                db.add(company)
-                await db.commit()
-                await db.refresh(company)
-            
-            # 2. Ensure admin_master exists
-            result = await db.execute(select(User).where(User.username == "nerdop@gmail.com"))
-            admin = result.scalar_one_or_none()
-            
-            if not admin:
-                logger.info("--- Seeding Master Admin (nerdop@gmail.com) ---")
-                hashed = get_password_hash("venrides123")
-                admin = User(
-                    username="nerdop@gmail.com",
-                    hashed_password=hashed,
-                    is_admin=True,
-                    role="admin_master",
-                    company_id=company.id
-                )
-                db.add(admin)
-                await db.commit()
-            else:
-                # Ensure existing admin has the correct role
-                if admin.role != "admin_master":
-                    admin.role = "admin_master"
+    try:
+        await init_db()
+        
+        # Seed Master Admin
+        async with AsyncSessionLocal() as db:
+            try:
+                # 1. Ensure a company exists for the admin
+                res_comp = await db.execute(select(Company).limit(1))
+                company = res_comp.scalar_one_or_none()
+                if not company:
+                    logger.info("--- Creating Default Company ---")
+                    company = Company(
+                        name="Venrides Admin", 
+                        plan="ultra", 
+                        is_active=True,
+                        valid_until=datetime.utcnow() + timedelta(days=3650)
+                    )
+                    db.add(company)
                     await db.commit()
-                    logger.info("--- Updated Admin Role to admin_master ---")
-                    
-        except Exception as e:
-            logger.error(f"Error during seeding: {e}")
-            await db.rollback()
+                    await db.refresh(company)
+                
+                # 2. Ensure admin_master exists
+                result = await db.execute(select(User).where(User.username == "nerdop@gmail.com"))
+                admin = result.scalar_one_or_none()
+                
+                if not admin:
+                    logger.info("--- Seeding Master Admin (nerdop@gmail.com) ---")
+                    hashed = get_password_hash("venrides123")
+                    admin = User(
+                        username="nerdop@gmail.com",
+                        hashed_password=hashed,
+                        is_admin=True,
+                        role="admin_master",
+                        company_id=company.id
+                    )
+                    db.add(admin)
+                    await db.commit()
+                else:
+                    # Ensure existing admin has the correct role
+                    if admin.role != "admin_master":
+                        admin.role = "admin_master"
+                        await db.commit()
+                        logger.info("--- Updated Admin Role to admin_master ---")
+                        
+            except Exception as e:
+                logger.error(f"Error during seeding: {e}")
+                await db.rollback()
+    except Exception as e:
+        logger.error(f"⚠️  Backend startup warning: {e}. Check database credentials.")
 
 # --- Auth Dependencies ---
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
@@ -329,6 +379,7 @@ async def get_support_unread_count(token: str = Depends(oauth2_scheme)):
 
 
 
+@app.middleware("http")
 async def kill_switch_middleware(request: Request, call_next):
     bypass_paths = ["/auth", "/docs", "/openapi.json", "/logos"]
     if any(request.url.path.startswith(p) for p in bypass_paths):
@@ -581,6 +632,59 @@ class PaymentCreate(BaseModel):
 
 # --- Endpoints ---
 
+# OAuth2-compatible endpoint for frontend login
+@app.post("/login/token")
+async def login_token(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    """OAuth2-compatible token endpoint"""
+    # Bot Protection
+    client_ip = request.client.host
+    if not check_rate_limit(client_ip):
+        raise HTTPException(429, "Demasiados intentos. Intente de nuevo en un minuto.")
+
+    # Search by email (username column)
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+    
+    # Check Active
+    if user and not user.is_active:
+        raise HTTPException(status_code=403, detail="Cuenta suspendida o inactiva")
+    
+    # Check password (hashed or temp)
+    if not user or (not verify_password(password, user.hashed_password) and \
+                    (not user.temp_password or not verify_password(password, user.temp_password))):
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    
+    # If using temp password, ensure must_change is set (safety net)
+    if user.temp_password and verify_password(password, user.temp_password):
+        if not user.must_change_password:
+             # Should be set, but force it just in case
+             user.must_change_password = True
+             await db.commit()
+
+    token = create_access_token(data={
+        "sub": user.username, 
+        "role": user.role,
+        "company_id": user.company_id
+    })
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "username": user.username,
+            "is_admin": user.is_admin,
+            "role": user.role,
+            "permissions": user.permissions,
+            "company_id": user.company_id,
+            "must_change_password": user.must_change_password
+        }
+    }
+
 @app.post("/auth/login")
 async def login(request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     # Bot Protection
@@ -650,8 +754,8 @@ async def forgot_password_endpoint(request: ForgotPasswordRequest, db: AsyncSess
     
     # Always return success to prevent user enumeration
     if not user:
-        # Fake delay to prevent timing attacks
-        time.sleep(random.uniform(0.1, 0.5))
+        # Avoid blocking the event loop
+        await asyncio.sleep(random.uniform(0.1, 0.5))
         return {"message": "Si el correo existe, recibirá instrucciones."}
     
     # Generate random temp password

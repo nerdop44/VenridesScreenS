@@ -30,19 +30,58 @@ venv/
 # Logs & Cache
 *.log
 bcv_cache.json
-logos/
 .cache/
 
-# Environment
+# CRITICAL: Credentials & Secrets
+credentials/
+*.pem
+*.key
+*.p12
+google-service-account.json
+**/credentials/*
+
+# Environment Variables (CRITICAL)
 .env
-.env.local
-.env.production
-.env.development
+.env.*
+!.env.example
+*.env
+
+# Assets (Large files)
+logos/
+android-sdk/
+*.apk
+*.aab
+*.zip
+*.tar.gz
+
+# Backups & Temporary
+backups/
+*.bak
+*.tmp
+*.swp
+*~
 
 # Node
 node_modules/
 dist/
+.next/
+out/
 
 # System
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# Build artifacts
+build/
+releases/
+*.lock
+package-lock.json
+
+# Database dumps
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+

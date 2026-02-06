@@ -175,6 +175,22 @@ function App() {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
+    // Force logout when accessed with ?logout=true parameter (security feature from landing page)
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('logout') === 'true') {
+            localStorage.clear();
+            setToken(null);
+            setView('login');
+            setCompany(null);
+            setLocalCompany(null);
+            setUserRole('');
+            setUserPermissions({});
+            // Remove parameter from URL without reload
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
+
     const handleLogout = () => {
         localStorage.clear();
         setToken(null);
@@ -333,24 +349,36 @@ function App() {
 
             if (role === 'superadmin') {
                 const res = await fetch(`${API_BASE}/companies/`, { headers });
+                if (res.status === 401) {
+                    handleLogout();
+                    return;
+                }
                 const data = await res.json();
-                setCompanies(data);
+                setCompanies(Array.isArray(data) ? data : []);
 
                 const statsRes = await fetch(`${API_BASE}/admin/stats/overview`, { headers });
-                const statsData = await statsRes.json();
-                setStats(statsData);
+                if (statsRes.ok) {
+                    const statsData = await statsRes.json();
+                    setStats(statsData);
+                }
 
                 const paymentsRes = await fetch(`${API_BASE}/admin/payments/`, { headers });
-                const paymentsData = await paymentsRes.json();
-                setPayments(paymentsData);
+                if (paymentsRes.ok) {
+                    const paymentsData = await paymentsRes.json();
+                    setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+                }
 
                 const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
-                const usersData = await usersRes.json();
-                if (Array.isArray(usersData)) setUsers(usersData);
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json();
+                    setUsers(Array.isArray(usersData) ? usersData : []);
+                }
 
                 const devicesRes = await fetch(`${API_BASE}/admin/devices/`, { headers });
-                const devicesData = await devicesRes.json();
-                if (Array.isArray(devicesData)) setAllDevices(devicesData);
+                if (devicesRes.ok) {
+                    const devicesData = await devicesRes.json();
+                    setAllDevices(Array.isArray(devicesData) ? devicesData : []);
+                }
             } else if (role === 'client') {
                 const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const targetId = impersonatingCompanyId || storedUser.company_id;
@@ -361,6 +389,10 @@ function App() {
                 }
 
                 const res = await fetch(`${API_BASE}/companies/${targetId}`, { headers });
+                if (res.status === 401) {
+                    handleLogout();
+                    return;
+                }
                 const data = await res.json();
                 setCompany(data);
                 setLocalCompany(data);
@@ -368,17 +400,21 @@ function App() {
 
                 // Fetch devices
                 const devRes = await fetch(`${API_BASE}/admin/companies/${targetId}/devices`, { headers });
-                const devData = await devRes.json();
-                setCompanyDevices(Array.isArray(devData) ? devData : []);
+                if (devRes.ok) {
+                    const devData = await devRes.json();
+                    setCompanyDevices(Array.isArray(devData) ? devData : []);
+                }
 
                 // Fetch users for this company (scoped by backend)
                 const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
-                const usersData = await usersRes.json();
-                if (Array.isArray(usersData)) setUsers(usersData);
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json();
+                    setUsers(Array.isArray(usersData) ? usersData : []);
+                }
             }
         } catch (err) {
             console.error("Fetch Error:", err);
-            if (err.status === 401) handleLogout();
+            handleLogout();
         } finally {
             setLoading(false);
         }

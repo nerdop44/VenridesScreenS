@@ -75,7 +75,6 @@ function onPlayerReady(event) {
     event.target.setVolume(100);
     event.target.playVideo();
     console.log("YouTube Player Ready event fired.");
-    fetchConfig();
     setInterval(fetchConfig, 30000);
 }
 
@@ -128,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isInterrupted = false;
         console.log("Priority video ended, resuming normal loop.");
     };
+
+    // Initialize config fetch immediately
+    fetchConfig();
 });
 
 // Helper to transform Drive URLs for Images (View)
@@ -811,8 +813,8 @@ function showRegistrationScreen() {
     reg.classList.remove("hidden");
     reg.innerHTML = `
         <div class="registration-box">
-            <div style="margin-bottom: 1rem;">
-                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 310px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
+            <div style="margin-bottom: 2rem;">
+                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 180px; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
             </div>
             <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>
@@ -835,18 +837,20 @@ function showRegistrationScreen() {
         if (code.length !== 6) return;
         try {
             const res = await fetch(`${API_URL}/devices/validate-code?code=${code}&device_uuid=${deviceUuid}`, { method: 'POST' });
-            applyBranding(data);
-        } else {
-            const errData = await res.json();
-            if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
-                showBlockingScreen();
+            if (res.ok) {
+                const data = await res.json();
+                applyBranding(data);
             } else {
-                alert("Código inválido o expirado");
+                const errData = await res.json();
+                if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
+                    showBlockingScreen();
+                } else {
+                    alert("Código inválido o expirado");
+                }
             }
+        } catch (e) {
+            console.error("Link Error:", e);
+            alert("Error de conexión");
         }
-    } catch (e) {
-        console.error("Link Error:", e);
-        alert("Error de conexión");
-    }
-};
+    };
 }
