@@ -41,16 +41,13 @@ async def get_db():
             await session.close()
 
 async def init_db():
-    async with engine.begin() as conn:
-        # Create all tables
-        await conn.run_sync(Base.metadata.create_all)
-        
-        # Post-Init Migrations
-        try:
+    try:
+        async with engine.begin() as conn:
+            # Create all tables
+            await conn.run_sync(Base.metadata.create_all)
+            
+            # Post-Init Migrations
             # We use IF NOT EXISTS to avoid errors if they already exist
-            # Note: PostgreSQL 9.6+ supports ADD COLUMN IF NOT EXISTS? 
-            # Actually, standard ALTER TABLE ADD COLUMN doesn't have IF NOT EXISTS in all versions.
-            # But we can use a try-except block or check pg_attribute.
             await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS design_settings JSON DEFAULT '{}';"))
             await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS priority_content_url VARCHAR;"))
             await conn.execute(text("ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan VARCHAR DEFAULT 'free';"))
@@ -76,6 +73,5 @@ async def init_db():
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSON DEFAULT '{}';"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_password VARCHAR;"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE;"))
-        except Exception as e:
-            print(f"Migration error: {e}")
-            pass
+    except Exception as e:
+        print(f"Database initialization/migration error: {e}")

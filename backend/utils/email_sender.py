@@ -46,9 +46,15 @@ def send_email(to: str, subject: str, body: str, html: bool = True) -> bool:
         mime_type = 'html' if html else 'plain'
         msg.attach(MIMEText(body, mime_type))
         
+        # SSL Context that skips validation
+        import ssl
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+
         # Send email
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
+            server.starttls(context=context)
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
         

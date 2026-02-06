@@ -1,3 +1,27 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/venv": true,
+        "**/backend/backups": true,
+        "**/backend/logos": true,
+        "**/backend/logos_backup": true,
+        "**/*.log": true,
+        "**/dist": true,
+        "**/build": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/venv/**": true,
+        "**/backend/backups/**": true,
+        "**/backend/logos/**": true,
+        "**/backend/logos_backup/**": true,
+        "**/*.log": true,
+        "**/dist/**": true,
+        "**/build/**": true
+    },
+    "typescript.tsserver.maxOldSpaceSize": 2048,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.git": true
+    }
 }
