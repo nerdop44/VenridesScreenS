@@ -1,25 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Import ALL images from assets
 import img1 from '../assets/Captura de pantalla de 2026-02-03 18-36-24.png';
 import img2 from '../assets/Captura de pantalla de 2026-02-03 18-37-17.png';
 import img3 from '../assets/Captura de pantalla de 2026-02-03 18-37-47.png';
 import img4 from '../assets/Captura de pantalla de 2026-02-03 18-38-31.png';
-import img5 from '../assets/Captura de pantalla de 2026-02-03 18-39-11.png';
-import img6 from '../assets/screen.png';
-import img7 from '../assets/descarga.jpeg';
-import img8 from '../assets/images (1).jpeg';
-import img9 from '../assets/images (2).jpeg';
-import img10 from '../assets/images (22).jpeg';
-import img11 from '../assets/images (23).jpeg';
-import img12 from '../assets/images (24).jpeg';
-import img13 from '../assets/images (25).jpeg';
-import img14 from '../assets/images (3).jpeg';
-import img15 from '../assets/images (33).jpeg';
-import img16 from '../assets/images.jpeg';
 
-const allImages = [img1, img2, img3, img4, img5, img6, img7, img8, img9, img10, img11, img12, img13, img14, img15, img16];
+const allImages = [img1, img2, img3, img4];
 
 const Carousel = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
