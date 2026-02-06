@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import img1 from '../assets/Captura de pantalla de 2026-02-03 18-36-24.png';
 import img2 from '../assets/Captura de pantalla de 2026-02-03 18-37-17.png';
-import img3 from '../assets/Captura de pantalla de 2026-02-03 18-37-47.png';
-import img4 from '../assets/Captura de pantalla de 2026-02-03 18-38-31.png';
+import img3 from '../assets/Captura de pantalla de 2026-02-03 18-39-11.png';
 
-const allImages = [img1, img2, img3, img4];
+const allImages = [img1, img2, img3];
 
 const Carousel = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
