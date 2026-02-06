@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import img1 from '../assets/Captura de pantalla de 2026-02-03 18-36-24.png';
-import img2 from '../assets/Captura de pantalla de 2026-02-03 18-37-17.png';
-import img3 from '../assets/Captura de pantalla de 2026-02-03 18-39-11.png';
+import img1 from '../assets/final_mall.jpg';
+import img2 from '../assets/final_times.jpg';
+import img3 from '../assets/final_collage.jpg';
 
 const allImages = [img1, img2, img3];
 
