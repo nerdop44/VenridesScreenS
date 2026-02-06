@@ -1,0 +1,117 @@
+# VenridesScreenS - Documento de Requerimientos y Estrategia Web
+
+## 1. Propósito y Visión
+**VenridesScreenS** no es solo un software de cartelería digital; es un sistema operativo de inteligencia contextual para espacios comerciales.
+El propósito de la Landing Page es vender una transformación: de "pantallas tontas" (TVs pasando imágenes) a "activos digitales inteligentes" que reaccionan a su audiencia y generan ingresos.
+
+**Objetivo Central:** Convertir visitantes en clientes potenciales (Leads) o usuarios de prueba (Free Trial), posicionando la marca como la solución tecnológica más avanzada y Premium del mercado (Apple/Tesla del Digital Signage).
+
+## 2. Características Principales (Selling Points)
+
+### A. Inteligencia Contextual (The "Killer Feature")
+- **Qué es:** El sistema usa visión por computadora (respetando privacidad) para detectar quién está mirando.
+- **Beneficio:** Si pasa un hombre joven, muestra un anuncio de deportes. Si pasa una familia, muestra ofertas de juguetes.
+- **Copy de Venta:** "Tus pantallas ahora tienen ojos y cerebro. Muestra el contenido perfecto, a la persona correcta, en el momento exacto."
+
+### B. Renderizado Dinámico (Dynamic Rendering)
+- **Qué es:** Tecnología basada en HTML5/WebGL, no imágenes estáticas (JPGs).
+- **Beneficio:** Animaciones fluidas a 60fps, transiciones de cine y datos en tiempo real (clima, noticias, stock) integrados en el diseño.
+- **Copy de Venta:** "Olvídate de los JPGs aburridos. Creamos experiencias vivas que detienen el tráfico."
+
+### C. Benry: Tu Copiloto de IA
+- **Qué es:** Un asistente de IA integrado profundamente en la plataforma.
+- **Funciones:**
+    - Genera parrillas de contenido automáticas.
+    - Analiza métricas de rendimiento y sugiere mejoras.
+    - Resuelve dudas técnicas al instante.
+- **Copy de Venta:** "Conoce a Benry. Tu experto en marketing digital que trabaja 24/7, optimizando tus pantallas mientras duermes."
+
+### D. Ecosistema Multi-Plataforma
+- **App TV:** Cliente ligero y ultra-rápido para las pantallas.
+- **App Mobile:** Control total desde tu bolsillo para dueños de negocio.
+- **Administrador Web:** El centro de comando global.
+
+## 3. Lógica de Negocio y Precios
+
+La landing debe reflejar una estructura SaaS (Software as a Service) clara:
+
+| Plan | Perfil | Características |
+| :--- | :--- | :--- |
+| **Starter (Free/Trial)** | Pequeños Negocios | 1 Pantalla, plantillas básicas, Benry limitado. |
+| **Professional** | PyMEs / Retail | 2-10 Pantallas, Inteligencia Contextual básica, Benry Full. |
+| **Enterprise** | Franquicias / Malls | Pantallas ilimitadas, API Access, Hardware dedicado, SLA 99.9%. |
+
+**Estrategia de CTA (Call to Action):**
+- Principal: "Comenzar Prueba Gratuita" (Sin tarjeta de crédito).
+- Secundario: "Agendar Demo Corporativa" (Para clientes grandes).
+
+## 4. Lógica de Acceso y Helpdesk
+
+### Portal de Clientes (Login)
+- El acceso no es un simple formulario. Es la entrada a una "Suite de Control".
+- **Requerimiento Visual:** El botón de login debe sentirse como una llave de acceso a algo exclusivo.
+- **Seguridad:** Mencionar encriptación de grado bancario y cumplimiento de privacidad.
+
+### Centro de Ayuda (Helpdesk)
+- No es solo un email de soporte.
+- Sistema de tickets inteligente integrado.
+- Base de conocimiento con tutoriales en video.
+- Chat en vivo potenciado por Benry para respuestas inmediatas.
+
+## 5. Estética y "Look & Feel"
+El usuario ha rechazado plantillas genéricas. Buscamos:
+- **Estilo:** "Commercial Reality" / "Cyberpunk Corporativo Limpio".
+- **Colores:** Negro Profundo (Fondo), Azul Neón Eléctrico (Acentos), Blanco Puro (Texto).
+- **Tipografía:** Impactante, gruesa, comercial (estilo "Impact" o "Helvetica Now Display").
+- **Visuales:** Mockups 3D realistas de pantallas en entornos reales (aeropuertos, ciudades, tiendas de lujo). Las pantallas deben verse "brillando" en la oscuridad.
+
+---
+
+# PROMPT PARA IA DE DISEÑO WEB (Profesional)
+
+Si vas a utilizar una IA especializada en diseño (como v0, Midjourney para mockups, o un generador de código UI), utiliza el siguiente prompt para garantizar el resultado exacto:
+
+```text
+Actúa como un Diseñador de Producto Senior (ex-Apple/Linear) especializado en Landing Pages SaaS de alto impacto B2B.
+
+**Misión:**
+Diseñar la landing page para "VenridesScreenS", un Sistema Operativo de Cartelería Digital con Inteligencia Artificial.
+
+**Estética Visual (Master Theme):**
+- **Concepto:** "Digital Reality". Una mezcla entre Times Square de noche y una interfaz de comando militar futurista.
+- **Paleta:** Fondo Negro (#000000) absoluto. Acentos en Azul Neón Eléctrico (#00CCFF) y Azul Profundo (#0066FF). Texto blanco.
+- **Tipografía:** Encabezados masivos, condensados y pesados (estilo 'Impact' o 'Druk Wide'). Texto de cuerpo limpio y técnico (estilo 'Inter' o 'Space Mono').
+- **Atmósfera:** Oscura, premium, con efectos de "glassmorphism" (vidrio esmerilado) en bordes y contenedores.
+
+**Estructura Requerida (Secciones):**
+
+1.  **Hero Section (Billboard Impact):**
+    - Izquierda: Headline gigante "PANTALLAS QUE PIENSAN". Subtítulo sobre convertir TVs en activos inteligentes.
+    - Derecha: Un mockup 3D, fotorrealista, de una pantalla comercial en una calle nocturna lluviosa, mostrando datos en tiempo real. La pantalla debe parecer que emite luz (efecto glow).
+
+2.  **Section: The Problem (Old vs New):**
+    - Comparativa visual. "Ellos (JPGs estáticos)" vs "Nosotros (HTML5 Vivo)".
+    - Usa un slider interactivo o tarjetas de comparación de alto contraste.
+
+3.  **Section: Contextual Intelligence (The Eye):**
+    - Visualización técnica de cómo la cámara detecta "Hombre, 25-35 años, Feliz".
+    - Muestra un diagrama de flujo elegante conectando la detección con el cambio de anuncio.
+
+4.  **Section: Meet Benry (AI Agent):**
+    - Presenta a "Benry" como un orbe de luz o una interfaz de chat flotante.
+    - Muestra ejemplos de conversación: "Benry, optimiza mi playlist de la tarde".
+
+5.  **Section: Pricing (Commercial Tiers):**
+    - 3 Tarjetas de vidrio flotante (Starter, Pro, Enterprise).
+    - La tarjeta "Pro" debe tener un brillo de neón pulsante para destacarla.
+
+6.  **Section: Footer (Trust & Access):**
+    - Enlaces a "Portal Clientes", "Helpdesk", "Legal".
+    - Diseño minimalista tipo terminal de computadora.
+
+**Requerimientos Técnicos del Prompt:**
+- Prioriza "Grid Layouts" asimétricos para modernidad.
+- Usa efectos de "Scroll Parallax" sutiles.
+- Los botones (CTAs) deben tener estados de "Hover" energéticos (brillo, expansión).
+- NO uses colores verdes, naranjas o cálidos. Mantén todo frío y eléctrico.
+```

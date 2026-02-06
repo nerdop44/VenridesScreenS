@@ -7,7 +7,7 @@ Este proyecto utiliza variables de entorno para gestionar las URLs de desarrollo
 Cada frontend tiene dos archivos de configuración:
 
 - **`.env.development`**: URLs para desarrollo local (localhost)
-- **`.env.production`**: URLs para producción en VPS (cafe.venrides.com)
+- **`.env.production`**: URLs para producción en VPS (screens.venrides.com)
 
 ## 🔄 Cambio Automático de Entorno
 
@@ -24,7 +24,7 @@ npm run dev
 ```bash
 npm run build
 # Usa .env.production automáticamente
-# URLs apuntan a cafe.venrides.com
+# URLs apuntan a los dominios finales
 ```
 
 ## 🌐 Variables Disponibles
@@ -47,7 +47,7 @@ VITE_ADMIN_PANEL_URL=http://localhost:8081
 ### Para Producción
 Edita `frontend-*/.env.production`:
 ```env
-VITE_ADMIN_PANEL_URL=https://cafe.venrides.com/admin
+VITE_ADMIN_PANEL_URL=https://admintv.venrides.com
 ```
 
 ## 💡 Uso en el Código

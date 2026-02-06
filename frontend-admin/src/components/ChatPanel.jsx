@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, Users, Clock, Check, CheckCheck, ShieldOff, Trash2, X } from 'lucide-react';
 
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const ChatPanel = ({ token, currentUser }) => {
     const [conversations, setConversations] = useState([]);

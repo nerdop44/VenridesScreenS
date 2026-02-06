@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // --- HELPERS ---
 const safeParse = (str, fallback = {}) => {
