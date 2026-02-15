@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi } from 'lucide-react';
+import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi, BarChart, Activity, ShoppingCart, Gift, Target } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -1063,11 +1063,15 @@ function App() {
                 </header>
                 <div className="admin-tabs" style={{ background: 'var(--card-bg)', padding: '0.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', overflowX: 'visible', border: '1px solid var(--border-color)' }}>
                     {hasPermission('companies') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'companies' ? 'active' : ''}`} onClick={() => setAdminTab('companies')}><Building size={16} /> Empresas</button><Tooltip text="Gestionar clientes, planes y vigencia" /></div>}
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'ecosystem' ? 'active' : ''}`} onClick={() => setAdminTab('ecosystem')}><Activity size={16} /> Estatus Ecosistema</button><Tooltip text="Visión general de todo el sistema" /></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'crm' ? 'active' : ''}`} onClick={() => setAdminTab('crm')}><Calendar size={16} /> CRM & Auto</button><Tooltip text="Plantillas, Calendario y Automatización" /></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'sales' ? 'active' : ''}`} onClick={() => setAdminTab('sales')}><ShoppingCart size={16} /> Ventas</button><Tooltip text="Promociones y Marketing de Afiliados" /></div>
                     {hasPermission('users') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'users' ? 'active' : ''}`} onClick={() => setAdminTab('users')}><Users size={16} /> Usuarios</button><Tooltip text="Administrar accesos de operadores" /></div>}
                     {hasPermission('devices') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'devices' ? 'active' : ''}`} onClick={() => setAdminTab('devices')}><Monitor size={16} /> Dispositivos</button><Tooltip text="Monitoreo y control de pantallas activas" /></div>}
                     {hasPermission('payments') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'payments' ? 'active' : ''}`} onClick={() => setAdminTab('payments')}><DollarSign size={16} /> Pagos</button><Tooltip text="Registro y control de ingresos por planes" /></div>}
                     {hasPermission('global_ad') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button><Tooltip text="Configurar contenido masivo para planes FREE" /></div>}
                     {hasPermission('stats') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button><Tooltip text="Estadísticas generales del sistema" /></div>}
+                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'seo' ? 'active' : ''}`} onClick={() => setAdminTab('seo')}><BarChart size={16} /> SEO & Analytics</button><Tooltip text="Tráfico, referidos y SEO" /></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button><Tooltip text="Comunicación directa con soporte y clientes" /></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')} style={{ position: 'relative' }}>
@@ -1334,6 +1338,27 @@ function App() {
                     </div>
                 )}
 
+                {adminTab === 'ecosystem' && (
+                    <div className="glass-card">
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema Venrides</h2>
+                        <EcosystemDashboard token={token} />
+                    </div>
+                )}
+
+                {adminTab === 'crm' && (
+                    <div className="glass-card">
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={20} /> CRM: Automatización y Calendario</h2>
+                        <CrmPanel token={token} />
+                    </div>
+                )}
+
+                {adminTab === 'sales' && (
+                    <div className="glass-card">
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShoppingCart size={20} /> Ventas: Marketing y Afiliados</h2>
+                        <SalesPanel token={token} />
+                    </div>
+                )}
+
                 {adminTab === 'stats' && (
                     <div className="glass-card">
                         <h2>Estadísticas Generales</h2>
@@ -1351,6 +1376,13 @@ function App() {
                     <div className="glass-card">
                         <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={20} /> Chat Interno</h2>
                         <ChatPanel token={token} currentUser={safeParse(localStorage.getItem('user'), {})} />
+                    </div>
+                )}
+
+                {adminTab === 'seo' && (
+                    <div className="glass-card">
+                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={20} /> SEO & Analítica de Landing</h2>
+                        <SeoPanel token={token} />
                     </div>
                 )}
 
@@ -2239,6 +2271,260 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                 </div>
             </div >
         </form >
+    );
+};
+
+const SeoPanel = ({ token }) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/admin/analytics/dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(d => {
+                setData(d);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error loading analytics:", err);
+                setLoading(false);
+            });
+    }, [token]);
+
+    if (loading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando analítica...</div>;
+    if (!data) return <div style={{ textAlign: 'center', padding: '2rem' }}>Sin datos disponibles.</div>;
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="value">{data.total_visits || 0}</div>
+                    <div className="label">Visitas Totales</div>
+                </div>
+                <div className="stat-card">
+                    <div className="value" style={{ color: '#10b981' }}>{data.visits_today || 0}</div>
+                    <div className="label">Hoy</div>
+                </div>
+                <div className="stat-card">
+                    <div className="value" style={{ color: '#6366f1' }}>{data.unique_ips || 0}</div>
+                    <div className="label">Usuarios Únicos</div>
+                </div>
+            </div>
+
+            <div className="grid-2">
+                <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Top Fuentes (Referrers)</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        {Object.entries(data.top_referrers || {}).slice(0, 5).map(([ref, count]) => (
+                            <div key={ref} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                                <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{ref === "Direct" ? "Directo / Desconocido" : ref}</span>
+                                <span style={{ fontWeight: 'bold' }}>{count}</span>
+                            </div>
+                        ))}
+                        {Object.keys(data.top_referrers || {}).length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>No hay datos suficientes.</p>}
+                    </div>
+                </div>
+
+                <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Distribución de Dispositivos</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {['Mobile', 'Desktop', 'Tablet'].map(type => {
+                            const count = data.devices?.[type] || 0;
+                            const total = Object.values(data.devices || {}).reduce((a, b) => a + b, 0) || 1;
+                            const pct = Math.round((count / total) * 100);
+                            if (count === 0) return null;
+                            return (
+                                <div key={type}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                                        <span>{type === 'Mobile' ? '📱 Móvil' : type === 'Desktop' ? '💻 Escritorio' : '📟 Tablet'}</span>
+                                        <span>{pct}% ({count})</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${pct}%`, height: '100%', background: type === 'Mobile' ? '#f43f5e' : '#10b981', borderRadius: '10px' }}></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {Object.keys(data.devices || {}).length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>Sin datos de dispositivos.</p>}
+                    </div>
+                </div>
+            </div>
+
+            <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Páginas más Visitadas</h3>
+                <div className="table-responsive">
+                    <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                                <th style={{ padding: '0.8rem 0' }}>Endpoint</th>
+                                <th style={{ padding: '0.8rem 0', textAlign: 'right' }}>Vistas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(data.top_pages || {}).slice(0, 5).map(([page, count]) => (
+                                <tr key={page} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                    <td style={{ padding: '0.8rem 0', fontFamily: 'monospace', opacity: 0.8 }}>{page}</td>
+                                    <td style={{ padding: '0.8rem 0', textAlign: 'right', fontWeight: 'bold' }}>{count}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const EcosystemDashboard = ({ token }) => {
+    const [data, setData] = useState(null);
+    useEffect(() => {
+        fetch(`${API_BASE}/admin/crm/ecosystem-status`, { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json()).then(setData);
+    }, [token]);
+
+    if (!data) return <div>Cargando estatus global...</div>;
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="value">{data.companies.active} / {data.companies.total}</div>
+                    <div className="label">Empresas Activas</div>
+                </div>
+                <div className="stat-card">
+                    <div className="value" style={{ color: '#10b981' }}>${data.revenue.last_30_days}</div>
+                    <div className="label">Revenue (30d)</div>
+                </div>
+                <div className="stat-card">
+                    <div className="value" style={{ color: '#fbbf24' }}>{data.tech.total_screens}</div>
+                    <div className="label">Pantallas en Red</div>
+                </div>
+            </div>
+
+            <div className="grid-2">
+                <div className="glass-card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={16} /> Próximas Actividades</h3>
+                    {data.next_activities.map((a, i) => (
+                        <div key={i} style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                            <span>{a.title}</span>
+                            <span style={{ opacity: 0.6 }}>{new Date(a.date).toLocaleDateString()}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="glass-card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} /> Salud del Sistema</h3>
+                    <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+                        <p>✅ Backend: Operativo</p>
+                        <p>✅ Base de Datos: Sincronizada</p>
+                        <p>✅ Backups: {data.backup_status}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CrmPanel = ({ token }) => {
+    const [templates, setTemplates] = useState([]);
+    const [activities, setActivities] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setTemplates);
+        fetch(`${API_BASE}/admin/crm/calendar`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setActivities);
+    }, [token]);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <section>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Gestión de Plantillas Auto</h3>
+                <div className="grid-2">
+                    {['welcome', 'apk_download', 'expiry_7', 'expiry_1', 'birthday'].map(t => (
+                        <div key={t} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ textTransform: 'capitalize' }}>{t.replace('_', ' ')}</div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button className="btn" style={{ fontSize: '0.7rem' }}>Editar</button>
+                                <div className="badge-status active" style={{ fontSize: '0.6rem' }}>AUTO: ON</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            <section>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Calendario de Marketing (Venezuela 🇻🇪)</h3>
+                <div className="table-responsive">
+                    <table className="admin-table">
+                        <thead><tr><th>Fecha</th><th>Evento</th><th>Tipo</th><th>Acción Auto</th></tr></thead>
+                        <tbody>
+                            {activities.map((a, i) => (
+                                <tr key={i}>
+                                    <td>{new Date(a.activity_date).toLocaleDateString()}</td>
+                                    <td>{a.title}</td>
+                                    <td>{a.is_holiday ? 'Feriado' : 'Actividad'}</td>
+                                    <td>{a.send_auto_greeting ? '✅ Saludo' : 'Manual'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    );
+};
+
+const SalesPanel = ({ token }) => {
+    const [promos, setPromos] = useState([]);
+    const [affiliates, setAffiliates] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/admin/crm/promotions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setPromos);
+        fetch(`${API_BASE}/admin/crm/affiliates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setAffiliates);
+    }, [token]);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="grid-2">
+                <div className="glass-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1rem' }}><Gift size={18} /> Promociones Activas</h3>
+                        <button className="btn btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }}>+ Nueva</button>
+                    </div>
+                    {promos.map((p, i) => (
+                        <div key={i} style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '0.5rem', fontSize: '0.8rem' }}>
+                            <div style={{ fontWeight: 'bold' }}>{p.code} ({p.discount_pct}%)</div>
+                            <div style={{ opacity: 0.6 }}>{p.name}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="glass-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1rem' }}><Target size={18} /> Marketing de Afiliados</h3>
+                        <button className="btn btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }}>+ Reclutar</button>
+                    </div>
+                    {affiliates.map((af, i) => (
+                        <div key={i} style={{ padding: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <span>{af.name}</span>
+                            <span style={{ fontWeight: 'bold', color: '#10b981' }}>{af.total_referred} Refs</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="glass-card">
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Marketing Social Status</h3>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    {['Instagram', 'Facebook', 'TikTok', 'WhatsApp'].map(plat => (
+                        <div key={plat} style={{ flex: 1, minWidth: '150px', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{plat}</div>
+                            <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Tracking Links: OK</div>
+                            <button className="btn" style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.7rem' }}>Ver Dashboard</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 };
 
