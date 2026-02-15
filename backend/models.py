@@ -213,6 +213,7 @@ class EmailTemplate(Base):
     name = Column(String, unique=True) # e.g., 'cobro_vencimiento', 'aviso_mantenimiento'
     subject = Column(String)
     body = Column(String) # HTML content
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class ChatThread(Base):

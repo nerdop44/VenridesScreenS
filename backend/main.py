@@ -196,6 +196,16 @@ class EmailTemplateSchema(BaseModel):
     name: str
     subject: str
     body: str
+    is_active: Optional[bool] = True
+
+class PromotionSchema(BaseModel):
+    name: str
+    description: Optional[str] = None
+    code: str
+    discount_pct: float
+    valid_from: str # ISO Date
+    valid_to: str # ISO Date
+    is_active: Optional[bool] = True
 
 # --- Existing Pydantic Models ---
 from utils.branding import extract_colors
@@ -3096,8 +3106,9 @@ async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depe
     if existing:
         existing.subject = data.subject
         existing.body = data.body
+        existing.is_active = data.is_active
     else:
-        new_template = EmailTemplate(name=data.name, subject=data.subject, body=data.body)
+        new_template = EmailTemplate(name=data.name, subject=data.subject, body=data.body, is_active=data.is_active)
         db.add(new_template)
     
     await db.commit()
@@ -3129,8 +3140,43 @@ async def list_promotions(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(Promotion).order_by(Promotion.created_at.desc()))
     return res.scalars().all()
 
-@app.get("/admin/crm/affiliates")
-async def list_affiliates(db: AsyncSession = Depends(get_db)):
+@app.post("/admin/crm/promotions")
+async def save_promotion(data: PromotionSchema, db: AsyncSession = Depends(get_db)):
+    from models import Promotion
+    stmt = select(Promotion).where(Promotion.code == data.code)
+    existing = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if existing:
+        existing.name = data.name
+        existing.description = data.description
+        existing.discount_pct = data.discount_pct
+        existing.valid_from = datetime.fromisoformat(data.valid_from)
+        existing.valid_to = datetime.fromisoformat(data.valid_to)
+        existing.is_active = data.is_active
+    else:
+        new_promo = Promotion(
+            name=data.name,
+            description=data.description,
+            code=data.code,
+            discount_pct=data.discount_pct,
+            valid_from=datetime.fromisoformat(data.valid_from),
+            valid_to=datetime.fromisoformat(data.valid_to),
+            is_active=data.is_active
+        )
+        db.add(new_promo)
+    
+    await db.commit()
+    return {"status": "success"}
+
+@app.post("/admin/crm/affiliates")
+async def save_affiliate(data: dict, db: AsyncSession = Depends(get_db)):
     from models import Affiliate
-    res = await db.execute(select(Affiliate).order_by(Affiliate.total_referred.desc()))
-    return res.scalars().all()
+    new_aff = Affiliate(
+        name=data["name"],
+        email=data["email"],
+        code=data["code"],
+        commission_pct=data.get("commission_pct", 10.0)
+    )
+    db.add(new_aff)
+    await db.commit()
+    return {"status": "success"}
