@@ -75,8 +75,8 @@ class SchedulerService:
                         logger.info(f"Sending {days}-day expiry reminder to {company.name}")
                         
                         # Get BCV rate for the email
-                        from utils.bcv import get_bcv_usd_rate
-                        bcv = get_bcv_usd_rate()
+                        from services.currency_service import currency_service
+                        bcv = currency_service.get_rate()
                         
                         rendered = template_service.render("expiry_reminder", {
                             "name": company.contact_person or company.name,
