@@ -3010,7 +3010,7 @@ async def track_page_visit(request: Request):
         return {"status": "ok"}
 
 
-@app.get("/api/admin/analytics/dashboard")
+@app.get("/admin/analytics/dashboard")
 async def get_analytics_dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     """Admin-only endpoint — analytics dashboard data"""
     # Verify admin token logic (inline to avoid refactoring common utils for now)
@@ -3028,7 +3028,7 @@ async def get_analytics_dashboard(request: Request, db: AsyncSession = Depends(g
 # ===== CRM & MARKETING ECOSYSTEM =====
 # =====================================================
 
-@app.get("/api/admin/crm/ecosystem-status")
+@app.get("/admin/crm/ecosystem-status")
 async def get_crm_ecosystem_status(db: AsyncSession = Depends(get_db)):
     """Comprehensive status of the entire ecosystem"""
     from models import Company, Device, Payment, Promotion, CalendarActivity
@@ -3060,7 +3060,7 @@ async def get_crm_ecosystem_status(db: AsyncSession = Depends(get_db)):
         "server_time": datetime.utcnow().isoformat()
     }
 
-@app.get("/api/admin/crm/templates")
+@app.get("/admin/crm/templates")
 async def list_email_templates(db: AsyncSession = Depends(get_db)):
     from models import EmailTemplate
     res = await db.execute(select(EmailTemplate).order_by(EmailTemplate.name))
@@ -3082,7 +3082,7 @@ async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depe
     await db.commit()
     return {"status": "success"}
 
-@app.get("/api/admin/crm/calendar")
+@app.get("/admin/crm/calendar")
 async def get_calendar(db: AsyncSession = Depends(get_db)):
     from models import CalendarActivity
     res = await db.execute(select(CalendarActivity).order_by(CalendarActivity.activity_date))
@@ -3102,13 +3102,13 @@ async def add_calendar_activity(data: dict, db: AsyncSession = Depends(get_db)):
     await db.commit()
     return {"status": "success"}
 
-@app.get("/api/admin/crm/promotions")
+@app.get("/admin/crm/promotions")
 async def list_promotions(db: AsyncSession = Depends(get_db)):
     from models import Promotion
     res = await db.execute(select(Promotion).order_by(Promotion.created_at.desc()))
     return res.scalars().all()
 
-@app.get("/api/admin/crm/affiliates")
+@app.get("/admin/crm/affiliates")
 async def list_affiliates(db: AsyncSession = Depends(get_db)):
     from models import Affiliate
     res = await db.execute(select(Affiliate).order_by(Affiliate.total_referred.desc()))
