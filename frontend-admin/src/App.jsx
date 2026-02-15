@@ -92,6 +92,108 @@ const GlobalStyles = () => (
             border-style: solid;
             border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
         }
+
+        /* Sidebar Layout - New Admin UI */
+        .admin-dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg-app);
+            color: var(--text-main);
+        }
+        .admin-sidebar {
+            width: 280px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .sidebar-header-custom {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .sidebar-content-custom {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+        .sidebar-group-custom {
+            margin-bottom: 1.2rem;
+        }
+        .sidebar-group-title-custom {
+            padding: 0 1.5rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.08rem;
+            margin-bottom: 0.6rem;
+            opacity: 0.7;
+        }
+        .sidebar-item-custom {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-main);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid transparent;
+            font-size: 0.92rem;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            opacity: 0.85;
+        }
+        .sidebar-item-custom:hover {
+            background: rgba(255,255,255,0.03);
+            color: var(--primary-color);
+            opacity: 1;
+            padding-left: 1.7rem;
+        }
+        .sidebar-item-custom.active {
+            background: rgba(var(--primary-rgb, 107, 70, 193), 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+            opacity: 1;
+        }
+        .sidebar-badge-custom {
+            background: #f43f5e;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .sidebar-footer-custom {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .admin-main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        @media (max-width: 1024px) {
+            .admin-sidebar { width: 80px; }
+            .sidebar-group-title-custom, .sidebar-item-custom span { display: none; }
+            .sidebar-item-custom { justify-content: center; padding: 1rem; }
+        }
     `}</style>
 );
 
@@ -1041,474 +1143,524 @@ function App() {
     }
 
     if (view === 'superadmin') {
+        const groups = [
+            {
+                title: "Administración",
+                items: [
+                    { id: 'companies', label: 'Empresas', icon: <Building size={18} />, perm: 'companies' },
+                    { id: 'users', label: 'Usuarios', icon: <Users size={18} />, perm: 'users' },
+                    { id: 'devices', label: 'Dispositivos', icon: <Monitor size={18} />, perm: 'devices' },
+                    { id: 'payments', label: 'Pagos', icon: <DollarSign size={18} />, perm: 'payments' },
+                ]
+            },
+            {
+                title: "CRM & Marketing",
+                items: [
+                    { id: 'ecosystem', label: 'Ecosistema', icon: <Activity size={18} /> },
+                    { id: 'crm', label: 'CRM & Auto', icon: <Mail size={18} /> },
+                    { id: 'sales', label: 'Ventas', icon: <ShoppingCart size={18} /> },
+                ]
+            },
+            {
+                title: "Inteligencia",
+                items: [
+                    { id: 'seo', label: 'SEO & Analytics', icon: <BarChart size={18} /> },
+                ]
+            },
+            {
+                title: "Soporte",
+                items: [
+                    { id: 'helpdesk', label: 'Tickets', icon: <LifeBuoy size={18} />, badge: supportUnreadCount },
+                    { id: 'chat', label: 'Chat Interno', icon: <MessageSquare size={18} /> },
+                ]
+            },
+            {
+                title: "Configuración",
+                items: [
+                    { id: 'global_ad', label: 'Publicidad Global', icon: <Bell size={18} />, perm: 'global_ad' },
+                    { id: 'stats', label: 'Estadísticas', icon: <Layout size={18} />, perm: 'stats' },
+                ]
+            }
+        ];
+
         return (
-            <div className="dashboard-container">
+            <div className="admin-dashboard-layout">
                 <GlobalStyles />
-                <header className="dash-header">
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <img src="/venrides_logo.png" alt="Admin" className="app-logo" />
-                        <span>Panel Master</span>
-                    </h1>
-                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                        <ThemeSwitch theme={theme} toggle={toggleTheme} />
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <button onClick={() => setShowAdminPassModal(true)} className="btn" title="Contraseña Admin"><Key size={18} /></button>
-                            <Tooltip text="Cambiar contraseña del Administrador Maestro" />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <button onClick={handleLogout} className="btn" style={{ background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}><LogOut size={18} /></button>
-                            <Tooltip text="Cerrar sesión de forma segura" />
+                <aside className="admin-sidebar">
+                    <div className="sidebar-header-custom">
+                        <img src="/venrides_logo.png" alt="Logo" style={{ height: '35px' }} />
+                        <div>
+                            <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--primary-color)', lineHeight: 1 }}>MASTER</div>
+                            <div style={{ fontSize: '0.65rem', opacity: 0.6, fontWeight: 'bold' }}>NETWORK CONTROL</div>
                         </div>
                     </div>
-                </header>
-                <div className="admin-tabs" style={{ background: 'var(--card-bg)', padding: '0.5rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', overflowX: 'visible', border: '1px solid var(--border-color)' }}>
-                    {hasPermission('companies') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'companies' ? 'active' : ''}`} onClick={() => setAdminTab('companies')}><Building size={16} /> Empresas</button><Tooltip text="Gestionar clientes, planes y vigencia" /></div>}
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'ecosystem' ? 'active' : ''}`} onClick={() => setAdminTab('ecosystem')}><Activity size={16} /> Estatus Ecosistema</button><Tooltip text="Visión general de todo el sistema" /></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'crm' ? 'active' : ''}`} onClick={() => setAdminTab('crm')}><Calendar size={16} /> CRM & Auto</button><Tooltip text="Plantillas, Calendario y Automatización" /></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'sales' ? 'active' : ''}`} onClick={() => setAdminTab('sales')}><ShoppingCart size={16} /> Ventas</button><Tooltip text="Promociones y Marketing de Afiliados" /></div>
-                    {hasPermission('users') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'users' ? 'active' : ''}`} onClick={() => setAdminTab('users')}><Users size={16} /> Usuarios</button><Tooltip text="Administrar accesos de operadores" /></div>}
-                    {hasPermission('devices') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'devices' ? 'active' : ''}`} onClick={() => setAdminTab('devices')}><Monitor size={16} /> Dispositivos</button><Tooltip text="Monitoreo y control de pantallas activas" /></div>}
-                    {hasPermission('payments') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'payments' ? 'active' : ''}`} onClick={() => setAdminTab('payments')}><DollarSign size={16} /> Pagos</button><Tooltip text="Registro y control de ingresos por planes" /></div>}
-                    {hasPermission('global_ad') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'global_ad' ? 'active' : ''}`} onClick={() => setAdminTab('global_ad')}><Bell size={16} /> Publicidad Global</button><Tooltip text="Configurar contenido masivo para planes FREE" /></div>}
-                    {hasPermission('stats') && <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'stats' ? 'active' : ''}`} onClick={() => setAdminTab('stats')}><Layout size={16} /> Stats</button><Tooltip text="Estadísticas generales del sistema" /></div>}
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'seo' ? 'active' : ''}`} onClick={() => setAdminTab('seo')}><BarChart size={16} /> SEO & Analytics</button><Tooltip text="Tráfico, referidos y SEO" /></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}><button className={`admin-tab ${adminTab === 'chat' ? 'active' : ''}`} onClick={() => setAdminTab('chat')}><MessageSquare size={16} /> Chat Interno</button><Tooltip text="Comunicación directa con soporte y clientes" /></div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <button className={`admin-tab ${adminTab === 'helpdesk' ? 'active' : ''}`} onClick={() => setAdminTab('helpdesk')} style={{ position: 'relative' }}>
-                            <LifeBuoy size={16} /> Soporte
-                            {supportUnreadCount > 0 && (
-                                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#f43f5e', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--card-bg)' }}>
-                                    {supportUnreadCount}
-                                </span>
-                            )}
-                        </button>
-                        <Tooltip text="Centro de tickets y ayuda técnica" />
-                    </div>
-                </div>
-
-                {adminTab === 'helpdesk' && <Helpdesk token={token} userRole={userRole} />}
-
-                {adminTab === 'companies' && !showCompanyForm && (
-                    <div className="glass-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <div>
-                                <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>Empresas Registradas</h1>
-                                <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestione los clientes y sus planes activos</p>
+                    <div className="sidebar-content-custom">
+                        {groups.map(group => (
+                            <div key={group.title} className="sidebar-group-custom">
+                                <div className="sidebar-group-title-custom">{group.title}</div>
+                                {group.items.map(item => {
+                                    if (item.perm && !hasPermission(item.perm)) return null;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            className={`sidebar-item-custom ${adminTab === item.id ? 'active' : ''}`}
+                                            onClick={() => setAdminTab(item.id)}
+                                        >
+                                            {item.icon}
+                                            <span style={{ flex: 1 }}>{item.label}</span>
+                                            {item.badge > 0 && <span className="sidebar-badge-custom">{item.badge}</span>}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            {hasPermission('companies', 'create') && (
-                                <button className="btn btn-primary" style={{ padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { setSelectedCompany(null); setShowCompanyForm(true); }}><Plus size={20} /> Nueva Empresa</button>
-                            )}
+                        ))}
+                    </div>
+                    <div className="sidebar-footer-custom">
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem' }}>
+                            <ThemeSwitch theme={theme} toggle={toggleTheme} />
+                            <div style={{ flex: 1 }}></div>
+                            <button onClick={() => setShowAdminPassModal(true)} className="btn" title="Perfil" style={{ padding: '0.5rem' }}><Key size={18} /></button>
+                            <button onClick={handleLogout} className="btn" style={{ padding: '0.5rem', color: '#f43f5e' }} title="Salir"><LogOut size={18} /></button>
                         </div>
-                        <div className="table-responsive">
-                            <table className="admin-table">
-                                <thead><tr><th>Empresa</th><th>Plan</th><th>Screens</th><th>Estado</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
-                                <tbody>
-                                    {companies.map(c => (
-                                        <tr key={c.id}>
-                                            <td style={{ fontWeight: '600' }}>{c.name}</td>
-                                            <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{c.plan}</td>
-                                            <td><span className="badge-screens">{c.total_screens} / {c.max_screens} TV</span></td>
-                                            <td>
-                                                <span className={`badge-status ${c.is_active ? 'active' : 'inactive'}`}>
-                                                    {c.is_active ? '✓ Activo' : '✗ Suspendido'}
-                                                </span>
-                                            </td>
-                                            <td style={{ fontSize: '0.8rem' }}>{c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'N/A'}</td>
-                                            <td style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                <div className="action-buttons">
-                                                    <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
-                                                    <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
-                                                    <Tooltip text={c.is_active ? "Suspender Servicio" : "Reactivar Servicio"}>
-                                                        <button onClick={() => toggleCompanyStatus(c)} className={`action-btn ${c.is_active ? 'suspend' : 'activate'}`} style={{ color: c.is_active ? 'var(--error)' : 'var(--success)' }}>
-                                                            <Power size={16} />
+                    </div>
+                </aside>
+
+                <main className="admin-main-content">
+                    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <div style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', opacity: 0.5, letterSpacing: '0.1rem' }}>
+                            Venrides / {adminTab.replace('_', ' ')}
+                        </div>
+                        {bcvRate && (
+                            <div className="glass-card" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--primary-color)' }}>
+                                <span style={{ opacity: 0.6 }}>BCV:</span> {bcvRate} Bs.
+                            </div>
+                        )}
+                    </header>
+
+                    {adminTab === 'helpdesk' && <Helpdesk token={token} userRole={userRole} />}
+
+                    {adminTab === 'companies' && !showCompanyForm && (
+                        <div className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+                                <div>
+                                    <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>Empresas Registradas</h1>
+                                    <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestione los clientes y sus planes activos</p>
+                                </div>
+                                {hasPermission('companies', 'create') && (
+                                    <button className="btn btn-primary" style={{ padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { setSelectedCompany(null); setShowCompanyForm(true); }}><Plus size={20} /> Nueva Empresa</button>
+                                )}
+                            </div>
+                            <div className="table-responsive">
+                                <table className="admin-table">
+                                    <thead><tr><th>Empresa</th><th>Plan</th><th>Screens</th><th>Estado</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
+                                    <tbody>
+                                        {companies.map(c => (
+                                            <tr key={c.id}>
+                                                <td style={{ fontWeight: '600' }}>{c.name}</td>
+                                                <td style={{ textTransform: 'uppercase', fontSize: '0.8rem' }}>{c.plan}</td>
+                                                <td><span className="badge-screens">{c.total_screens} / {c.max_screens} TV</span></td>
+                                                <td>
+                                                    <span className={`badge-status ${c.is_active ? 'active' : 'inactive'}`}>
+                                                        {c.is_active ? '✓ Activo' : '✗ Suspendido'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '0.8rem' }}>{c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'N/A'}</td>
+                                                <td style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <div className="action-buttons">
+                                                        <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
+                                                        <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
+                                                        <Tooltip text={c.is_active ? "Suspender Servicio" : "Reactivar Servicio"}>
+                                                            <button onClick={() => toggleCompanyStatus(c)} className={`action-btn ${c.is_active ? 'suspend' : 'activate'}`} style={{ color: c.is_active ? 'var(--error)' : 'var(--success)' }}>
+                                                                <Power size={16} />
+                                                            </button>
+                                                        </Tooltip>
+                                                        <Tooltip text="Estadísticas / Detalles"><button onClick={() => viewDetails(c)} className="action-btn view"><Eye size={16} /></button></Tooltip>
+                                                        <Tooltip text="Eliminar Empresa"><button onClick={() => deleteCompany(c.id)} className="action-btn suspend"><Trash2 size={16} /></button></Tooltip>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {adminTab === 'companies' && showCompanyForm && (
+                        <div className="full-page-form">
+                            <div className="form-container">
+                                <CompanyForm
+                                    onGenerateCode={generateRegistrationCode}
+                                    company={selectedCompany}
+                                    isSuperAdmin={true}
+                                    activeUsers={users.filter(u => u.company_id === selectedCompany?.id)}
+                                    activeDevices={allDevices.filter(d => d.company_id === selectedCompany?.id)}
+                                    onSave={async (data) => {
+                                        await saveCompany(data);
+                                        setShowCompanyForm(false);
+                                    }}
+                                    onCancel={() => setShowCompanyForm(false)}
+                                    onChange={(data) => setLocalCompany(data)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {adminTab === 'users' && (
+                        <div className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+                                <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={20} /> Gestión de Usuarios</h2>
+                                {isMaster && (
+                                    <button className="btn btn-primary" onClick={() => setShowUserModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <Plus size={18} /> Crear Usuario
+                                    </button>
+                                )}
+                            </div>
+                            <div className="table-responsive">
+                                <table className="admin-table">
+                                    <thead><tr><th>Usuario</th><th>Empresa</th><th>Rol</th><th>Estatus</th><th>Acciones</th></tr></thead>
+                                    <tbody>
+                                        {users.map(u => (
+                                            <tr key={u.id}>
+                                                <td style={{ fontWeight: '600' }}>{u.username}</td>
+                                                <td>{companies.find(c => c.id === u.company_id)?.name || 'N/A'}</td>
+                                                <td>
+                                                    <span className={`badge-role ${u.role}`}>
+                                                        {u.role === 'admin_master' && 'Super Admin'}
+                                                        {u.role === 'admin_empresa' && 'Admin Empresa'}
+                                                        {u.role === 'operador_empresa' && 'Operador Empresa'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge-status ${u.is_active !== false ? 'active' : 'inactive'}`}>
+                                                        {u.is_active !== false ? 'Activo' : 'Inactivo'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ display: 'flex', gap: '5px' }}>
+                                                    <Tooltip text="Editar Usuario">
+                                                        <button onClick={() => {
+                                                            setEditingUser(u);
+                                                            setShowUserModal(true);
+                                                        }} className="action-btn edit">
+                                                            <Edit size={16} />
                                                         </button>
                                                     </Tooltip>
-                                                    <Tooltip text="Estadísticas / Detalles"><button onClick={() => viewDetails(c)} className="action-btn view"><Eye size={16} /></button></Tooltip>
-                                                    <Tooltip text="Eliminar Empresa"><button onClick={() => deleteCompany(c.id)} className="action-btn suspend"><Trash2 size={16} /></button></Tooltip>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                    <Tooltip text={u.is_active !== false ? "Suspender Usuario" : "Activar Usuario"}>
+                                                        <button onClick={async () => {
+                                                            try {
+                                                                const newStatus = u.is_active === false;
+                                                                const res = await fetch(`${API_BASE}/admin/users/${u.id}/status?is_active=${newStatus}`, {
+                                                                    method: 'PATCH',
+                                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                                });
+                                                                if (res.ok) fetchInitialData();
+                                                                else alert("Error al cambiar estado");
+                                                            } catch (e) { alert("Error"); }
+                                                        }} className={`action-btn ${u.is_active !== false ? 'suspend' : 'activate'}`}>
+                                                            {u.is_active !== false ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                                        </button>
+                                                    </Tooltip>
+                                                    <Tooltip text="Eliminar Usuario">
+                                                        <button onClick={() => deleteUser(u.id)} className="action-btn delete"><Trash2 size={16} /></button>
+                                                    </Tooltip>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {adminTab === 'companies' && showCompanyForm && (
-                    <div className="full-page-form">
-                        <div className="form-container">
-                            <CompanyForm
-                                onGenerateCode={generateRegistrationCode}
-                                company={selectedCompany}
-                                isSuperAdmin={true}
-                                activeUsers={users.filter(u => u.company_id === selectedCompany?.id)}
-                                activeDevices={allDevices.filter(d => d.company_id === selectedCompany?.id)}
-                                onSave={async (data) => {
-                                    await saveCompany(data);
-                                    setShowCompanyForm(false);
-                                }}
-                                onCancel={() => setShowCompanyForm(false)}
-                                onChange={(data) => setLocalCompany(data)}
-                            />
-                        </div>
-                    </div>
-                )}
+                    {adminTab === 'devices' && (
+                        <div className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Monitor size={20} /> Gestión de Dispositivos</h2>
+                            </div>
 
-                {adminTab === 'users' && (
-                    <div className="glass-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Users size={20} /> Gestión de Usuarios</h2>
-                            {isMaster && (
-                                <button className="btn btn-primary" onClick={() => setShowUserModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <Plus size={18} /> Crear Usuario
-                                </button>
+                            {allDevices.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
+                                    <Monitor size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                    <p>No se encontraron pantallas vinculadas.</p>
+                                </div>
+                            ) : (
+                                Object.entries(allDevices.reduce((acc, d) => {
+                                    const cName = d.company_name || companies.find(c => c.id === d.company_id)?.name || 'Sin Asignar';
+                                    if (!acc[cName]) acc[cName] = [];
+                                    acc[cName].push(d);
+                                    return acc;
+                                }, {})).map(([compName, devs]) => (
+                                    <div key={compName} className="company-group" style={{ marginBottom: '2rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                            <Building size={16} color="var(--primary-color)" />
+                                            <h3 style={{ fontSize: '1rem', flex: 1, margin: 0, color: '#f3f4f6' }}>{compName} <span style={{ fontSize: '0.7rem', opacity: 0.6, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', marginLeft: '0.5rem' }}>{devs.length} Pantallas</span></h3>
+                                            <button
+                                                onClick={() => generateRegistrationCode(devs[0]?.company_id)}
+                                                style={{ background: 'var(--primary-color)', border: 'none', borderRadius: '4px', color: 'white', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                            >
+                                                <Monitor size={12} /> Vincular
+                                            </button>
+                                        </div>
+                                        <div className="table-responsive">
+                                            <table className="admin-table">
+                                                <thead><tr><th>Nombre</th><th>Empresa</th><th>UUID</th><th>Estado</th><th>Acciones</th></tr></thead>
+                                                <tbody>
+                                                    {devs.map(d => (
+                                                        <tr key={d.id}>
+                                                            <td>
+                                                                <div style={{ fontWeight: 'bold' }}>{d.name}</div>
+                                                            </td>
+                                                            <td style={{ fontSize: '0.85rem', opacity: 0.7 }}>{compName}</td>
+                                                            <td style={{ fontSize: '0.7rem', opacity: 0.5, fontFamily: 'monospace' }}>{d.uuid}</td>
+                                                            <td>
+                                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                    <span className={`badge-status ${d.is_online ? 'active' : 'inactive'}`} style={{ fontSize: '0.7rem' }}>
+                                                                        {d.is_online ? '● Online' : '○ Offline'}
+                                                                    </span>
+                                                                    <span className={`badge-status ${d.is_active ? 'active' : 'inactive'}`} style={{ background: d.is_active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)', color: d.is_active ? '#10b981' : '#f43f5e', fontSize: '0.7rem' }}>
+                                                                        {d.is_active ? 'HABILITADO' : 'SUSPENDIDO'}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="action-buttons">
+                                                                    <Tooltip text={d.is_active ? "Suspender Pantalla" : "Reactivar Pantalla"}>
+                                                                        <button
+                                                                            onClick={() => toggleDeviceStatus(d)}
+                                                                            className={`action-btn ${d.is_active ? 'suspend' : 'activate'}`}
+                                                                        >
+                                                                            {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
+                                                                        </button>
+                                                                    </Tooltip>
+                                                                    <Tooltip text="Identificar Pantalla (Ping)">
+                                                                        <button onClick={() => handlePingTV(d.uuid)} className="action-btn" style={{ color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)' }}>
+                                                                            <Wifi size={16} />
+                                                                        </button>
+                                                                    </Tooltip>
+                                                                    <Tooltip text="Renombrar / Editar">
+                                                                        <button onClick={() => handleRenameClick(d)} className="action-btn edit"><Edit size={16} /></button>
+                                                                    </Tooltip>
+                                                                    <Tooltip text="Eliminar Dispositivo">
+                                                                        <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete"><Trash2 size={16} /></button>
+                                                                    </Tooltip>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
-                        <div className="table-responsive">
-                            <table className="admin-table">
-                                <thead><tr><th>Usuario</th><th>Empresa</th><th>Rol</th><th>Estatus</th><th>Acciones</th></tr></thead>
-                                <tbody>
-                                    {users.map(u => (
-                                        <tr key={u.id}>
-                                            <td style={{ fontWeight: '600' }}>{u.username}</td>
-                                            <td>{companies.find(c => c.id === u.company_id)?.name || 'N/A'}</td>
-                                            <td>
-                                                <span className={`badge-role ${u.role}`}>
-                                                    {u.role === 'admin_master' && 'Super Admin'}
-                                                    {u.role === 'admin_empresa' && 'Admin Empresa'}
-                                                    {u.role === 'operador_empresa' && 'Operador Empresa'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`badge-status ${u.is_active !== false ? 'active' : 'inactive'}`}>
-                                                    {u.is_active !== false ? 'Activo' : 'Inactivo'}
-                                                </span>
-                                            </td>
-                                            <td style={{ display: 'flex', gap: '5px' }}>
-                                                <Tooltip text="Editar Usuario">
-                                                    <button onClick={() => {
-                                                        setEditingUser(u);
-                                                        setShowUserModal(true);
-                                                    }} className="action-btn edit">
-                                                        <Edit size={16} />
-                                                    </button>
-                                                </Tooltip>
-                                                <Tooltip text={u.is_active !== false ? "Suspender Usuario" : "Activar Usuario"}>
-                                                    <button onClick={async () => {
-                                                        try {
-                                                            const newStatus = u.is_active === false;
-                                                            const res = await fetch(`${API_BASE}/admin/users/${u.id}/status?is_active=${newStatus}`, {
-                                                                method: 'PATCH',
-                                                                headers: { 'Authorization': `Bearer ${token}` }
-                                                            });
-                                                            if (res.ok) fetchInitialData();
-                                                            else alert("Error al cambiar estado");
-                                                        } catch (e) { alert("Error"); }
-                                                    }} className={`action-btn ${u.is_active !== false ? 'suspend' : 'activate'}`}>
-                                                        {u.is_active !== false ? <XCircle size={16} /> : <CheckCircle size={16} />}
-                                                    </button>
-                                                </Tooltip>
-                                                <Tooltip text="Eliminar Usuario">
-                                                    <button onClick={() => deleteUser(u.id)} className="action-btn delete"><Trash2 size={16} /></button>
-                                                </Tooltip>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {adminTab === 'devices' && (
-                    <div className="glass-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Monitor size={20} /> Gestión de Dispositivos</h2>
-                        </div>
-
-                        {allDevices.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.6 }}>
-                                <Monitor size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                                <p>No se encontraron pantallas vinculadas.</p>
+                    {adminTab === 'payments' && (
+                        <div className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={20} /> Historial de Pagos</h2>
+                                <button className="btn btn-primary" onClick={() => setShowPaymentModal(true)}><Plus size={18} /> Registrar Pago</button>
                             </div>
-                        ) : (
-                            Object.entries(allDevices.reduce((acc, d) => {
-                                const cName = d.company_name || companies.find(c => c.id === d.company_id)?.name || 'Sin Asignar';
-                                if (!acc[cName]) acc[cName] = [];
-                                acc[cName].push(d);
-                                return acc;
-                            }, {})).map(([compName, devs]) => (
-                                <div key={compName} className="company-group" style={{ marginBottom: '2rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                        <Building size={16} color="var(--primary-color)" />
-                                        <h3 style={{ fontSize: '1rem', flex: 1, margin: 0, color: '#f3f4f6' }}>{compName} <span style={{ fontSize: '0.7rem', opacity: 0.6, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', marginLeft: '0.5rem' }}>{devs.length} Pantallas</span></h3>
-                                        <button
-                                            onClick={() => generateRegistrationCode(devs[0]?.company_id)}
-                                            style={{ background: 'var(--primary-color)', border: 'none', borderRadius: '4px', color: 'white', padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-                                        >
-                                            <Monitor size={12} /> Vincular
-                                        </button>
-                                    </div>
-                                    <div className="table-responsive">
-                                        <table className="admin-table">
-                                            <thead><tr><th>Nombre</th><th>Empresa</th><th>UUID</th><th>Estado</th><th>Acciones</th></tr></thead>
-                                            <tbody>
-                                                {devs.map(d => (
-                                                    <tr key={d.id}>
-                                                        <td>
-                                                            <div style={{ fontWeight: 'bold' }}>{d.name}</div>
-                                                        </td>
-                                                        <td style={{ fontSize: '0.85rem', opacity: 0.7 }}>{compName}</td>
-                                                        <td style={{ fontSize: '0.7rem', opacity: 0.5, fontFamily: 'monospace' }}>{d.uuid}</td>
-                                                        <td>
-                                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                <span className={`badge-status ${d.is_online ? 'active' : 'inactive'}`} style={{ fontSize: '0.7rem' }}>
-                                                                    {d.is_online ? '● Online' : '○ Offline'}
-                                                                </span>
-                                                                <span className={`badge-status ${d.is_active ? 'active' : 'inactive'}`} style={{ background: d.is_active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)', color: d.is_active ? '#10b981' : '#f43f5e', fontSize: '0.7rem' }}>
-                                                                    {d.is_active ? 'HABILITADO' : 'SUSPENDIDO'}
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <div className="action-buttons">
-                                                                <Tooltip text={d.is_active ? "Suspender Pantalla" : "Reactivar Pantalla"}>
-                                                                    <button
-                                                                        onClick={() => toggleDeviceStatus(d)}
-                                                                        className={`action-btn ${d.is_active ? 'suspend' : 'activate'}`}
-                                                                    >
-                                                                        {d.is_active ? <XCircle size={16} /> : <CheckCircle size={16} />}
-                                                                    </button>
-                                                                </Tooltip>
-                                                                <Tooltip text="Identificar Pantalla (Ping)">
-                                                                    <button onClick={() => handlePingTV(d.uuid)} className="action-btn" style={{ color: '#fbbf24', background: 'rgba(251, 191, 36, 0.1)' }}>
-                                                                        <Wifi size={16} />
-                                                                    </button>
-                                                                </Tooltip>
-                                                                <Tooltip text="Renombrar / Editar">
-                                                                    <button onClick={() => handleRenameClick(d)} className="action-btn edit"><Edit size={16} /></button>
-                                                                </Tooltip>
-                                                                <Tooltip text="Eliminar Dispositivo">
-                                                                    <button onClick={() => deleteDevice(d.uuid)} className="action-btn delete"><Trash2 size={16} /></button>
-                                                                </Tooltip>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
-
-                {adminTab === 'payments' && (
-                    <div className="glass-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={20} /> Historial de Pagos</h2>
-                            <button className="btn btn-primary" onClick={() => setShowPaymentModal(true)}><Plus size={18} /> Registrar Pago</button>
-                        </div>
-                        <div className="table-responsive">
-                            <table className="admin-table">
-                                <thead><tr><th>Fecha</th><th>Empresa</th><th>Monto</th><th>Método</th><th>Acciones</th></tr></thead>
-                                <tbody>
-                                    {payments.map(p => (
-                                        <tr key={p.id}>
-                                            <td>{new Date(p.payment_date).toLocaleDateString()}</td>
-                                            <td style={{ fontWeight: '500' }}>{companies.find(c => c.id === p.company_id)?.name || p.company_id}</td>
-                                            <td style={{ color: '#10b981', fontWeight: 'bold' }}>{p.currency} {p.amount}</td>
-                                            <td style={{ fontSize: '0.8rem', opacity: 0.7 }}>{p.payment_method}</td>
-                                            <td>
-                                                <button onClick={() => deletePayment(p.id)} className="action-btn suspend" title="Eliminar Pago"><Trash2 size={16} /></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-                {adminTab === 'global_ad' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Bell size={20} /> Publicidad Global</h2>
-                        <MasterAdManager token={token} />
-                    </div>
-                )}
-
-                {adminTab === 'ecosystem' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema Venrides</h2>
-                        <EcosystemDashboard token={token} />
-                    </div>
-                )}
-
-                {adminTab === 'crm' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={20} /> CRM: Automatización y Calendario</h2>
-                        <CrmPanel token={token} />
-                    </div>
-                )}
-
-                {adminTab === 'sales' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShoppingCart size={20} /> Ventas: Marketing y Afiliados</h2>
-                        <SalesPanel token={token} />
-                    </div>
-                )}
-
-                {adminTab === 'stats' && (
-                    <div className="glass-card">
-                        <h2>Estadísticas Generales</h2>
-                        {stats && (
-                            <div className="stats-grid" style={{ marginTop: '1rem' }}>
-                                <div className="stat-card"><div className="value">{stats.total_companies}</div><div className="label">Empresas</div></div>
-                                <div className="stat-card"><div className="value">{stats.total_screens}</div><div className="label">Pantallas</div></div>
-                                <div className="stat-card"><div className="value">${stats.monthly_revenue}</div><div className="label">Este Mes</div></div>
+                            <div className="table-responsive">
+                                <table className="admin-table">
+                                    <thead><tr><th>Fecha</th><th>Empresa</th><th>Monto</th><th>Método</th><th>Acciones</th></tr></thead>
+                                    <tbody>
+                                        {payments.map(p => (
+                                            <tr key={p.id}>
+                                                <td>{new Date(p.payment_date).toLocaleDateString()}</td>
+                                                <td style={{ fontWeight: '500' }}>{companies.find(c => c.id === p.company_id)?.name || p.company_id}</td>
+                                                <td style={{ color: '#10b981', fontWeight: 'bold' }}>{p.currency} {p.amount}</td>
+                                                <td style={{ fontSize: '0.8rem', opacity: 0.7 }}>{p.payment_method}</td>
+                                                <td>
+                                                    <button onClick={() => deletePayment(p.id)} className="action-btn suspend" title="Eliminar Pago"><Trash2 size={16} /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
-                    </div>
-                )}
-
-                {adminTab === 'chat' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={20} /> Chat Interno</h2>
-                        <ChatPanel token={token} currentUser={safeParse(localStorage.getItem('user'), {})} />
-                    </div>
-                )}
-
-                {adminTab === 'seo' && (
-                    <div className="glass-card">
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={20} /> SEO & Analítica de Landing</h2>
-                        <SeoPanel token={token} />
-                    </div>
-                )}
-
-                <Modal isOpen={showAdminPassModal} onClose={() => setShowAdminPassModal(false)} title="Mi Perfil Master">
-                    <AdminProfileForm onSave={saveAdminProfile} onCancel={() => setShowAdminPassModal(false)} />
-                </Modal>
-                <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title={selectedCompany ? 'Editar' : 'Nueva'}>
-                    <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={true} onGenerateCode={generateRegistrationCode} />
-                </Modal>
-                <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Nuevo Pago">
-                    <PaymentForm companies={companies} onSave={savePayment} onCancel={() => setShowPaymentModal(false)} />
-                </Modal>
-                <Modal isOpen={showUserModal} onClose={() => { setShowUserModal(false); setEditingUser(null); }} title={editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}>
-                    <UserForm
-                        companies={companies}
-                        initialData={editingUser}
-                        onSave={async (u) => {
-                            const url = editingUser
-                                ? `${API_BASE}/admin/users/${editingUser.id}`
-                                : `${API_BASE}/admin/users/`;
-                            const method = editingUser ? 'PATCH' : 'POST';
-
-                            const res = await fetch(url, {
-                                method,
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                body: JSON.stringify(u)
-                            });
-                            if (res.ok) {
-                                alert(editingUser ? "Usuario actualizado" : "Usuario creado");
-                                setShowUserModal(false);
-                                setEditingUser(null);
-                                fetchInitialData();
-                            } else {
-                                const err = await res.json();
-                                alert("Error: " + (err.detail || "No se pudo guardar"));
-                            }
-                        }}
-                        onCancel={() => { setShowUserModal(false); setEditingUser(null); }}
-                    />
-                </Modal>
-                <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title="Detalles Empresa">
-                    {selectedCompany && (
-                        <div>
-                            <h3>Dispositivos ({companyDevices.length}/{selectedCompany.max_screens})</h3>
-                            <ul>{companyDevices.map(d => <li key={d.id}>{d.name}</li>)}</ul>
                         </div>
                     )}
-                </Modal>
-
-                <Modal isOpen={!!codeModalData} onClose={() => setCodeModalData(null)} title="Vincular Nueva Pantalla">
-                    {codeModalData && (
-                        <div style={{ textAlign: 'center', padding: '1rem' }}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <Monitor size={48} color="var(--primary-color)" style={{ opacity: 0.8 }} />
-                            </div>
-                            <h3 style={{ margin: '0 0 1rem 0' }}>Código de Vinculación</h3>
-                            <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Ingresa el siguiente código en tu TV:</p>
-
-                            <div style={{
-                                background: 'rgba(0,0,0,0.3)',
-                                padding: '1.5rem',
-                                borderRadius: '16px',
-                                marginBottom: '1.5rem',
-                                border: '2px dashed var(--primary-color)',
-                                display: 'inline-block',
-                                minWidth: '280px'
-                            }}>
-                                <div style={{
-                                    fontSize: '3.5rem',
-                                    fontWeight: 'bold',
-                                    letterSpacing: '8px',
-                                    color: '#10b981',
-                                    fontFamily: 'monospace',
-                                    lineHeight: 1
-                                }}>
-                                    {codeModalData.code}
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Clock size={16} /> Expira en {codeModalData.expires_in_minutes} minutos
-                                </div>
-                                <div>El código fue copiado al portapapeles</div>
-                            </div>
-
-                            <button onClick={() => setCodeModalData(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '2rem', justifyContent: 'center', padding: '1rem', fontSize: '1.1rem' }}>
-                                Entendido
-                            </button>
+                    {adminTab === 'global_ad' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Bell size={20} /> Publicidad Global</h2>
+                            <MasterAdManager token={token} />
                         </div>
                     )}
-                </Modal>
-                {/* GLOBAL REPLACEMENT MODALS */}
-                {confirmModalData && <Modal isOpen={!!confirmModalData} onClose={() => setConfirmModalData(null)} title={confirmModalData.title || "Confirmación"}>
-                    <div style={{ textAlign: 'center', padding: '1rem' }}>
-                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{confirmModalData.message}</p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                            <button onClick={() => setConfirmModalData(null)} className="btn btn-secondary" style={{ flex: 1 }}>{confirmModalData.cancelText || "Cancelar"}</button>
-                            <button onClick={() => { if (confirmModalData.onConfirm) confirmModalData.onConfirm(); setConfirmModalData(null); }} className={`btn btn-${confirmModalData.type === 'danger' ? 'danger' : 'primary'}`} style={{ flex: 1 }}>{confirmModalData.confirmText || "Confirmar"}</button>
+
+                    {adminTab === 'ecosystem' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema Venrides</h2>
+                            <EcosystemDashboard token={token} />
                         </div>
-                    </div>
-                </Modal>}
-                {alertModalData && <Modal isOpen={!!alertModalData} onClose={() => setAlertModalData(null)} title={alertModalData.title || "Aviso"}>
-                    <div style={{ textAlign: 'center', padding: '1rem' }}>
-                        <div style={{ marginBottom: '1rem' }}>{alertModalData.type === 'error' ? <XCircle size={40} color="var(--error)" /> : <CheckCircle size={40} color="var(--success)" />}</div>
-                        <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{alertModalData.message}</p>
-                        <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
-                    </div>
-                </Modal>}
-                <Modal isOpen={!!editingDevice} onClose={() => setEditingDevice(null)} title="Renombrar Dispositivo">
-                    <div style={{ padding: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nuevo Nombre</label>
-                        <input
-                            type="text"
-                            value={renameDeviceName}
-                            onChange={e => setRenameDeviceName(e.target.value)}
-                            className="form-control"
-                            style={{ width: '100%', padding: '0.8rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                            autoFocus
+                    )}
+
+                    {adminTab === 'crm' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={20} /> CRM: Automatización y Calendario</h2>
+                            <CrmPanel token={token} />
+                        </div>
+                    )}
+
+                    {adminTab === 'sales' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShoppingCart size={20} /> Ventas: Marketing y Afiliados</h2>
+                            <SalesPanel token={token} />
+                        </div>
+                    )}
+
+                    {adminTab === 'stats' && (
+                        <div className="glass-card">
+                            <h2>Estadísticas Generales</h2>
+                            {stats && (
+                                <div className="stats-grid" style={{ marginTop: '1rem' }}>
+                                    <div className="stat-card"><div className="value">{stats.total_companies}</div><div className="label">Empresas</div></div>
+                                    <div className="stat-card"><div className="value">{stats.total_screens}</div><div className="label">Pantallas</div></div>
+                                    <div className="stat-card"><div className="value">${stats.monthly_revenue}</div><div className="label">Este Mes</div></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {adminTab === 'chat' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MessageSquare size={20} /> Chat Interno</h2>
+                            <ChatPanel token={token} currentUser={safeParse(localStorage.getItem('user'), {})} />
+                        </div>
+                    )}
+
+                    {adminTab === 'seo' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={20} /> SEO & Analítica de Landing</h2>
+                            <SeoPanel token={token} />
+                        </div>
+                    )}
+
+                    <Modal isOpen={showAdminPassModal} onClose={() => setShowAdminPassModal(false)} title="Mi Perfil Master">
+                        <AdminProfileForm onSave={saveAdminProfile} onCancel={() => setShowAdminPassModal(false)} />
+                    </Modal>
+                    <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title={selectedCompany ? 'Editar' : 'Nueva'}>
+                        <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={true} onGenerateCode={generateRegistrationCode} />
+                    </Modal>
+                    <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Nuevo Pago">
+                        <PaymentForm companies={companies} onSave={savePayment} onCancel={() => setShowPaymentModal(false)} />
+                    </Modal>
+                    <Modal isOpen={showUserModal} onClose={() => { setShowUserModal(false); setEditingUser(null); }} title={editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}>
+                        <UserForm
+                            companies={companies}
+                            initialData={editingUser}
+                            onSave={async (u) => {
+                                const url = editingUser
+                                    ? `${API_BASE}/admin/users/${editingUser.id}`
+                                    : `${API_BASE}/admin/users/`;
+                                const method = editingUser ? 'PATCH' : 'POST';
+
+                                const res = await fetch(url, {
+                                    method,
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify(u)
+                                });
+                                if (res.ok) {
+                                    alert(editingUser ? "Usuario actualizado" : "Usuario creado");
+                                    setShowUserModal(false);
+                                    setEditingUser(null);
+                                    fetchInitialData();
+                                } else {
+                                    const err = await res.json();
+                                    alert("Error: " + (err.detail || "No se pudo guardar"));
+                                }
+                            }}
+                            onCancel={() => { setShowUserModal(false); setEditingUser(null); }}
                         />
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <button onClick={() => setEditingDevice(null)} className="btn btn-secondary">Cancelar</button>
-                            <button onClick={handleRenameSubmit} className="btn btn-primary">Guardar Cambios</button>
+                    </Modal>
+                    <Modal isOpen={showDetailsModal} onClose={() => setShowDetailsModal(false)} title="Detalles Empresa">
+                        {selectedCompany && (
+                            <div>
+                                <h3>Dispositivos ({companyDevices.length}/{selectedCompany.max_screens})</h3>
+                                <ul>{companyDevices.map(d => <li key={d.id}>{d.name}</li>)}</ul>
+                            </div>
+                        )}
+                    </Modal>
+
+                    <Modal isOpen={!!codeModalData} onClose={() => setCodeModalData(null)} title="Vincular Nueva Pantalla">
+                        {codeModalData && (
+                            <div style={{ textAlign: 'center', padding: '1rem' }}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <Monitor size={48} color="var(--primary-color)" style={{ opacity: 0.8 }} />
+                                </div>
+                                <h3 style={{ margin: '0 0 1rem 0' }}>Código de Vinculación</h3>
+                                <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Ingresa el siguiente código en tu TV:</p>
+
+                                <div style={{
+                                    background: 'rgba(0,0,0,0.3)',
+                                    padding: '1.5rem',
+                                    borderRadius: '16px',
+                                    marginBottom: '1.5rem',
+                                    border: '2px dashed var(--primary-color)',
+                                    display: 'inline-block',
+                                    minWidth: '280px'
+                                }}>
+                                    <div style={{
+                                        fontSize: '3.5rem',
+                                        fontWeight: 'bold',
+                                        letterSpacing: '8px',
+                                        color: '#10b981',
+                                        fontFamily: 'monospace',
+                                        lineHeight: 1
+                                    }}>
+                                        {codeModalData.code}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Clock size={16} /> Expira en {codeModalData.expires_in_minutes} minutos
+                                    </div>
+                                    <div>El código fue copiado al portapapeles</div>
+                                </div>
+
+                                <button onClick={() => setCodeModalData(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '2rem', justifyContent: 'center', padding: '1rem', fontSize: '1.1rem' }}>
+                                    Entendido
+                                </button>
+                            </div>
+                        )}
+                    </Modal>
+                    {/* GLOBAL REPLACEMENT MODALS */}
+                    {confirmModalData && <Modal isOpen={!!confirmModalData} onClose={() => setConfirmModalData(null)} title={confirmModalData.title || "Confirmación"}>
+                        <div style={{ textAlign: 'center', padding: '1rem' }}>
+                            <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{confirmModalData.message}</p>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                                <button onClick={() => setConfirmModalData(null)} className="btn btn-secondary" style={{ flex: 1 }}>{confirmModalData.cancelText || "Cancelar"}</button>
+                                <button onClick={() => { if (confirmModalData.onConfirm) confirmModalData.onConfirm(); setConfirmModalData(null); }} className={`btn btn-${confirmModalData.type === 'danger' ? 'danger' : 'primary'}`} style={{ flex: 1 }}>{confirmModalData.confirmText || "Confirmar"}</button>
+                            </div>
                         </div>
-                    </div>
-                </Modal>
+                    </Modal>}
+                    {alertModalData && <Modal isOpen={!!alertModalData} onClose={() => setAlertModalData(null)} title={alertModalData.title || "Aviso"}>
+                        <div style={{ textAlign: 'center', padding: '1rem' }}>
+                            <div style={{ marginBottom: '1rem' }}>{alertModalData.type === 'error' ? <XCircle size={40} color="var(--error)" /> : <CheckCircle size={40} color="var(--success)" />}</div>
+                            <p style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>{alertModalData.message}</p>
+                            <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
+                        </div>
+                    </Modal>}
+                    <Modal isOpen={!!editingDevice} onClose={() => setEditingDevice(null)} title="Renombrar Dispositivo">
+                        <div style={{ padding: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Nuevo Nombre</label>
+                            <input
+                                type="text"
+                                value={renameDeviceName}
+                                onChange={e => setRenameDeviceName(e.target.value)}
+                                className="form-control"
+                                style={{ width: '100%', padding: '0.8rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                                autoFocus
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button onClick={() => setEditingDevice(null)} className="btn btn-secondary">Cancelar</button>
+                                <button onClick={handleRenameSubmit} className="btn btn-primary">Guardar Cambios</button>
+                            </div>
+                        </div>
+                    </Modal>
+                </main>
             </div>
         );
     }
@@ -2308,62 +2460,62 @@ const SeoPanel = ({ token }) => {
                     <div className="label">Hoy</div>
                 </div>
                 <div className="stat-card">
-                    <div className="value" style={{ color: '#6366f1' }}>{data.unique_ips || 0}</div>
-                    <div className="label">Usuarios Únicos</div>
+                    <div className="value" style={{ color: '#6366f1' }}>{data.unique_today || 0}</div>
+                    <div className="label">Visitantes Unicos (Hoy)</div>
                 </div>
             </div>
 
             <div className="grid-2">
-                <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+                <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Top Fuentes (Referrers)</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        {Object.entries(data.top_referrers || {}).slice(0, 5).map(([ref, count]) => (
+                        {Object.entries(data.referrers || {}).slice(0, 5).map(([ref, count]) => (
                             <div key={ref} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                                <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{ref === "Direct" ? "Directo / Desconocido" : ref}</span>
+                                <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{ref === "directo" ? "Directo / Desconocido" : ref}</span>
                                 <span style={{ fontWeight: 'bold' }}>{count}</span>
                             </div>
                         ))}
-                        {Object.keys(data.top_referrers || {}).length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>No hay datos suficientes.</p>}
+                        {Object.keys(data.referrers || {}).length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>No hay datos suficientes.</p>}
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+                <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Distribución de Dispositivos</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {['Mobile', 'Desktop', 'Tablet'].map(type => {
+                        {['mobile', 'desktop', 'tablet'].map(type => {
+                            const label = type === 'mobile' ? '📱 Móvil' : type === 'desktop' ? '💻 Escritorio' : '📟 Tablet';
                             const count = data.devices?.[type] || 0;
                             const total = Object.values(data.devices || {}).reduce((a, b) => a + b, 0) || 1;
                             const pct = Math.round((count / total) * 100);
-                            if (count === 0) return null;
+                            if (count === 0 && type !== 'desktop') return null;
                             return (
                                 <div key={type}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                                        <span>{type === 'Mobile' ? '📱 Móvil' : type === 'Desktop' ? '💻 Escritorio' : '📟 Tablet'}</span>
+                                        <span>{label}</span>
                                         <span>{pct}% ({count})</span>
                                     </div>
                                     <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${pct}%`, height: '100%', background: type === 'Mobile' ? '#f43f5e' : '#10b981', borderRadius: '10px' }}></div>
+                                        <div style={{ width: `${pct}%`, height: '100%', background: type === 'mobile' ? '#f43f5e' : '#10b981', borderRadius: '10px' }}></div>
                                     </div>
                                 </div>
                             );
                         })}
-                        {Object.keys(data.devices || {}).length === 0 && <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>Sin datos de dispositivos.</p>}
                     </div>
                 </div>
             </div>
 
-            <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.5rem' }}>
+            <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem' }}>
                 <h3 style={{ fontSize: '0.9rem', marginBottom: '1rem', opacity: 0.8 }}>Páginas más Visitadas</h3>
                 <div className="table-responsive">
                     <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
-                                <th style={{ padding: '0.8rem 0' }}>Endpoint</th>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
+                                <th style={{ padding: '0.8rem 0' }}>Ruta (Path)</th>
                                 <th style={{ padding: '0.8rem 0', textAlign: 'right' }}>Vistas</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.entries(data.top_pages || {}).slice(0, 5).map(([page, count]) => (
+                            {Object.entries(data.top_pages || {}).slice(0, 10).map(([page, count]) => (
                                 <tr key={page} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                     <td style={{ padding: '0.8rem 0', fontFamily: 'monospace', opacity: 0.8 }}>{page}</td>
                                     <td style={{ padding: '0.8rem 0', textAlign: 'right', fontWeight: 'bold' }}>{count}</td>

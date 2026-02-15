@@ -3066,7 +3066,7 @@ async def list_email_templates(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(EmailTemplate).order_by(EmailTemplate.name))
     return res.scalars().all()
 
-@app.post("/api/admin/crm/templates")
+@app.post("/admin/crm/templates")
 async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depends(get_db)):
     from models import EmailTemplate
     stmt = select(EmailTemplate).where(EmailTemplate.name == data.name)
@@ -3088,7 +3088,7 @@ async def get_calendar(db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(CalendarActivity).order_by(CalendarActivity.activity_date))
     return res.scalars().all()
 
-@app.post("/api/admin/crm/calendar")
+@app.post("/admin/crm/calendar")
 async def add_calendar_activity(data: dict, db: AsyncSession = Depends(get_db)):
     from models import CalendarActivity
     new_act = CalendarActivity(
