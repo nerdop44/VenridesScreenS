@@ -2279,7 +2279,7 @@ const SeoPanel = ({ token }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/admin/analytics/dashboard`, {
+        fetch(`${API_BASE}/admin/analytics/dashboard`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => res.json())
@@ -2380,7 +2380,7 @@ const SeoPanel = ({ token }) => {
 const EcosystemDashboard = ({ token }) => {
     const [data, setData] = useState(null);
     useEffect(() => {
-        fetch(`${API_BASE}/api/admin/crm/ecosystem-status`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${API_BASE}/admin/crm/ecosystem-status`, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json()).then(setData);
     }, [token]);
 
@@ -2431,8 +2431,8 @@ const CrmPanel = ({ token }) => {
     const [activities, setActivities] = useState([]);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setTemplates);
-        fetch(`${API_BASE}/api/admin/crm/calendar`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setActivities);
+        fetch(`${API_BASE}/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setTemplates);
+        fetch(`${API_BASE}/admin/crm/calendar`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setActivities);
     }, [token]);
 
     return (
@@ -2479,8 +2479,8 @@ const SalesPanel = ({ token }) => {
     const [affiliates, setAffiliates] = useState([]);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/admin/crm/promotions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setPromos);
-        fetch(`${API_BASE}/api/admin/crm/affiliates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setAffiliates);
+        fetch(`${API_BASE}/admin/crm/promotions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setPromos);
+        fetch(`${API_BASE}/admin/crm/affiliates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setAffiliates);
     }, [token]);
 
     return (
