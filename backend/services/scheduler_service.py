@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from models import Company, CalendarActivity, EmailTemplate
 from services.template_service import template_service
 from utils.email_sender import send_email
-from database import SessionLocal, engine
+from db_config import AsyncSessionLocal as SessionLocal, engine
 
 logger = logging.getLogger("VenrideScreenS.Scheduler")
 

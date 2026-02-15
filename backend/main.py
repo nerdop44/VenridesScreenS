@@ -206,16 +206,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 # --- Simple Rate Limiting for Auth ---
 login_attempts = {} # {ip: [timestamps]}
-def check_rate_limit(ip: str):
-    now = time.time()
-    if ip not in login_attempts:
-        login_attempts[ip] = []
-    # Keep only last minute
-    login_attempts[ip] = [t for t in login_attempts[ip] if now - t < 60]
-    if len(login_attempts[ip]) >= 5: # 5 attempts per minute
-        return False
-    login_attempts[ip].append(now)
-    return True
 
 app = FastAPI(title="VenrideScreenS API")
 
