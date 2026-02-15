@@ -2902,13 +2902,14 @@ async def benry_chat(data: BenryChatMessage, request: Request):
             except Exception as e:
                 logger.warning(f"Failed to log Benry lead: {e}")
         
-        # If handoff needed, send email notification
         if result.get("needs_handoff"):
             try:
+                summary = benry_service.get_conversation_summary(session_id)
+                
+                # 1. Send Email Notification
                 from utils.email_sender import send_email
                 notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
                 
-                summary = benry_service.get_conversation_summary(session_id)
                 email_body = f"""
                 <html>
                 <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
@@ -2933,8 +2934,28 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                     body=email_body,
                     html=True
                 )
+                
+                # 2. Create internal message for Admin Master
+                async with AsyncSessionLocal() as db:
+                    # Find Admin Master (role: admin_master)
+                    from models import User, Message
+                    admin_res = await db.execute(select(User).where(User.role == "admin_master"))
+                    admin_master = admin_res.scalar()
+                    
+                    if admin_master:
+                        new_msg = Message(
+                            sender_id=None, # System/Benry
+                            receiver_id=admin_master.id,
+                            subject="🔔 Soporte Benry: Atención Humana Requerida",
+                            body=f"Un cliente está esperando en la landing page.\n\nSESIÓN: {session_id}\n\nRESUMEN:\n{summary}",
+                            is_alert=True
+                        )
+                        db.add(new_msg)
+                        await db.commit()
+                        logger.info(f"Benry handoff message created for admin {admin_master.id}")
+                
             except Exception as e:
-                logger.warning(f"Failed to send Benry handoff notification: {e}")
+                logger.warning(f"Failed to process Benry handoff: {e}")
         
         return result
         

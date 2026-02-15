@@ -125,8 +125,8 @@ const BenryChat = ({ onOpenContact }) => {
                     </div>
                 )}
                 <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${isUser
-                        ? 'bg-primary text-black rounded-br-md'
-                        : 'bg-white/10 text-white rounded-bl-md'
+                    ? 'bg-primary text-black rounded-br-md'
+                    : 'bg-white/10 text-white rounded-bl-md'
                     }`} style={{ whiteSpace: 'pre-wrap' }}>
                     {msg.content.split('**').map((part, i) =>
                         i % 2 === 1
@@ -233,7 +233,7 @@ const BenryChat = ({ onOpenContact }) => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Escribe tu mensaje..."
                             disabled={isTyping}
-                            className="flex-1 bg-white/8 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 disabled:opacity-50 transition-colors"
+                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-primary placeholder-slate-500 focus:outline-none focus:border-primary/50 disabled:opacity-50 transition-colors font-medium"
                         />
                         <button
                             type="submit"

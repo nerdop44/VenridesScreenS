@@ -183,7 +183,7 @@ const Pricing = ({ onOpenContact }) => {
                                     : 'border border-white/20 hover:bg-white/5'
                                 }`}
                         >
-                            {plan.id === 'free' ? 'Comenzar' : plan.id === 'empresarial' ? 'Contactar Ventas' : 'Seleccionar'}
+                            {plan.id === 'free' ? 'Comenzar Gratis' : plan.id === 'empresarial' ? 'Contactar Ventas' : 'Seleccionar'}
                         </button>
                     </div>
                 ))}
