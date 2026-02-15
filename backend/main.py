@@ -23,7 +23,7 @@ import time
 import json
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Union
 import logging
 from logging.handlers import RotatingFileHandler
 import urllib3
@@ -178,7 +178,7 @@ class GlobalAdSchema(BaseModel):
     ad_scripts: Optional[List[str]] = []
 
 class ChatMessageSchema(BaseModel):
-    receiver_id: int
+    receiver_id: Union[int, str]
     body: str
 
 class MessageSchema(BaseModel):
@@ -2198,13 +2198,37 @@ async def get_chat_conversations(
     threads = result.scalars().all()
     
     result_list = []
+    
+    # Add Guest Sessions (Benry Support)
+    # Get recent messages with session_id from/for this user (as receiver)
+    guest_query = select(Message).where(and_(Message.receiver_id == current_user.id, Message.session_id != None)).order_by(Message.created_at.desc())
+    guest_res = await db.execute(guest_query)
+    guest_msgs = guest_res.scalars().all()
+    
+    # Group by session_id
+    seen_sessions = set()
+    for gm in guest_msgs:
+        if gm.session_id not in seen_sessions:
+            seen_sessions.add(gm.session_id)
+            result_list.append({
+                'partner': {
+                    'id': f"guest_{gm.session_id}",
+                    'username': f"GUEST: {gm.session_id[:8]}",
+                    'role': 'guest',
+                    'is_guest': True,
+                    'session_id': gm.session_id
+                },
+                'last_message': gm.body[:50] + "..." if len(gm.body) > 50 else gm.body,
+                'last_message_at': gm.created_at.isoformat(),
+                'unread_count': 1 if not gm.is_read else 0
+            })
+
     for thread in threads:
         partner_id = thread.participant_2_id if thread.participant_1_id == current_user.id else thread.participant_1_id
         
         partner_res = await db.execute(select(User).where(User.id == partner_id))
         partner = partner_res.scalar_one_or_none()
         
-        # Calculate real unread count for this partner
         unread_res = await db.execute(
             select(func.count(Message.id)).where(
                 and_(
@@ -2215,8 +2239,6 @@ async def get_chat_conversations(
             )
         )
         real_unread_count = unread_res.scalar_one()
-
-        # Get last message body from cache or fetch if missing
         last_msg = thread.last_subject or "S/M"
         
         if partner:
@@ -2232,49 +2254,49 @@ async def get_chat_conversations(
             })
     
     return result_list
-
 @app.get("/admin/chat/messages/{partner_id}")
 async def get_chat_messages(
-    partner_id: int,
+    partner_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all messages with partner and mark as read"""
-    query = select(Message).where(
-        and_(
-            Message.is_alert == False,
-            or_(
-                and_(Message.sender_id == current_user.id, Message.receiver_id == partner_id),
-                and_(Message.sender_id == partner_id, Message.receiver_id == current_user.id)
+    """Get all messages with partner (Internal or Guest)"""
+    if partner_id.startswith("guest_"):
+        session_id = partner_id.replace("guest_", "")
+        query = select(Message).where(Message.session_id == session_id).order_by(Message.created_at.asc())
+    else:
+        pid = int(partner_id)
+        query = select(Message).where(
+            and_(
+                Message.is_alert == False,
+                or_(
+                    and_(Message.sender_id == current_user.id, Message.receiver_id == pid),
+                    and_(Message.sender_id == pid, Message.receiver_id == current_user.id)
+                )
             )
-        )
-    ).order_by(Message.created_at.asc())
+        ).order_by(Message.created_at.asc())
     
     result = await db.execute(query)
     messages = result.scalars().all()
     
-    # Mark as read in Thread
-    p1 = min(current_user.id, partner_id)
-    p2 = max(current_user.id, partner_id)
-    t_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
-    thread = t_res.scalar_one_or_none()
-    if thread:
-        if thread.participant_1_id == current_user.id:
-            thread.is_read_by_1 = True
-        else:
-            thread.is_read_by_2 = True
-            
-    # Mark individual messages as read
-    await db.execute(
-        update(Message)
-        .where(and_(
-            Message.sender_id == partner_id,
-            Message.receiver_id == current_user.id,
-            Message.is_read == False
-        ))
-        .values(is_read=True)
-    )
+    # Mark messages as read
+    for msg in messages:
+        if msg.receiver_id == current_user.id:
+            msg.is_read = True
     
+    # Mark Thread as read if internal
+    if not partner_id.startswith("guest_"):
+        pid = int(partner_id)
+        p1 = min(current_user.id, pid)
+        p2 = max(current_user.id, pid)
+        t_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
+        thread = t_res.scalar_one_or_none()
+        if thread:
+            if thread.participant_1_id == current_user.id:
+                thread.is_read_by_1 = True
+            else:
+                thread.is_read_by_2 = True
+            
     await db.commit()
     return messages
 
@@ -2284,69 +2306,82 @@ async def send_chat_message(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Send a chat message (Internal Messaging 2.0)"""
-    receiver_id = chat_data.receiver_id
+    """Send a chat message (Internal or Guest)"""
     body = chat_data.body
-
-    # Verify receiver
-    receiver_res = await db.execute(select(User).where(User.id == receiver_id))
-    receiver = receiver_res.scalar_one_or_none()
-    if not receiver: raise HTTPException(404, "Destinatario no encontrado")
+    receiver_input = str(chat_data.receiver_id)
+    session_id = None
+    receiver_id = None
     
-    # Check Blocks
-    from models import BlockedUser
-    block = await db.execute(select(BlockedUser).where(
-        or_(
-            and_(BlockedUser.blocker_id == receiver_id, BlockedUser.blocked_id == current_user.id),
-            and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == receiver_id)
-        )
-    ))
-    if block.scalar_one_or_none():
-        raise HTTPException(403, "Comunicación bloqueada entre estos usuarios")
-
-    # Handle Thread
-    p1 = min(current_user.id, receiver_id)
-    p2 = max(current_user.id, receiver_id)
-    
-    thread_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
-    thread = thread_res.scalar_one_or_none()
-    
-    if not thread:
-        thread = ChatThread(
-            participant_1_id=p1,
-            participant_2_id=p2,
-            last_message_at=datetime.utcnow(),
-            last_subject=body[:100]
-        )
-        db.add(thread)
-    
-    # Update thread
-    thread.last_message_at = datetime.utcnow()
-    thread.last_subject = body[:100]
-    if thread.participant_1_id == receiver_id:
-        thread.is_read_by_1 = False
-        thread.is_hidden_by_1 = False
-        thread.is_read_by_2 = True
-        thread.is_hidden_by_2 = False
+    if receiver_input.startswith("guest_"):
+        session_id = receiver_input.replace("guest_", "")
     else:
-        thread.is_read_by_2 = False
-        thread.is_hidden_by_2 = False
-        thread.is_read_by_1 = True
-        thread.is_hidden_by_1 = False
+        try:
+            receiver_id = int(receiver_input)
+            receiver_res = await db.execute(select(User).where(User.id == receiver_id))
+            receiver = receiver_res.scalar_one_or_none()
+            if not receiver:
+                raise HTTPException(404, "Destinatario no encontrado")
+        except ValueError:
+            raise HTTPException(400, "ID de destinatario inválido")
+
+    if not session_id:
+        # Internal Chat Logic
+        if not receiver_id:
+            raise HTTPException(400, "receiver_id es requerido para chats internos")
+            
+        # Check Blocks
+        from models import BlockedUser
+        block = await db.execute(select(BlockedUser).where(
+            or_(
+                and_(BlockedUser.blocker_id == receiver_id, BlockedUser.blocked_id == current_user.id),
+                and_(BlockedUser.blocker_id == current_user.id, BlockedUser.blocked_id == receiver_id)
+            )
+        ))
+        if block.scalar_one_or_none():
+            raise HTTPException(403, "Comunicación bloqueada entre estos usuarios")
+
+        # Handle Thread
+        p1 = min(current_user.id, receiver_id)
+        p2 = max(current_user.id, receiver_id)
+        
+        thread_res = await db.execute(select(ChatThread).where(and_(ChatThread.participant_1_id == p1, ChatThread.participant_2_id == p2)))
+        thread = thread_res.scalar_one_or_none()
+        
+        if not thread:
+            thread = ChatThread(
+                participant_1_id=p1,
+                participant_2_id=p2,
+                last_message_at=datetime.utcnow(),
+                last_subject=body[:100]
+            )
+            db.add(thread)
+        else:
+            thread.last_message_at = datetime.utcnow()
+            thread.last_subject = body[:100]
+            if thread.participant_1_id == receiver_id:
+                thread.is_read_by_1 = False
+                thread.is_hidden_by_1 = False
+                thread.is_read_by_2 = True
+                thread.is_hidden_by_2 = False
+            else:
+                thread.is_read_by_2 = False
+                thread.is_hidden_by_2 = False
+                thread.is_read_by_1 = True
+                thread.is_hidden_by_1 = False
 
     # Save Message
     msg = Message(
         sender_id=current_user.id,
         receiver_id=receiver_id,
-        subject="Chat Interno",
+        session_id=session_id,
+        subject="Chat Interno" if not session_id else "Soporte Benry",
         body=body,
         is_alert=False,
         created_at=datetime.utcnow()
     )
     db.add(msg)
     await db.commit()
-    await db.refresh(msg)
-    return msg
+    return {"status": "success"}
 
 @app.delete("/admin/chat/conversation/{partner_id}")
 async def delete_chat_conversation(
@@ -2919,6 +2954,8 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                 # 1. Send Email Notification
                 from utils.email_sender import send_email
                 notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+                admin_panel_url = os.getenv("VITE_ADMIN_URL", "https://admin.venridesscreen.com")
+                chat_url = f"{admin_panel_url}/#chat?session={session_id}"
                 
                 email_body = f"""
                 <html>
@@ -2930,7 +2967,10 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                             <strong style="color: #c8ff00;">Resumen de conversación:</strong><br><br>
                             <pre style="white-space: pre-wrap; font-family: inherit;">{summary}</pre>
                         </div>
-                        <p style="margin-top: 15px; color: #c8ff00; font-weight: bold;">Session ID: {session_id}</p>
+                        <div style="margin-top: 25px; text-align: center;">
+                            <a href="{chat_url}" style="background: #ff4444; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">ABRIR CANAL DE SOPORTE</a>
+                        </div>
+                        <p style="margin-top: 15px; color: #c8ff00; font-size: 12px;">Session ID: {session_id}</p>
                         <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
                         <p style="font-size: 11px; color: #666;">Benry AI — VenridesScreenS</p>
                     </div>
@@ -2940,29 +2980,30 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                 
                 send_email(
                     to=notification_email,
-                    subject="🔔 Benry: Cliente requiere atención humana",
+                    subject=f"🔔 SOPORTE: Cliente esperando ({session_id[:8]})",
                     body=email_body,
                     html=True
                 )
                 
                 # 2. Create internal message for Admin Master
                 async with AsyncSessionLocal() as db:
-                    # Find Admin Master (role: admin_master)
+                    # Find Admin Master
                     from models import User, Message
                     admin_res = await db.execute(select(User).where(User.role == "admin_master"))
                     admin_master = admin_res.scalar()
                     
                     if admin_master:
                         new_msg = Message(
-                            sender_id=None, # System/Benry
+                            sender_id=None, 
                             receiver_id=admin_master.id,
-                            subject="🔔 Soporte Benry: Atención Humana Requerida",
-                            body=f"Un cliente está esperando en la landing page.\n\nSESIÓN: {session_id}\n\nRESUMEN:\n{summary}",
+                            session_id=session_id,
+                            subject="🎌 Soporte Benry: Atención Requerida",
+                            body=f"Cliente esperando atención en vivo.\n\nRESUMEN:\n{summary}",
                             is_alert=True
                         )
                         db.add(new_msg)
                         await db.commit()
-                        logger.info(f"Benry handoff message created for admin {admin_master.id}")
+                        logger.info(f"Benry support notification created for session {session_id}")
                 
             except Exception as e:
                 logger.warning(f"Failed to process Benry handoff: {e}")

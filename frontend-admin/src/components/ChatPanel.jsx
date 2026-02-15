@@ -88,8 +88,9 @@ const ChatPanel = ({ token, currentUser }) => {
 
     // Block user
     const blockUser = async () => {
-        if (!selectedPartner) return;
+        if (!selectedPartner || selectedPartner.is_guest) return;
         if (!window.confirm(`¿Seguro que deseas bloquear a ${selectedPartner.username}?`)) return;
+        // ...
 
         try {
             const res = await fetch(`${API_BASE}/admin/chat/block?blocked_id=${selectedPartner.id}`, {
@@ -238,10 +239,13 @@ const ChatPanel = ({ token, currentUser }) => {
                     <>
                         <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h3 style={{ margin: 0 }}>{selectedPartner.username}</h3>
+                                <h3 style={{ margin: 0, color: selectedPartner.is_guest ? 'var(--primary-color)' : 'inherit' }}>
+                                    {selectedPartner.is_guest ? '🤖 ' : ''}{selectedPartner.username}
+                                </h3>
                                 <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '0.25rem' }}>
-                                    {selectedPartner.role === 'admin_master' ? 'Administrador Master' :
-                                        selectedPartner.role === 'admin_empresa' ? 'Admin Empresa' : 'Operador'}
+                                    {selectedPartner.is_guest ? 'Cliente en Landing Page (Benry)' :
+                                        selectedPartner.role === 'admin_master' ? 'Administrador Master' :
+                                            selectedPartner.role === 'admin_empresa' ? 'Admin Empresa' : 'Operador'}
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -254,12 +258,13 @@ const ChatPanel = ({ token, currentUser }) => {
                         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {messages.map(msg => {
                                 const isSent = msg.sender_id === currentUser.id;
+                                const isSystem = !msg.sender_id && !msg.session_id;
                                 return (
                                     <div
                                         key={msg.id}
                                         style={{
-                                            alignSelf: isSent ? 'flex-end' : 'flex-start',
-                                            maxWidth: '70%'
+                                            alignSelf: isSent ? 'flex-end' : isSystem ? 'center' : 'flex-start',
+                                            maxWidth: isSystem ? '90%' : '70%'
                                         }}
                                     >
                                         <div
