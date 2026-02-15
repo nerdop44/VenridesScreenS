@@ -8,7 +8,6 @@ const PlanSignupModal = ({ isOpen, onClose, planName }) => {
         telefono: '',
         empresa: '',
         tipo_negocio: '',
-        pantallas_estimadas: '',
         mensaje: ''
     });
 
@@ -41,7 +40,6 @@ const PlanSignupModal = ({ isOpen, onClose, planName }) => {
                     telefono: '',
                     empresa: '',
                     tipo_negocio: '',
-                    pantallas_estimadas: '',
                     mensaje: ''
                 });
                 setSubmitStatus(null);
@@ -160,7 +158,7 @@ const PlanSignupModal = ({ isOpen, onClose, planName }) => {
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">
-                        <div>
+                        <div className="col-span-2">
                             <label className="block text-sm font-mono uppercase tracking-wider mb-2">
                                 Tipo de Negocio *
                             </label>
@@ -180,26 +178,6 @@ const PlanSignupModal = ({ isOpen, onClose, planName }) => {
                                 <option value="Centro Comercial">Centro Comercial</option>
                                 <option value="Oficina">Oficina Corporativa</option>
                                 <option value="Otro">Otro</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-mono uppercase tracking-wider mb-2">
-                                Pantallas Estimadas *
-                            </label>
-                            <select
-                                name="pantallas_estimadas"
-                                value={formData.pantallas_estimadas}
-                                onChange={handleChange}
-                                required
-                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 focus:border-primary focus:outline-none transition-colors"
-                            >
-                                <option value="">Selecciona...</option>
-                                <option value="1-2">1-2 pantallas</option>
-                                <option value="3-5">3-5 pantallas</option>
-                                <option value="6-10">6-10 pantallas</option>
-                                <option value="11-20">11-20 pantallas</option>
-                                <option value="20+">Más de 20</option>
                             </select>
                         </div>
                     </div>

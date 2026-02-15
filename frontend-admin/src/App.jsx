@@ -113,11 +113,13 @@ const GlobalStyles = () => (
             transition: all 0.3s;
         }
         .sidebar-header-custom {
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.8rem;
+            text-align: center;
+            gap: 1rem;
         }
         .sidebar-content-custom {
             flex: 1;
@@ -1188,10 +1190,10 @@ function App() {
                 <GlobalStyles />
                 <aside className="admin-sidebar">
                     <div className="sidebar-header-custom">
-                        <img src="/venrides_logo.png" alt="Logo" style={{ height: '35px' }} />
-                        <div>
-                            <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--primary-color)', lineHeight: 1 }}>MASTER</div>
-                            <div style={{ fontSize: '0.65rem', opacity: 0.6, fontWeight: 'bold' }}>NETWORK CONTROL</div>
+                        <img src="/venrides_logo.png" alt="Logo" style={{ height: '60px', marginBottom: '0.5rem' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--primary-color)', lineHeight: 1, letterSpacing: '0.1rem' }}>MASTER</div>
+                            <div style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 'bold', textTransform: 'uppercase', marginTop: '0.2rem' }}>Network Control Center</div>
                         </div>
                     </div>
                     <div className="sidebar-content-custom">
