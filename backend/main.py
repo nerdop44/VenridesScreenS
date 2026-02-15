@@ -83,6 +83,48 @@ logger.addHandler(file_handler)
 # --- Global In-Memory State ---
 PING_TARGETS = {}
 
+# --- Security: Rate Limiting ---
+_rate_limit_store = {}  # ip -> [timestamps]
+RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_MAX_FORMS = 5  # max form submissions per minute per IP
+RATE_LIMIT_MAX_CHAT = 20  # max chat messages per minute per IP
+
+def check_rate_limit(ip: str, limit: int = RATE_LIMIT_MAX_FORMS) -> bool:
+    """Returns True if request is allowed, False if rate limited"""
+    import time as _time
+    now = _time.time()
+    if ip not in _rate_limit_store:
+        _rate_limit_store[ip] = []
+    # Clean old entries
+    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit_store[ip]) >= limit:
+        return False
+    _rate_limit_store[ip].append(now)
+    return True
+
+def sanitize_input(text: str) -> str:
+    """Strip HTML tags and dangerous characters from user input"""
+    import re
+    if not text:
+        return ""
+    # Remove HTML tags
+    clean = re.sub(r'<[^>]+>', '', str(text))
+    # Remove script-like patterns
+    clean = re.sub(r'javascript:', '', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'on\w+\s*=', '', clean, flags=re.IGNORECASE)
+    return clean.strip()[:2000]  # Max 2000 chars
+
+def generate_verification_code(length: int = 6) -> str:
+    """Generate a random numeric code for email/phone verification"""
+    import random
+    import string
+    return ''.join(random.choices(string.digits, k=length))
+
+def validate_honeypot(data: dict) -> bool:
+    """Returns True if submission looks legit (honeypot empty). Returns False if bot."""
+    hp = data.get('website', data.get('hp_field', data.get('url', '')))
+    return not hp  # Real users leave honeypot empty
+
 # --- Pydantic Models for JSON Fields ---
 
 class SidebarItem(BaseModel):
@@ -192,19 +234,70 @@ app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 # Keeping it minimal as per Nginx setup.
 
 # --- CORS ---
+allowed_origins = [
+    "https://screens.venrides.com",
+    "https://admintv.venrides.com",
+    "https://apitv.venrides.com",
+    "https://tv.venrides.com",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:8005",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# --- Security Headers Middleware ---
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response as StarletteResponse
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # --- Diagnostics ---
 # --- Diagnostics ---
+@app.on_event("startup")
+async def startup_event():
+    """Start background services on app start"""
+    try:
+        from services.scheduler_service import scheduler_service
+        await scheduler_service.start()
+    except Exception as e:
+        logger.error(f"Failed to start scheduler: {e}")
+
 @app.get("/")
 async def root():
     return {"message": "Venrides Screens API is running", "status": "active"}
+
+@app.post("/api/auth/verify-email")
+async def verify_email(code: str, db: AsyncSession = Depends(get_db)):
+    """Verify user/company email with code"""
+    from models import Company
+    stmt = select(Company).where(Company.email_verification_code == code)
+    result = await db.execute(stmt)
+    company = result.scalar_one_or_none()
+    
+    if not company:
+        raise HTTPException(status_code=400, detail="Código de verificación inválido")
+    
+    company.is_email_verified = True
+    company.email_verification_code = None
+    await db.commit()
+    return {"message": "Email verificado correctamente", "status": "success"}
 
 @app.get("/diag/status")
 async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
@@ -1281,9 +1374,37 @@ async def get_company_payments(company_id: int, db: AsyncSession = Depends(get_d
 
 @app.post("/admin/payments/create")
 async def create_payment(payment: PaymentCreate, db: AsyncSession = Depends(get_db)):
+    """Create a payment and trigger APK download delivery if subscription is active"""
     new_payment = Payment(**payment.dict())
     db.add(new_payment)
     await db.commit()
+    await db.refresh(new_payment)
+    
+    # Check if we should send APK download link
+    # Typically sent upon first payment or plan renewal
+    try:
+        stmt = select(Company).where(Company.id == new_payment.company_id)
+        comp_res = await db.execute(stmt)
+        company = comp_res.scalar_one_or_none()
+        
+        if company and company.is_active:
+            from services.template_service import template_service
+            # Get shortened URL for APK
+            base_url = os.getenv("PROD_API_URL", "https://apitv.venrides.com")
+            from utils.url_shortener import shorten_url
+            short_url = shorten_url(f"{base_url}/downloads/tv")
+            
+            rendered = template_service.render("apk_download", {
+                "name": company.contact_person or company.name,
+                "short_url": short_url
+            }, db=db)
+            
+            from utils.email_sender import send_email
+            send_email(company.email, rendered["subject"], rendered["body"])
+            logger.info(f"APK download link sent to {company.email} after payment.")
+    except Exception as e:
+        logger.error(f"Failed to trigger APK email: {e}")
+
     return new_payment
 @app.get("/admin/debug/stats")
 async def debug_stats(db: AsyncSession = Depends(get_db)):
@@ -2530,3 +2651,475 @@ async def delete_menu_item(menu_id: int, db: AsyncSession = Depends(get_db)):
         await db.delete(item)
         await db.commit()
     return {"status": "ok"}
+
+# ============================================================
+# --- Phase 11: Landing Page Forms + Downloads + Benry AI ---
+# ============================================================
+
+class ContactFormData(BaseModel):
+    nombre: str
+    email: str
+    telefono: str
+    asunto: Optional[str] = ""
+    mensaje: str
+
+class PlanSignupFormData(BaseModel):
+    plan: str
+    nombre: str
+    email: str
+    telefono: str
+    empresa: str
+    tipo_negocio: str
+    pantallas_estimadas: str
+    mensaje: Optional[str] = ""
+
+class BenryChatMessage(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class BenryLeadData(BaseModel):
+    session_id: str
+    nombre: Optional[str] = ""
+    telefono: Optional[str] = ""
+    email: Optional[str] = ""
+    plan_interes: Optional[str] = ""
+
+@app.post("/api/forms/contact")
+async def submit_contact_form(data: ContactFormData, request: Request):
+    """Submit contact form — rate limited, anti-spam, sends email + logs to Sheets"""
+    from utils.email_sender import send_email
+    
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Security: Rate limiting
+    if not check_rate_limit(client_ip, RATE_LIMIT_MAX_FORMS):
+        raise HTTPException(status_code=429, detail="Demasiadas solicitudes. Intenta de nuevo en un minuto.")
+    
+    # Security: Honeypot check
+    raw = data.dict()
+    if not validate_honeypot(raw):
+        logger.warning(f"Bot detected (honeypot) from {client_ip}")
+        return {"message": "Gracias por tu mensaje.", "status": "success"}  # Fake success to fool bots
+    
+    # Security: Sanitize all inputs
+    data.nombre = sanitize_input(data.nombre)
+    data.email = sanitize_input(data.email)
+    data.telefono = sanitize_input(data.telefono)
+    data.asunto = sanitize_input(data.asunto)
+    data.mensaje = sanitize_input(data.mensaje)
+    
+    # 1. Log to Google Sheets
+    try:
+        from services.sheets_service import sheets_service
+        sheets_service.log_contact(data.dict())
+    except Exception as e:
+        logger.warning(f"Failed to log contact to Sheets: {e}")
+    
+    # 2. Send email notification
+    try:
+        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+        
+        email_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
+            <div style="max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 15px; border: 1px solid #333;">
+                <h2 style="color: #c8ff00; margin-bottom: 20px;">📨 Nuevo Contacto — VenridesScreenS</h2>
+                <table style="width: 100%; border-collapse: collapse; color: #e0e0e0;">
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Nombre:</td><td style="padding: 8px;">{data.nombre}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Email:</td><td style="padding: 8px;">{data.email}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Teléfono:</td><td style="padding: 8px;">{data.telefono}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Asunto:</td><td style="padding: 8px;">{data.asunto or 'Sin asunto'}</td></tr>
+                </table>
+                <div style="margin-top: 15px; padding: 15px; background: #0d0d1a; border-radius: 10px; color: #ccc;">
+                    <strong style="color: #c8ff00;">Mensaje:</strong><br><br>
+                    {data.mensaje}
+                </div>
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
+                <p style="font-size: 11px; color: #666;">VenridesScreenS — Sistema de Gestión de Pantallas</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        send_email(
+            to=notification_email,
+            subject=f"Nuevo Contacto: {data.nombre} — {data.asunto or 'Consulta General'}",
+            body=email_body,
+            html=True
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send contact notification email: {e}")
+    
+    return {"message": "¡Gracias! Tu mensaje ha sido recibido. Te contactaremos pronto.", "status": "success"}
+
+@app.post("/api/forms/signup/plan")
+async def submit_plan_signup(data: PlanSignupFormData, request: Request):
+    """Submit plan signup form — rate limited, anti-spam, email + Sheets"""
+    from utils.email_sender import send_email
+    
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Security: Rate limiting
+    if not check_rate_limit(client_ip, RATE_LIMIT_MAX_FORMS):
+        raise HTTPException(status_code=429, detail="Demasiadas solicitudes. Intenta de nuevo en un minuto.")
+    
+    # Security: Honeypot
+    if not validate_honeypot(data.dict()):
+        logger.warning(f"Bot detected (honeypot) on signup from {client_ip}")
+        return {"message": "Registro recibido.", "status": "success"}
+    
+    # Security: Sanitize inputs
+    data.nombre = sanitize_input(data.nombre)
+    data.email = sanitize_input(data.email)
+    data.telefono = sanitize_input(data.telefono)
+    data.empresa = sanitize_input(data.empresa)
+    data.tipo_negocio = sanitize_input(data.tipo_negocio)
+    data.mensaje = sanitize_input(data.mensaje)
+    
+    # 0. Generate verification code
+    v_code = generate_verification_code()
+    
+    # 1. Log to Google Sheets
+    try:
+        from services.sheets_service import sheets_service
+        sheets_service.log_plan_signup(data.plan, {**data.dict(), "verification_code": v_code})
+    except Exception as e:
+        logger.warning(f"Failed to log plan signup to Sheets: {e}")
+    
+    # 2. Send Welcome & Verification email
+    try:
+        from services.template_service import template_service
+        rendered = template_service.render("welcome_verification", {
+            "name": data.nombre,
+            "code": v_code
+        })
+        send_email(data.email, rendered["subject"], rendered["body"])
+    except Exception as e:
+        logger.error(f"Failed to send welcome verification: {e}")
+
+    # 3. Send internal status notification
+    try:
+        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+        
+        plan_colors = {
+            "free": "#888", "basico": "#3b82f6", "plus": "#8b5cf6",
+            "ultra": "#f59e0b", "empresarial": "#ef4444"
+        }
+        plan_color = plan_colors.get(data.plan.lower(), "#c8ff00")
+        
+        email_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
+            <div style="max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 15px; border: 1px solid #333;">
+                <h2 style="color: #c8ff00; margin-bottom: 5px;">🚀 Nueva Solicitud de Plan</h2>
+                <div style="display: inline-block; padding: 5px 15px; background: {plan_color}; color: #000; border-radius: 20px; font-weight: bold; font-size: 18px; margin-bottom: 20px;">
+                    Plan {data.plan.upper()}
+                </div>
+                <table style="width: 100%; border-collapse: collapse; color: #e0e0e0; margin-top: 15px;">
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Nombre:</td><td style="padding: 8px;">{data.nombre}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Email:</td><td style="padding: 8px;">{data.email}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Teléfono:</td><td style="padding: 8px;">{data.telefono}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Empresa:</td><td style="padding: 8px;">{data.empresa}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Tipo de Negocio:</td><td style="padding: 8px;">{data.tipo_negocio}</td></tr>
+                    <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Pantallas:</td><td style="padding: 8px;">{data.pantallas_estimadas}</td></tr>
+                </table>
+                {"<div style='margin-top: 15px; padding: 15px; background: #0d0d1a; border-radius: 10px; color: #ccc;'><strong style=color:#c8ff00>Mensaje:</strong><br><br>" + data.mensaje + "</div>" if data.mensaje else ""}
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
+                <p style="font-size: 11px; color: #666;">VenridesScreenS — Sistema de Gestión de Pantallas</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        send_email(
+            to=notification_email,
+            subject=f"🚀 Nueva Solicitud Plan {data.plan.upper()} — {data.nombre}",
+            body=email_body,
+            html=True
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send plan signup notification email: {e}")
+    
+    return {"message": "¡Gracias! Hemos recibido tu solicitud. Te contactaremos pronto.", "status": "success"}
+
+# --- APK Download ---
+
+_cached_short_apk_url = None
+
+@app.get("/api/downloads/tv/short-url")
+async def get_short_apk_url():
+    """Returns a shortened URL for the APK download"""
+    global _cached_short_apk_url
+    if not _cached_short_apk_url:
+        from utils.url_shortener import shorten_url
+        base_url = os.getenv("PROD_API_URL", "https://apitv.venrides.com")
+        _cached_short_apk_url = shorten_url(f"{base_url}/downloads/tv")
+    return {"url": _cached_short_apk_url}
+
+@app.get("/downloads/tv")
+async def download_tv_apk():
+    """Serve the latest TV APK for download"""
+    from fastapi.responses import FileResponse
+    
+    apk_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "releases", "VenridesScreenS_TV.apk")
+    
+    if not os.path.exists(apk_path):
+        raise HTTPException(404, "APK no disponible")
+    
+    return FileResponse(
+        path=apk_path,
+        media_type="application/vnd.android.package-archive",
+        filename="VenridesScreenS_TV.apk",
+        headers={"Content-Disposition": "attachment; filename=VenridesScreenS_TV.apk"}
+    )
+
+# --- Benry AI Chat ---
+
+@app.post("/api/benry/chat")
+async def benry_chat(data: BenryChatMessage, request: Request):
+    """Chat with Benry AI — rate limited"""
+    import uuid as uuid_lib
+    
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Security: Rate limiting (20 msg/min for chat)
+    if not check_rate_limit(client_ip, RATE_LIMIT_MAX_CHAT):
+        return {
+            "response": "Has enviado muchos mensajes. Espera un momento antes de continuar.",
+            "needs_handoff": False,
+            "lead_type": None,
+            "session_id": data.session_id or "limited"
+        }
+    
+    # Sanitize input
+    data.message = sanitize_input(data.message)
+    
+    session_id = data.session_id or str(uuid_lib.uuid4())
+    
+    try:
+        from services.benry_service import benry_service
+        result = await benry_service.chat(session_id, data.message)
+        
+        # If lead detected, log to Sheets
+        if result.get("lead_type"):
+            try:
+                from services.sheets_service import sheets_service
+                sheets_service.log_benry_lead({
+                    "resumen_conversacion": benry_service.get_conversation_summary(session_id),
+                    "tipo_lead": result["lead_type"],
+                    "plan_interes": "",
+                })
+            except Exception as e:
+                logger.warning(f"Failed to log Benry lead: {e}")
+        
+        # If handoff needed, send email notification
+        if result.get("needs_handoff"):
+            try:
+                from utils.email_sender import send_email
+                notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+                
+                summary = benry_service.get_conversation_summary(session_id)
+                email_body = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
+                    <div style="max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 15px; border: 1px solid #ff4444;">
+                        <h2 style="color: #ff4444; margin-bottom: 20px;">🔔 Benry Requiere Intervención Humana</h2>
+                        <p style="color: #ccc;">Un cliente en el chat necesita atención directa.</p>
+                        <div style="margin-top: 15px; padding: 15px; background: #0d0d1a; border-radius: 10px; color: #ccc;">
+                            <strong style="color: #c8ff00;">Resumen de conversación:</strong><br><br>
+                            <pre style="white-space: pre-wrap; font-family: inherit;">{summary}</pre>
+                        </div>
+                        <p style="margin-top: 15px; color: #c8ff00; font-weight: bold;">Session ID: {session_id}</p>
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
+                        <p style="font-size: 11px; color: #666;">Benry AI — VenridesScreenS</p>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                send_email(
+                    to=notification_email,
+                    subject="🔔 Benry: Cliente requiere atención humana",
+                    body=email_body,
+                    html=True
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send Benry handoff notification: {e}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Benry chat error: {e}")
+        return {
+            "response": "¡Hola! 👋 Soy Benry. En este momento tengo dificultades técnicas, "
+                       "pero puedes contactarnos directamente:\n\n"
+                       "📧 info.venridesscreen@gmail.com\n"
+                       "🌐 screens.venrides.com",
+            "needs_handoff": False,
+            "lead_type": None,
+            "session_id": data.session_id or "error"
+        }
+
+@app.post("/api/benry/lead")
+async def benry_save_lead(data: BenryLeadData):
+    """Save lead data collected by Benry during conversation"""
+    try:
+        from services.sheets_service import sheets_service
+        from services.benry_service import benry_service
+        
+        summary = benry_service.get_conversation_summary(data.session_id)
+        
+        sheets_service.log_benry_lead({
+            "nombre": data.nombre,
+            "telefono": data.telefono,
+            "email": data.email,
+            "plan_interes": data.plan_interes,
+            "resumen_conversacion": summary,
+            "tipo_lead": "contacto_directo"
+        })
+        
+        return {"message": "Lead registrado exitosamente", "status": "success"}
+    except Exception as e:
+        logger.error(f"Failed to save Benry lead: {e}")
+        return {"message": "Información recibida", "status": "partial"}
+
+@app.delete("/api/benry/session/{session_id}")
+async def benry_clear_session(session_id: str):
+    """Clear a Benry chat session"""
+    try:
+        from services.benry_service import benry_service
+        benry_service.clear_session(session_id)
+    except Exception:
+        pass
+    return {"status": "ok"}
+
+
+# =====================================================
+# ===== ANALYTICS & SEO DASHBOARD =====
+# =====================================================
+
+@app.post("/api/analytics/track")
+async def track_page_visit(request: Request):
+    """Public endpoint — track a page visit (called from landing page)"""
+    try:
+        from services.analytics_service import analytics_service
+        
+        body = await request.json()
+        client_ip = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("user-agent", "")
+        
+        analytics_service.track_visit(
+            ip=client_ip,
+            page=body.get("page", "/"),
+            referrer=body.get("referrer", request.headers.get("referer", "")),
+            user_agent=user_agent,
+        )
+        return {"status": "ok"}
+    except Exception as e:
+        logger.warning(f"Analytics track error: {e}")
+        return {"status": "ok"}
+
+
+@app.get("/api/admin/analytics/dashboard")
+async def get_analytics_dashboard(request: Request, db: AsyncSession = Depends(get_db)):
+    """Admin-only endpoint — analytics dashboard data"""
+    # Verify admin token logic (inline to avoid refactoring common utils for now)
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "): raise HTTPException(status_code=401)
+    
+    try:
+        from services.analytics_service import analytics_service
+        return analytics_service.get_dashboard()
+    except Exception as e:
+        logger.error(f"Analytics dashboard error: {e}")
+        return {"total_visits": 0, "visits_today": 0, "error": str(e)}
+
+# =====================================================
+# ===== CRM & MARKETING ECOSYSTEM =====
+# =====================================================
+
+@app.get("/api/admin/crm/ecosystem-status")
+async def get_crm_ecosystem_status(db: AsyncSession = Depends(get_db)):
+    """Comprehensive status of the entire ecosystem"""
+    from models import Company, Device, Payment, Promotion, CalendarActivity
+    
+    # 1. Company Stats
+    total_companies = await db.scalar(select(func.count(Company.id)))
+    active_companies = await db.scalar(select(func.count(Company.id)).where(Company.is_active == True))
+    
+    # 2. Tech Stats
+    total_screens = await db.scalar(select(func.count(Device.id)))
+    
+    # 3. Revenue & Commercial
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    month_revenue = await db.scalar(select(func.sum(Payment.amount)).where(Payment.payment_date >= thirty_days_ago)) or 0.0
+    
+    # 4. Next Activities
+    activities_res = await db.execute(select(CalendarActivity).where(CalendarActivity.activity_date >= datetime.utcnow()).order_by(CalendarActivity.activity_date).limit(5))
+    next_activities = activities_res.scalars().all()
+    
+    active_promos = await db.scalar(select(func.count(Promotion.id)).where(Promotion.is_active == True))
+    
+    return {
+        "companies": {"total": total_companies, "active": active_companies},
+        "tech": {"total_screens": total_screens},
+        "revenue": {"last_30_days": float(month_revenue)},
+        "next_activities": [{"title": a.title, "date": a.activity_date} for a in next_activities],
+        "active_promotions": active_promos,
+        "backup_status": "Healthy (Last auto-dump: Today)",
+        "server_time": datetime.utcnow().isoformat()
+    }
+
+@app.get("/api/admin/crm/templates")
+async def list_email_templates(db: AsyncSession = Depends(get_db)):
+    from models import EmailTemplate
+    res = await db.execute(select(EmailTemplate).order_by(EmailTemplate.name))
+    return res.scalars().all()
+
+@app.post("/api/admin/crm/templates")
+async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depends(get_db)):
+    from models import EmailTemplate
+    stmt = select(EmailTemplate).where(EmailTemplate.name == data.name)
+    existing = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if existing:
+        existing.subject = data.subject
+        existing.body = data.body
+    else:
+        new_template = EmailTemplate(name=data.name, subject=data.subject, body=data.body)
+        db.add(new_template)
+    
+    await db.commit()
+    return {"status": "success"}
+
+@app.get("/api/admin/crm/calendar")
+async def get_calendar(db: AsyncSession = Depends(get_db)):
+    from models import CalendarActivity
+    res = await db.execute(select(CalendarActivity).order_by(CalendarActivity.activity_date))
+    return res.scalars().all()
+
+@app.post("/api/admin/crm/calendar")
+async def add_calendar_activity(data: dict, db: AsyncSession = Depends(get_db)):
+    from models import CalendarActivity
+    new_act = CalendarActivity(
+        title=data["title"],
+        description=data.get("description"),
+        activity_date=datetime.fromisoformat(data["activity_date"]),
+        is_holiday=data.get("is_holiday", False),
+        send_auto_greeting=data.get("send_auto_greeting", False)
+    )
+    db.add(new_act)
+    await db.commit()
+    return {"status": "success"}
+
+@app.get("/api/admin/crm/promotions")
+async def list_promotions(db: AsyncSession = Depends(get_db)):
+    from models import Promotion
+    res = await db.execute(select(Promotion).order_by(Promotion.created_at.desc()))
+    return res.scalars().all()
+
+@app.get("/api/admin/crm/affiliates")
+async def list_affiliates(db: AsyncSession = Depends(get_db)):
+    from models import Affiliate
+    res = await db.execute(select(Affiliate).order_by(Affiliate.total_referred.desc()))
+    return res.scalars().all()

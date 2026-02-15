@@ -67,6 +67,22 @@ class Company(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # CRM & Automation Settings
+    birthday = Column(DateTime(timezone=True), nullable=True)
+    is_email_verified = Column(Boolean, default=False)
+    is_phone_verified = Column(Boolean, default=False)
+    email_verification_code = Column(String, nullable=True)
+    
+    # Toggle individual auto-notifications
+    # e.g., {"welcome": true, "expiry_7": true, "expiry_1": true, "birthday": false}
+    auto_notification_settings = Column(JSON, default=lambda: {
+        "welcome": True,
+        "billing": True,
+        "expiry_reminders": True,
+        "birthday_greetings": True,
+        "holiday_greetings": True
+    })
+
     @hybrid_property
     def total_screens(self):
         return len(self.devices)
@@ -272,3 +288,39 @@ class TicketMessage(Base):
 # I am editing the end of file. I will just add the classes here.
 # For User.tickets relationship, I'll need to update User class definition.
 
+# --- Phase 13 CRM & Marketing Models ---
+
+class Promotion(Base):
+    __tablename__ = "promotions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String, nullable=True)
+    code = Column(String, unique=True, index=True)
+    discount_pct = Column(Float, default=0.0)
+    valid_from = Column(DateTime(timezone=True))
+    valid_to = Column(DateTime(timezone=True))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Affiliate(Base):
+    __tablename__ = "affiliates"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, unique=True)
+    code = Column(String, unique=True, index=True)
+    commission_pct = Column(Float, default=10.0)
+    total_referred = Column(Integer, default=0)
+    total_earned = Column(Float, default=0.0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class CalendarActivity(Base):
+    __tablename__ = "calendar_activities"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String, nullable=True)
+    activity_date = Column(DateTime(timezone=True))
+    is_holiday = Column(Boolean, default=False)
+    send_auto_greeting = Column(Boolean, default=False)
+    greeting_template_id = Column(Integer, ForeignKey("email_templates.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

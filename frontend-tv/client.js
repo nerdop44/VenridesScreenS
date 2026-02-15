@@ -641,8 +641,9 @@ function updateBottomBar() {
     });
 
     // 4. Inject Ad Scripts (Google/Meta if provided)
-    if (data.ad_scripts && Array.isArray(data.ad_scripts)) {
-        data.ad_scripts.forEach(scriptCode => {
+    const configData = window.currentConfig || {};
+    if (configData.ad_scripts && Array.isArray(configData.ad_scripts)) {
+        configData.ad_scripts.forEach(scriptCode => {
             if (!document.querySelector(`[data-ad-script="${btoa(scriptCode).substring(0, 20)}"]`)) {
                 const container = document.createElement('div');
                 container.setAttribute('data-ad-script', btoa(scriptCode).substring(0, 20));
