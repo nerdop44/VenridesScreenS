@@ -2672,189 +2672,180 @@ const CrmPanel = ({ token }) => {
     const [templates, setTemplates] = useState([]);
     const [activities, setActivities] = useState([]);
     const [promos, setPromos] = useState([]);
+    const [variables, setVariables] = useState([]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [showActivityModal, setShowActivityModal] = useState(false);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [showNewTemplateModal, setShowNewTemplateModal] = useState(false);
+    const [showMassEmailModal, setShowMassEmailModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
-    const [newActivity, setNewActivity] = useState({ title: '', description: '', is_holiday: false, send_auto_greeting: false });
-
+    const [newActivity, setNewActivity] = useState({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' });
+    const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', body: '', category: 'general', is_active: true });
+    const [massEmail, setMassEmail] = useState({ template_id: null, promo_name: '', promo_code: '', promo_discount: '' });
+    const [sending, setSending] = useState(false);
+    const [seedStatus, setSeedStatus] = useState('');
     const fetchData = () => {
-        fetch(`${API_BASE}/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setTemplates);
-        fetch(`${API_BASE}/admin/crm/calendar`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setActivities);
-        fetch(`${API_BASE}/admin/crm/promotions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()).then(setPromos);
+        fetch(`${API_BASE}/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(d => setTemplates(Array.isArray(d) ? d : [])).catch(() => setTemplates([]));
+        fetch(`${API_BASE}/admin/crm/calendar`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(d => setActivities(Array.isArray(d) ? d : [])).catch(() => setActivities([]));
+        fetch(`${API_BASE}/admin/crm/promotions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(d => setPromos(Array.isArray(d) ? d : [])).catch(() => setPromos([]));
+        fetch(`${API_BASE}/admin/crm/templates/variables`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(d => setVariables(Array.isArray(d) ? d : [])).catch(() => { });
     };
-
     useEffect(() => { fetchData(); }, [token]);
-
-    const handleSaveActivity = async () => {
-        if (!newActivity.title || !selectedDate) return;
-        const res = await fetch(`${API_BASE}/admin/crm/calendar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ ...newActivity, activity_date: selectedDate.toISOString() })
-        });
-        if (res.ok) {
-            setShowActivityModal(false);
-            setNewActivity({ title: '', description: '', is_holiday: false, send_auto_greeting: false });
-            fetchData();
-        }
-    };
-
-    const handleSaveTemplate = async (template) => {
-        const res = await fetch(`${API_BASE}/admin/crm/templates`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(template)
-        });
-        if (res.ok) {
-            setShowTemplateModal(false);
-            fetchData();
-        }
-    };
-
-    // Calendar logic
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const days = [];
-
-        // Prev month days
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        for (let i = firstDay - 1; i >= 0; i--) {
-            days.push({ date: new Date(year, month - 1, prevMonthLastDay - i), otherMonth: true });
-        }
-        // Current month
-        for (let i = 1; i <= daysInMonth; i++) {
-            days.push({ date: new Date(year, month, i), currentMonth: true });
-        }
-        // Next month
-        const remaining = 42 - days.length;
-        for (let i = 1; i <= remaining; i++) {
-            days.push({ date: new Date(year, month + 1, i), otherMonth: true });
-        }
-        return days;
-    };
-
+    useEffect(() => { if (templates.length === 0 && !seedStatus) { setSeedStatus('seeding'); Promise.all([fetch(`${API_BASE}/admin/crm/templates/seed`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }), fetch(`${API_BASE}/admin/crm/calendar/holidays`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } })]).then(() => { setSeedStatus('done'); fetchData(); }).catch(() => setSeedStatus('error')); } }, [templates.length]);
+    const handleSaveActivity = async () => { if (!newActivity.title || !selectedDate) return; const r = await fetch(`${API_BASE}/admin/crm/calendar`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ...newActivity, activity_date: selectedDate.toISOString() }) }); if (r.ok) { setShowActivityModal(false); setNewActivity({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' }); fetchData(); } };
+    const handleDeleteActivity = async (id) => { if (!confirm('¿Eliminar esta actividad?')) return; await fetch(`${API_BASE}/admin/crm/calendar/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchData(); };
+    const handleSaveTemplate = async (t) => { const r = await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(t) }); if (r.ok) { setShowTemplateModal(false); fetchData(); } };
+    const handleCreateTemplate = async () => { if (!newTemplate.name || !newTemplate.subject) return; const r = await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(newTemplate) }); if (r.ok) { setShowNewTemplateModal(false); setNewTemplate({ name: '', subject: '', body: '', category: 'general', is_active: true }); fetchData(); } };
+    const handleDeleteTemplate = async (id) => { if (!confirm('¿Eliminar esta plantilla personalizada?')) return; const r = await fetch(`${API_BASE}/admin/crm/templates/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (r.ok) fetchData(); else { const d = await r.json(); alert(d.detail || 'Error'); } };
+    const handleRevertTemplate = async (id) => { if (!confirm('¿Restaurar esta plantilla a su versión original?')) return; const r = await fetch(`${API_BASE}/admin/crm/templates/${id}/revert`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); if (r.ok) { fetchData(); setShowTemplateModal(false); } };
+    const toggleTemplate = async (t) => { await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ...t, is_active: !t.is_active }) }); fetchData(); };
+    const handleSendMassEmail = async () => { setSending(true); try { const r = await fetch(`${API_BASE}/admin/crm/mass-email`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(massEmail) }); const d = await r.json(); alert(`✅ Enviados: ${d.sent} | Errores: ${d.errors} | Total: ${d.total}`); setShowMassEmailModal(false); } catch (e) { alert('Error al enviar'); } setSending(false); };
+    const insertVariable = (v) => { const ta = document.getElementById('tmpl-body-ed'); if (ta) { const s = ta.selectionStart, e = ta.selectionEnd, c = selectedTemplate?.body || ''; setSelectedTemplate({ ...selectedTemplate, body: c.substring(0, s) + v + c.substring(e) }); setTimeout(() => { ta.focus(); ta.setSelectionRange(s + v.length, s + v.length); }, 50); } else if (selectedTemplate) setSelectedTemplate({ ...selectedTemplate, body: (selectedTemplate.body || '') + v }); };
+    const insertVariableNew = (v) => { setNewTemplate({ ...newTemplate, body: (newTemplate.body || '') + v }); };
+    const getDaysInMonth = (date) => { const y = date.getFullYear(), m = date.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = [], pld = new Date(y, m, 0).getDate(); for (let i = fd - 1; i >= 0; i--) days.push({ date: new Date(y, m - 1, pld - i), otherMonth: true }); for (let i = 1; i <= dim; i++) days.push({ date: new Date(y, m, i), currentMonth: true }); const rem = 42 - days.length; for (let i = 1; i <= rem; i++) days.push({ date: new Date(y, m + 1, i), otherMonth: true }); return days; };
     const monthName = currentMonth.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
     const calendarDays = getDaysInMonth(currentMonth);
-
-    const toggleTemplate = async (tmpl) => {
-        const res = await fetch(`${API_BASE}/admin/crm/templates`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ ...tmpl, is_active: !tmpl.is_active })
-        });
-        if (res.ok) fetchData();
-    };
-
+    const catLabels = { bienvenida: '👋 Bienvenida', cobranza: '💰 Cobranza', marketing: '📣 Marketing', soporte: '🛠️ Soporte', general: '📋 General' };
+    const catColors = { bienvenida: '#10b981', cobranza: '#fbbf24', marketing: '#a855f7', soporte: '#00e5ff', general: '#6b7280' };
+    const grouped = {};
+    templates.forEach(t => { const c = t.category || 'general'; if (!grouped[c]) grouped[c] = []; grouped[c].push(t); });
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <section>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Mail size={18} /> Automatización de Email
-                </h3>
-                <div className="grid-2">
-                    {['welcome', 'apk_download', 'expiry_7', 'expiry_1', 'birthday'].map(t => {
-                        const tmpl = templates.find(x => x.name === t) || { name: t, subject: 'Sin configurar', body: '', is_active: false };
-                        return (
-                            <div key={t} className="glass-card" style={{ padding: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '0.9rem' }}>{t.replace('_', ' ')}</div>
-                                    <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{tmpl.subject}</div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <button onClick={() => { setSelectedTemplate(tmpl); setShowTemplateModal(true); }} className="btn" style={{ fontSize: '0.7rem', padding: '4px 12px' }}>Editar</button>
-                                    <label className="toggle-switch">
-                                        <input type="checkbox" checked={tmpl.is_active} onChange={() => toggleTemplate(tmpl)} />
-                                        <span className="slider round"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </section>
-
-            <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Calendar size={18} /> Calendario de Marketing
-                    </h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className="btn" onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))} style={{ padding: '4px' }}><Plus size={16} style={{ transform: 'rotate(45deg)' }} /></button>
-                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', minWidth: '150px', textAlign: 'center' }}>{monthName}</span>
-                        <button className="btn" onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))} style={{ padding: '4px' }}><Plus size={16} /></button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Mail size={18} /> Plantillas de Email ({templates.length})</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn" onClick={() => setShowMassEmailModal(true)} style={{ fontSize: '0.75rem', padding: '6px 14px', background: 'rgba(168,85,247,0.2)', borderColor: '#a855f7' }}>📨 Email Masivo</button>
+                        <button className="btn btn-primary" onClick={() => setShowNewTemplateModal(true)} style={{ fontSize: '0.75rem', padding: '6px 14px' }}>+ Nueva Plantilla</button>
                     </div>
                 </div>
-
+                {templates.length === 0 && seedStatus === 'seeding' && <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>⏳ Inicializando plantillas...</div>}
+                {Object.entries(grouped).map(([cat, tmpls]) => (
+                    <div key={cat} style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '0.5rem', color: catColors[cat] || '#888' }}>{catLabels[cat] || cat}</div>
+                        <div className="grid-2">
+                            {tmpls.map(tmpl => (
+                                <div key={tmpl.id || tmpl.name} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `3px solid ${catColors[tmpl.category] || '#666'}` }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{tmpl.is_system && <span title="Sistema" style={{ fontSize: '0.7rem', opacity: 0.5 }}>🔒 </span>}{tmpl.name.replace(/_/g, ' ')}</div>
+                                        <div style={{ fontSize: '0.7rem', opacity: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tmpl.subject}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                                        <button onClick={() => { setSelectedTemplate({ ...tmpl }); setShowTemplateModal(true); }} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }}>Editar</button>
+                                        {!tmpl.is_system && <button onClick={() => handleDeleteTemplate(tmpl.id)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px', color: '#ef4444', borderColor: '#ef4444' }}>✕</button>}
+                                        <label className="toggle-switch" style={{ transform: 'scale(0.8)' }}><input type="checkbox" checked={tmpl.is_active} onChange={() => toggleTemplate(tmpl)} /><span className="slider round"></span></label>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </section>
+            <section>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calendar size={18} /> Calendario de Marketing</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button className="btn" onClick={() => setCurrentMonth(new Date(new Date(currentMonth).setMonth(currentMonth.getMonth() - 1)))} style={{ padding: '4px 8px' }}>◀</button>
+                        <span style={{ textTransform: 'capitalize', fontWeight: 'bold', minWidth: '170px', textAlign: 'center' }}>{monthName}</span>
+                        <button className="btn" onClick={() => setCurrentMonth(new Date(new Date(currentMonth).setMonth(currentMonth.getMonth() + 1)))} style={{ padding: '4px 8px' }}>▶</button>
+                    </div>
+                </div>
                 <div className="calendar-container">
                     <div className="calendar-grid">
                         {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => <div key={d} className="calendar-day-header">{d}</div>)}
                         {calendarDays.map((day, i) => {
-                            const dateStr = day.date.toISOString().split('T')[0];
-                            const dayEvents = activities.filter(a => a.activity_date.split('T')[0] === dateStr);
-                            const dayPromos = promos.filter(p => p.valid_from && p.valid_from.split('T')[0] <= dateStr && p.valid_to && p.valid_to.split('T')[0] >= dateStr);
+                            const ds = day.date.toISOString().split('T')[0];
+                            const evts = activities.filter(a => a.activity_date && a.activity_date.split('T')[0] === ds);
+                            const dps = promos.filter(p => p.valid_from && p.valid_from.split('T')[0] <= ds && p.valid_to && p.valid_to.split('T')[0] >= ds);
                             const isToday = new Date().toDateString() === day.date.toDateString();
-
+                            const hasH = evts.some(e => e.is_holiday);
                             return (
-                                <div key={i} className={`calendar-day ${day.otherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`} onClick={() => { setSelectedDate(day.date); setShowActivityModal(true); }}>
-                                    <div className="calendar-date-number">{day.date.getDate()}</div>
-                                    {dayEvents.map((e, idx) => (
-                                        <div key={idx} className={`calendar-event ${e.is_holiday ? 'event-holiday' : 'event-activity'}`}>
-                                            {e.is_holiday ? '🎌' : '📅'} {e.title}
+                                <div key={i} className={`calendar-day ${day.otherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
+                                    style={hasH ? { background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)' } : {}}
+                                    onClick={() => { setSelectedDate(day.date); setNewActivity({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' }); setShowActivityModal(true); }}>
+                                    <div className="calendar-date-number" style={hasH ? { color: '#ef4444', fontWeight: 'bold' } : {}}>{day.date.getDate()}</div>
+                                    {evts.map((e, idx) => (
+                                        <div key={idx} className={`calendar-event ${e.is_holiday ? 'event-holiday' : 'event-activity'}`}
+                                            style={e.is_holiday ? { background: 'rgba(239,68,68,0.3)', color: '#fca5a5', borderLeft: '2px solid #ef4444' } : {}}
+                                            onClick={ev => ev.stopPropagation()}>
+                                            {e.is_holiday ? '🔴' : '📅'} {e.title}
+                                            <span onClick={ev => { ev.stopPropagation(); handleDeleteActivity(e.id); }} style={{ marginLeft: '4px', cursor: 'pointer', opacity: 0.5, fontSize: '0.6rem' }}>✕</span>
                                         </div>
                                     ))}
-                                    {dayPromos.map((p, idx) => (
-                                        <div key={idx} className="calendar-event event-promo">
-                                            🏷️ {p.code}
-                                        </div>
-                                    ))}
+                                    {dps.map((p, idx) => <div key={idx} className="calendar-event event-promo">🏷️ {p.code}</div>)}
                                 </div>
                             );
                         })}
                     </div>
                 </div>
             </section>
-
-            <Modal isOpen={showActivityModal} onClose={() => setShowActivityModal(false)} title={`Nueva Actividad: ${selectedDate?.toLocaleDateString()}`}>
+            <Modal isOpen={showActivityModal} onClose={() => setShowActivityModal(false)} title={`Agregar a: ${selectedDate?.toLocaleDateString('es-VE')}`}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label className="label">Título del Evento</label>
-                        <input value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} placeholder="Ej: Black Friday, Feriado..." />
+                        <label className="label">Tipo</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[{ id: 'evento', label: '📅 Evento' }, { id: 'feriado', label: '🔴 Feriado' }, { id: 'promocion', label: '🏷️ Promoción' }].map(t => (
+                                <button key={t.id} onClick={() => setNewActivity({ ...newActivity, type: t.id, is_holiday: t.id === 'feriado' })} className="btn" style={{ flex: 1, fontSize: '0.8rem', padding: '8px', background: newActivity.type === t.id ? 'rgba(200,255,0,0.2)' : '', borderColor: newActivity.type === t.id ? '#c8ff00' : '' }}>{t.label}</button>
+                            ))}
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={newActivity.is_holiday} onChange={e => setNewActivity({ ...newActivity, is_holiday: e.target.checked })} /> Es Feriado
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={newActivity.send_auto_greeting} onChange={e => setNewActivity({ ...newActivity, send_auto_greeting: e.target.checked })} /> Saludo Automático
-                        </label>
-                    </div>
-                    <button className="btn btn-primary" onClick={handleSaveActivity} style={{ width: '100%', marginTop: '1rem' }}>Guardar en Calendario</button>
+                    <div><label className="label">Título</label><input value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} placeholder="Ej: Black Friday, Día del Trabajador..." /></div>
+                    <div><label className="label">Descripción</label><textarea value={newActivity.description || ''} onChange={e => setNewActivity({ ...newActivity, description: e.target.value })} rows={3} placeholder="Detalles..." style={{ width: '100%', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }} /></div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}><input type="checkbox" checked={newActivity.send_auto_greeting} onChange={e => setNewActivity({ ...newActivity, send_auto_greeting: e.target.checked })} /> Saludo automático a empresas</label>
+                    {newActivity.type === 'promocion' && <div style={{ background: 'rgba(200,255,0,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(200,255,0,0.2)', fontSize: '0.8rem' }}>📨 Al guardar, podrás enviar un email masivo con la plantilla "promo_announcement".</div>}
+                    <button className="btn btn-primary" onClick={handleSaveActivity} style={{ width: '100%' }}>Guardar en Calendario</button>
                 </div>
             </Modal>
-
-            <Modal isOpen={showTemplateModal} onClose={() => setShowTemplateModal(false)} title={`Editor de Plantilla: ${selectedTemplate?.name}`}>
+            <Modal isOpen={showTemplateModal} onClose={() => setShowTemplateModal(false)} title={`Editor: ${selectedTemplate?.name?.replace(/_/g, ' ')}`}>
                 {selectedTemplate && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div>
-                            <label className="label">Asunto del Correo</label>
-                            <input value={selectedTemplate.subject} onChange={e => setSelectedTemplate({ ...selectedTemplate, subject: e.target.value })} />
+                        <div><label className="label">Asunto</label><input value={selectedTemplate.subject} onChange={e => setSelectedTemplate({ ...selectedTemplate, subject: e.target.value })} /></div>
+                        <div><label className="label">Categoría</label><select value={selectedTemplate.category || 'general'} onChange={e => setSelectedTemplate({ ...selectedTemplate, category: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="bienvenida">👋 Bienvenida</option><option value="cobranza">💰 Cobranza</option><option value="marketing">📣 Marketing</option><option value="soporte">🛠️ Soporte</option><option value="general">📋 General</option></select></div>
+                        <div><label className="label">Cuerpo (HTML)</label><textarea id="tmpl-body-ed" value={selectedTemplate.body} onChange={e => setSelectedTemplate({ ...selectedTemplate, body: e.target.value })} rows={12} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }} /></div>
+                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(200,255,0,0.15)' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#c8ff00', marginBottom: '0.5rem' }}>📋 Variables <span style={{ fontWeight: 'normal', opacity: 0.6 }}>(clic para insertar)</span></div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{variables.map((v, i) => <button key={i} onClick={() => insertVariable(v.var)} title={`${v.desc} — Ej: ${v.example}`} style={{ background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: '#c8ff00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', cursor: 'pointer' }}>{v.var}</button>)}</div>
                         </div>
-                        <div>
-                            <label className="label">Cuerpo (HTML)</label>
-                            <textarea value={selectedTemplate.body} onChange={e => setSelectedTemplate({ ...selectedTemplate, body: e.target.value })} rows={10} style={{ width: '100%', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }} />
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn btn-primary" onClick={() => handleSaveTemplate(selectedTemplate)} style={{ flex: 2 }}>💾 Guardar</button>
+                            {selectedTemplate.is_system && selectedTemplate.default_body && <button className="btn" onClick={() => handleRevertTemplate(selectedTemplate.id)} style={{ flex: 1, color: '#fbbf24', borderColor: '#fbbf24', fontSize: '0.8rem' }}>↩ Original</button>}
                         </div>
-                        <button className="btn btn-primary" onClick={() => handleSaveTemplate(selectedTemplate)} style={{ width: '100%', marginTop: '1rem' }}>Guardar Cambios</button>
                     </div>
                 )}
+            </Modal>
+            <Modal isOpen={showNewTemplateModal} onClose={() => setShowNewTemplateModal(false)} title="Nueva Plantilla de Email">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div><label className="label">Nombre (sin espacios)</label><input value={newTemplate.name} onChange={e => setNewTemplate({ ...newTemplate, name: e.target.value.toLowerCase().replace(/\s+/g, '_') })} placeholder="ej: aviso_mantenimiento" /></div>
+                    <div><label className="label">Categoría</label><select value={newTemplate.category} onChange={e => setNewTemplate({ ...newTemplate, category: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="bienvenida">👋 Bienvenida</option><option value="cobranza">💰 Cobranza</option><option value="marketing">📣 Marketing</option><option value="soporte">🛠️ Soporte</option><option value="general">📋 General</option></select></div>
+                    <div><label className="label">Asunto</label><input value={newTemplate.subject} onChange={e => setNewTemplate({ ...newTemplate, subject: e.target.value })} placeholder="Asunto del correo..." /></div>
+                    <div><label className="label">Cuerpo (HTML)</label><textarea value={newTemplate.body} onChange={e => setNewTemplate({ ...newTemplate, body: e.target.value })} rows={8} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }} /></div>
+                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(200,255,0,0.15)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#c8ff00', marginBottom: '0.4rem' }}>📋 Variables (clic para insertar)</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{variables.map((v, i) => <button key={i} onClick={() => insertVariableNew(v.var)} title={`${v.desc} — Ej: ${v.example}`} style={{ background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: '#c8ff00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', cursor: 'pointer' }}>{v.var}</button>)}</div>
+                    </div>
+                    <button className="btn btn-primary" onClick={handleCreateTemplate} style={{ width: '100%' }}>Crear Plantilla</button>
+                </div>
+            </Modal>
+            <Modal isOpen={showMassEmailModal} onClose={() => setShowMassEmailModal(false)} title="📨 Envío Masivo de Emails">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', fontSize: '0.8rem' }}>⚠️ Se enviará a <strong>TODAS las empresas activas</strong> con email.</div>
+                    <div><label className="label">Plantilla</label><select value={massEmail.template_id || ''} onChange={e => setMassEmail({ ...massEmail, template_id: e.target.value ? parseInt(e.target.value) : null })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="">-- Seleccionar --</option>{templates.filter(t => t.is_active).map(t => <option key={t.id} value={t.id}>{t.name.replace(/_/g, ' ')} ({t.category})</option>)}</select></div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.75rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#c8ff00' }}>Variables de Promoción (opcional)</div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <input value={massEmail.promo_name} onChange={e => setMassEmail({ ...massEmail, promo_name: e.target.value })} placeholder="Nombre promo" style={{ flex: 1, minWidth: '120px' }} />
+                            <input value={massEmail.promo_code} onChange={e => setMassEmail({ ...massEmail, promo_code: e.target.value })} placeholder="Código" style={{ flex: 1, minWidth: '80px' }} />
+                            <input value={massEmail.promo_discount} onChange={e => setMassEmail({ ...massEmail, promo_discount: e.target.value })} placeholder="Descuento %" style={{ flex: 1, minWidth: '80px' }} />
+                        </div>
+                    </div>
+                    <button className="btn btn-primary" onClick={handleSendMassEmail} disabled={!massEmail.template_id || sending} style={{ width: '100%', opacity: (!massEmail.template_id || sending) ? 0.5 : 1 }}>{sending ? '⏳ Enviando...' : '📨 Enviar a Todos'}</button>
+                </div>
             </Modal>
         </div>
     );
 };
+
 
 const SalesPanel = ({ token }) => {
     const [promos, setPromos] = useState([]);

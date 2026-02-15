@@ -197,6 +197,7 @@ class EmailTemplateSchema(BaseModel):
     subject: str
     body: str
     is_active: Optional[bool] = True
+    category: Optional[str] = "general"
 
 class PromotionSchema(BaseModel):
     name: str
@@ -3135,8 +3136,13 @@ async def get_crm_ecosystem_status(db: AsyncSession = Depends(get_db)):
 @app.get("/admin/crm/templates")
 async def list_email_templates(db: AsyncSession = Depends(get_db)):
     from models import EmailTemplate
-    res = await db.execute(select(EmailTemplate).order_by(EmailTemplate.name))
-    return res.scalars().all()
+    res = await db.execute(select(EmailTemplate).order_by(EmailTemplate.category, EmailTemplate.name))
+    templates = res.scalars().all()
+    return [{
+        "id": t.id, "name": t.name, "subject": t.subject, "body": t.body,
+        "default_subject": t.default_subject, "default_body": t.default_body,
+        "is_system": t.is_system, "category": t.category, "is_active": t.is_active
+    } for t in templates]
 
 @app.post("/admin/crm/templates")
 async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depends(get_db)):
@@ -3148,18 +3154,358 @@ async def save_email_template(data: EmailTemplateSchema, db: AsyncSession = Depe
         existing.subject = data.subject
         existing.body = data.body
         existing.is_active = data.is_active
+        if hasattr(data, 'category') and data.category:
+            existing.category = data.category
     else:
-        new_template = EmailTemplate(name=data.name, subject=data.subject, body=data.body, is_active=data.is_active)
+        new_template = EmailTemplate(
+            name=data.name, subject=data.subject, body=data.body,
+            is_active=data.is_active,
+            category=getattr(data, 'category', 'general') or 'general'
+        )
         db.add(new_template)
     
     await db.commit()
     return {"status": "success"}
 
+@app.delete("/admin/crm/templates/{template_id}")
+async def delete_email_template(template_id: int, db: AsyncSession = Depends(get_db)):
+    from models import EmailTemplate
+    tmpl = (await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))).scalar_one_or_none()
+    if not tmpl:
+        raise HTTPException(404, "Plantilla no encontrada")
+    if tmpl.is_system:
+        raise HTTPException(403, "No se puede eliminar una plantilla del sistema. Use 'Restaurar Original' en su lugar.")
+    await db.delete(tmpl)
+    await db.commit()
+    return {"status": "deleted"}
+
+@app.post("/admin/crm/templates/{template_id}/revert")
+async def revert_email_template(template_id: int, db: AsyncSession = Depends(get_db)):
+    from models import EmailTemplate
+    tmpl = (await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))).scalar_one_or_none()
+    if not tmpl:
+        raise HTTPException(404, "Plantilla no encontrada")
+    if not tmpl.is_system or not tmpl.default_body:
+        raise HTTPException(400, "Esta plantilla no tiene versión original para restaurar")
+    tmpl.subject = tmpl.default_subject
+    tmpl.body = tmpl.default_body
+    await db.commit()
+    return {"status": "reverted"}
+
+@app.get("/admin/crm/templates/variables")
+async def get_template_variables():
+    return [
+        {"var": "{{nombre_empresa}}", "desc": "Nombre de la empresa cliente", "example": "Café El Venezolano"},
+        {"var": "{{contacto}}", "desc": "Persona de contacto de la empresa", "example": "Juan Pérez"},
+        {"var": "{{email}}", "desc": "Email de la empresa", "example": "info@empresa.com"},
+        {"var": "{{telefono}}", "desc": "Teléfono de la empresa", "example": "+58 412 1234567"},
+        {"var": "{{plan}}", "desc": "Plan actual contratado", "example": "Plus"},
+        {"var": "{{fecha_vencimiento}}", "desc": "Fecha de vencimiento del plan", "example": "15/03/2026"},
+        {"var": "{{pantallas_activas}}", "desc": "Cantidad de pantallas activas", "example": "3"},
+        {"var": "{{max_pantallas}}", "desc": "Máximo de pantallas permitidas por plan", "example": "10"},
+        {"var": "{{monto_pago}}", "desc": "Monto del último pago registrado", "example": "$50.00"},
+        {"var": "{{fecha_hoy}}", "desc": "Fecha actual al enviar el correo", "example": "15/02/2026"},
+        {"var": "{{nombre_promo}}", "desc": "Nombre de la promoción (en emails de promo)", "example": "Black Friday 2026"},
+        {"var": "{{codigo_promo}}", "desc": "Código de descuento de la promoción", "example": "BF2026"},
+        {"var": "{{descuento}}", "desc": "Porcentaje de descuento de la promoción", "example": "25%"},
+        {"var": "{{whatsapp}}", "desc": "Link de WhatsApp de la empresa", "example": "+58 412 1234567"},
+    ]
+
+# --- DEFAULT TEMPLATE HTML CONTENT ---
+SYSTEM_TEMPLATES = [
+    {
+        "name": "welcome",
+        "category": "bienvenida",
+        "subject": "🎉 ¡Bienvenido a VenridesScreen, {{nombre_empresa}}!",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#c8ff00,#00e5ff);padding:30px;text-align:center;">
+<h1 style="color:#0d0d0d;margin:0;font-size:28px;">¡Bienvenido a VenridesScreen!</h1>
+<p style="color:#0d0d0d;margin:8px 0 0;font-size:14px;">La red de pantallas inteligentes más avanzada de Venezuela</p>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Nos complace darte la bienvenida a <strong>VenridesScreen</strong>. Tu empresa <strong>{{nombre_empresa}}</strong> ya forma parte de nuestra red de pantallas inteligentes.</p>
+<div style="background:rgba(200,255,0,0.1);border-left:4px solid #c8ff00;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>Datos de tu cuenta:</strong><br>
+📋 Plan: <strong>{{plan}}</strong><br>
+📺 Pantallas permitidas: <strong>{{max_pantallas}}</strong><br>
+📅 Válido hasta: <strong>{{fecha_vencimiento}}</strong>
+</div>
+<p>Puedes acceder al panel de administración en cualquier momento para configurar tus pantallas, contenido y diseño.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#c8ff00;color:#0d0d0d;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;font-size:16px;">ACCEDER AL PANEL</a>
+</div>
+<p style="font-size:13px;opacity:0.6;">¿Necesitas ayuda? Contáctanos por WhatsApp: {{whatsapp}}</p>
+</div>
+</div>"""
+    },
+    {
+        "name": "apk_download",
+        "category": "bienvenida",
+        "subject": "📱 Descarga la App VenridesScreen para tu TV, {{nombre_empresa}}",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#00e5ff,#c8ff00);padding:30px;text-align:center;">
+<h1 style="color:#0d0d0d;margin:0;font-size:24px;">📱 Tu App de TV está Lista</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Ya puedes descargar e instalar la aplicación VenridesScreen en tu Smart TV o dispositivo Android TV.</p>
+<div style="background:rgba(0,229,255,0.1);border-left:4px solid #00e5ff;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>Pasos rápidos:</strong><br>
+1️⃣ Descarga el APK desde el enlace debajo<br>
+2️⃣ Instálalo en tu TV Android<br>
+3️⃣ Abre la app y sigue las instrucciones en pantalla<br>
+4️⃣ Tu pantalla se vinculará automáticamente a tu cuenta
+</div>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://dl.venrides.com/venrides-screen.apk" style="background:#c8ff00;color:#0d0d0d;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;">⬇️ DESCARGAR APK</a>
+</div>
+<p style="font-size:13px;opacity:0.6;">Empresa: {{nombre_empresa}} | Plan: {{plan}} | Pantallas: {{pantallas_activas}}/{{max_pantallas}}</p>
+</div>
+</div>"""
+    },
+    {
+        "name": "expiry_7",
+        "category": "cobranza",
+        "subject": "⏰ Tu plan vence en 7 días - {{nombre_empresa}}",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#fbbf24,#f59e0b);padding:30px;text-align:center;">
+<h1 style="color:#0d0d0d;margin:0;font-size:24px;">⏰ Renovación Próxima</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Te recordamos que el plan <strong>{{plan}}</strong> de <strong>{{nombre_empresa}}</strong> vence el <strong>{{fecha_vencimiento}}</strong>.</p>
+<div style="background:rgba(251,191,36,0.1);border-left:4px solid #fbbf24;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>Estado actual:</strong><br>
+📺 Pantallas activas: <strong>{{pantallas_activas}}</strong><br>
+📋 Plan: <strong>{{plan}}</strong><br>
+📅 Vence: <strong>{{fecha_vencimiento}}</strong>
+</div>
+<p>Para evitar interrupciones en tu servicio de pantallas, te recomendamos renovar antes de la fecha de vencimiento.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#c8ff00;color:#0d0d0d;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;">RENOVAR AHORA</a>
+</div>
+<p style="font-size:13px;opacity:0.6;">Si ya realizaste el pago, puedes ignorar este mensaje.</p>
+</div>
+</div>"""
+    },
+    {
+        "name": "expiry_1",
+        "category": "cobranza",
+        "subject": "🚨 ¡ÚLTIMO DÍA! Tu plan vence hoy - {{nombre_empresa}}",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#ef4444,#dc2626);padding:30px;text-align:center;">
+<h1 style="color:white;margin:0;font-size:24px;">🚨 Vencimiento Hoy</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p><strong>¡Tu plan vence HOY!</strong> Si no renuevas, las pantallas de <strong>{{nombre_empresa}}</strong> se desactivarán automáticamente.</p>
+<div style="background:rgba(239,68,68,0.1);border-left:4px solid #ef4444;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>⚠️ Datos importantes:</strong><br>
+📺 Pantallas en riesgo: <strong>{{pantallas_activas}}</strong><br>
+📋 Plan actual: <strong>{{plan}}</strong><br>
+📅 Fecha límite: <strong>{{fecha_vencimiento}}</strong>
+</div>
+<p>Renueva ahora para mantener tus pantallas operativas sin interrupción.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#ef4444;color:white;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;font-size:16px;">⚡ RENOVAR URGENTE</a>
+</div>
+</div>
+</div>"""
+    },
+    {
+        "name": "birthday",
+        "category": "marketing",
+        "subject": "🎂 ¡Feliz Aniversario, {{nombre_empresa}}!",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#a855f7,#ec4899);padding:30px;text-align:center;">
+<h1 style="color:white;margin:0;font-size:28px;">🎂 ¡Felicidades!</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Hoy celebramos un aniversario más de <strong>{{nombre_empresa}}</strong> como parte de la familia VenridesScreen. 🎉</p>
+<p>Gracias por confiar en nosotros para llevar contenido dinámico a sus pantallas. Su éxito es nuestro motor.</p>
+<div style="background:rgba(168,85,247,0.1);border-left:4px solid #a855f7;padding:15px;margin:20px 0;border-radius:8px;text-align:center;">
+<span style="font-size:40px;">🎂🎈🎉</span><br>
+<strong style="font-size:18px;">¡Muchas Felicidades!</strong>
+</div>
+<p style="text-align:center;font-size:14px;opacity:0.7;">De parte de todo el equipo VenridesScreen</p>
+</div>
+</div>"""
+    },
+    {
+        "name": "payment_received",
+        "category": "cobranza",
+        "subject": "✅ Pago Recibido - {{nombre_empresa}} ({{monto_pago}})",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#10b981,#059669);padding:30px;text-align:center;">
+<h1 style="color:white;margin:0;font-size:24px;">✅ Pago Confirmado</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Hemos recibido y registrado exitosamente tu pago. Aquí el resumen:</p>
+<div style="background:rgba(16,185,129,0.1);border-left:4px solid #10b981;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>Detalle del Pago:</strong><br>
+🏢 Empresa: <strong>{{nombre_empresa}}</strong><br>
+💰 Monto: <strong>{{monto_pago}}</strong><br>
+📋 Plan: <strong>{{plan}}</strong><br>
+📅 Válido hasta: <strong>{{fecha_vencimiento}}</strong><br>
+📅 Fecha de pago: <strong>{{fecha_hoy}}</strong>
+</div>
+<p>Tu servicio continuará sin interrupciones. Gracias por tu confianza.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#c8ff00;color:#0d0d0d;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;">VER MI CUENTA</a>
+</div>
+</div>
+</div>"""
+    },
+    {
+        "name": "account_suspended",
+        "category": "cobranza",
+        "subject": "🔴 Cuenta Suspendida - {{nombre_empresa}}",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#991b1b,#7f1d1d);padding:30px;text-align:center;">
+<h1 style="color:white;margin:0;font-size:24px;">🔴 Servicio Suspendido</h1>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Lamentamos informarte que las pantallas de <strong>{{nombre_empresa}}</strong> han sido suspendidas por mora en el pago.</p>
+<div style="background:rgba(153,27,27,0.1);border-left:4px solid #ef4444;padding:15px;margin:20px 0;border-radius:8px;">
+<strong>Estado de cuenta:</strong><br>
+📋 Plan: <strong>{{plan}}</strong><br>
+📅 Venció: <strong>{{fecha_vencimiento}}</strong><br>
+📺 Pantallas suspendidas: <strong>{{pantallas_activas}}</strong>
+</div>
+<p>Para reactivar tu servicio, realiza el pago pendiente y comunícate con nosotros.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#ef4444;color:white;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;">REGULARIZAR CUENTA</a>
+</div>
+<p style="font-size:13px;opacity:0.6;">WhatsApp: {{whatsapp}}</p>
+</div>
+</div>"""
+    },
+    {
+        "name": "promo_announcement",
+        "category": "marketing",
+        "subject": "🏷️ {{nombre_promo}} - ¡{{descuento}} de Descuento para {{nombre_empresa}}!",
+        "body": """<div style="max-width:600px;margin:0 auto;font-family:'Segoe UI',Arial,sans-serif;background:#0d0d0d;color:#f0f0f0;border-radius:16px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#c8ff00,#10b981);padding:30px;text-align:center;">
+<h1 style="color:#0d0d0d;margin:0;font-size:28px;">🏷️ ¡Promoción Especial!</h1>
+<p style="color:#0d0d0d;margin:8px 0 0;font-size:16px;">{{nombre_promo}}</p>
+</div>
+<div style="padding:30px;">
+<p>Hola <strong>{{contacto}}</strong>,</p>
+<p>Tenemos una oferta exclusiva para <strong>{{nombre_empresa}}</strong>:</p>
+<div style="background:rgba(200,255,0,0.1);border:2px dashed #c8ff00;padding:20px;margin:20px 0;border-radius:12px;text-align:center;">
+<div style="font-size:48px;font-weight:bold;color:#c8ff00;">{{descuento}}</div>
+<div style="font-size:18px;margin:8px 0;">DE DESCUENTO</div>
+<div style="background:#c8ff00;color:#0d0d0d;display:inline-block;padding:8px 24px;border-radius:20px;font-weight:bold;font-size:20px;letter-spacing:3px;margin-top:10px;">{{codigo_promo}}</div>
+</div>
+<p style="text-align:center;">Usa el código al momento de renovar o contratar un plan superior.</p>
+<div style="text-align:center;margin:25px 0;">
+<a href="https://admin.venridesscreen.com" style="background:#c8ff00;color:#0d0d0d;padding:14px 32px;text-decoration:none;border-radius:30px;font-weight:bold;font-size:16px;">APROVECHAR OFERTA</a>
+</div>
+<p style="font-size:12px;opacity:0.5;text-align:center;">Promoción válida por tiempo limitado. Código: {{codigo_promo}}</p>
+</div>
+</div>"""
+    }
+]
+
+@app.post("/admin/crm/templates/seed")
+async def seed_email_templates(db: AsyncSession = Depends(get_db)):
+    """Seed all 8 system templates (creates if missing, does not overwrite existing)"""
+    from models import EmailTemplate
+    created = 0
+    for tmpl_data in SYSTEM_TEMPLATES:
+        existing = (await db.execute(select(EmailTemplate).where(EmailTemplate.name == tmpl_data["name"]))).scalar_one_or_none()
+        if not existing:
+            new_tmpl = EmailTemplate(
+                name=tmpl_data["name"],
+                subject=tmpl_data["subject"],
+                body=tmpl_data["body"],
+                default_subject=tmpl_data["subject"],
+                default_body=tmpl_data["body"],
+                is_system=True,
+                category=tmpl_data["category"],
+                is_active=True
+            )
+            db.add(new_tmpl)
+            created += 1
+        else:
+            # Update defaults if missing
+            if not existing.default_body:
+                existing.default_body = tmpl_data["body"]
+                existing.default_subject = tmpl_data["subject"]
+            if not existing.is_system:
+                existing.is_system = True
+            if not existing.category or existing.category == 'general':
+                existing.category = tmpl_data["category"]
+    await db.commit()
+    return {"status": "success", "created": created, "total": len(SYSTEM_TEMPLATES)}
+
+# --- VENEZUELAN HOLIDAYS ---
+VENEZUELAN_HOLIDAYS = [
+    {"title": "Año Nuevo", "month": 1, "day": 1},
+    {"title": "Día del Maestro", "month": 1, "day": 15},
+    {"title": "Carnaval (Lunes)", "month": 2, "day": 28},
+    {"title": "Carnaval (Martes)", "month": 3, "day": 1},
+    {"title": "Día de la Mujer", "month": 3, "day": 8},
+    {"title": "Día de San José", "month": 3, "day": 19},
+    {"title": "Jueves Santo", "month": 4, "day": 17},
+    {"title": "Viernes Santo", "month": 4, "day": 18},
+    {"title": "Declaración de Independencia", "month": 4, "day": 19},
+    {"title": "Día del Trabajador", "month": 5, "day": 1},
+    {"title": "Día de las Madres", "month": 5, "day": 11},
+    {"title": "Batalla de Carabobo", "month": 6, "day": 24},
+    {"title": "Día de la Independencia", "month": 7, "day": 5},
+    {"title": "Natalicio del Libertador", "month": 7, "day": 24},
+    {"title": "Día de la Bandera", "month": 8, "day": 3},
+    {"title": "Día de la Resistencia Indígena", "month": 10, "day": 12},
+    {"title": "Día de la Alimentación", "month": 10, "day": 16},
+    {"title": "Nochebuena", "month": 12, "day": 24},
+    {"title": "Navidad", "month": 12, "day": 25},
+    {"title": "Fin de Año", "month": 12, "day": 31},
+]
+
+@app.post("/admin/crm/calendar/holidays")
+async def seed_venezuelan_holidays(db: AsyncSession = Depends(get_db)):
+    """Seed Venezuelan holidays for the current year"""
+    from models import CalendarActivity
+    year = datetime.utcnow().year
+    created = 0
+    for h in VENEZUELAN_HOLIDAYS:
+        date = datetime(year, h["month"], h["day"])
+        # Check if already exists
+        existing = (await db.execute(
+            select(CalendarActivity).where(
+                CalendarActivity.title == h["title"],
+                CalendarActivity.is_holiday == True,
+                func.extract('year', CalendarActivity.activity_date) == year
+            )
+        )).scalar_one_or_none()
+        if not existing:
+            new_act = CalendarActivity(
+                title=h["title"],
+                description=f"Feriado Nacional: {h['title']}",
+                activity_date=date,
+                is_holiday=True,
+                send_auto_greeting=True
+            )
+            db.add(new_act)
+            created += 1
+    await db.commit()
+    return {"status": "success", "created": created}
+
 @app.get("/admin/crm/calendar")
 async def get_calendar(db: AsyncSession = Depends(get_db)):
     from models import CalendarActivity
     res = await db.execute(select(CalendarActivity).order_by(CalendarActivity.activity_date))
-    return res.scalars().all()
+    activities = res.scalars().all()
+    return [{
+        "id": a.id, "title": a.title, "description": a.description,
+        "activity_date": a.activity_date.isoformat() if a.activity_date else None,
+        "is_holiday": a.is_holiday, "send_auto_greeting": a.send_auto_greeting
+    } for a in activities]
 
 @app.post("/admin/crm/calendar")
 async def add_calendar_activity(data: dict, db: AsyncSession = Depends(get_db)):
@@ -3173,7 +3519,82 @@ async def add_calendar_activity(data: dict, db: AsyncSession = Depends(get_db)):
     )
     db.add(new_act)
     await db.commit()
-    return {"status": "success"}
+    return {"status": "success", "id": new_act.id}
+
+@app.delete("/admin/crm/calendar/{activity_id}")
+async def delete_calendar_activity(activity_id: int, db: AsyncSession = Depends(get_db)):
+    from models import CalendarActivity
+    act = (await db.execute(select(CalendarActivity).where(CalendarActivity.id == activity_id))).scalar_one_or_none()
+    if not act:
+        raise HTTPException(404, "Actividad no encontrada")
+    await db.delete(act)
+    await db.commit()
+    return {"status": "deleted"}
+
+@app.post("/admin/crm/mass-email")
+async def send_mass_email(data: dict, db: AsyncSession = Depends(get_db)):
+    """Send mass email to all active companies using a template"""
+    from models import EmailTemplate, Company
+    from utils.email_sender import send_email
+    
+    template_id = data.get("template_id")
+    custom_subject = data.get("subject")
+    custom_body = data.get("body")
+    promo_name = data.get("promo_name", "")
+    promo_code = data.get("promo_code", "")
+    promo_discount = data.get("promo_discount", "")
+    
+    # Get template if provided
+    body_html = custom_body or ""
+    subject = custom_subject or ""
+    if template_id:
+        tmpl = (await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))).scalar_one_or_none()
+        if tmpl:
+            body_html = tmpl.body
+            subject = tmpl.subject
+    
+    if not body_html or not subject:
+        raise HTTPException(400, "Se requiere asunto y cuerpo del email")
+    
+    # Get all active companies with email
+    companies_res = await db.execute(select(Company).where(Company.is_active == True, Company.email != None))
+    companies = companies_res.scalars().all()
+    
+    sent = 0
+    errors = 0
+    for company in companies:
+        try:
+            # Replace variables
+            rendered_subject = subject
+            rendered_body = body_html
+            replacements = {
+                "{{nombre_empresa}}": company.name or "",
+                "{{contacto}}": company.contact_person or company.name or "",
+                "{{email}}": company.email or "",
+                "{{telefono}}": company.phone or "",
+                "{{plan}}": (company.plan or "free").capitalize(),
+                "{{fecha_vencimiento}}": company.valid_until.strftime("%d/%m/%Y") if company.valid_until else "N/A",
+                "{{pantallas_activas}}": str(len([d for d in company.devices if d.is_active]) if company.devices else 0),
+                "{{max_pantallas}}": str(company.max_screens or 2),
+                "{{monto_pago}}": "",
+                "{{fecha_hoy}}": datetime.utcnow().strftime("%d/%m/%Y"),
+                "{{nombre_promo}}": promo_name,
+                "{{codigo_promo}}": promo_code,
+                "{{descuento}}": promo_discount,
+                "{{whatsapp}}": company.whatsapp or "",
+            }
+            for var, val in replacements.items():
+                rendered_subject = rendered_subject.replace(var, val)
+                rendered_body = rendered_body.replace(var, val)
+            
+            send_email(company.email, rendered_subject, rendered_body, html=True)
+            sent += 1
+        except Exception as e:
+            logger.error(f"Mass email error for {company.email}: {e}")
+            errors += 1
+    
+    return {"status": "success", "sent": sent, "errors": errors, "total": len(companies)}
+
 
 @app.get("/admin/crm/promotions")
 async def list_promotions(db: AsyncSession = Depends(get_db)):

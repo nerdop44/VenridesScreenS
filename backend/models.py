@@ -211,9 +211,13 @@ class EmailTemplate(Base):
     __tablename__ = "email_templates"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True) # e.g., 'cobro_vencimiento', 'aviso_mantenimiento'
+    name = Column(String, unique=True) # e.g., 'welcome', 'expiry_7'
     subject = Column(String)
-    body = Column(String) # HTML content
+    body = Column(String) # HTML content (editable)
+    default_subject = Column(String, nullable=True) # Original subject for revert
+    default_body = Column(String, nullable=True) # Original body for revert
+    is_system = Column(Boolean, default=False) # System templates cannot be deleted
+    category = Column(String, default="general") # bienvenida, cobranza, marketing, soporte
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
