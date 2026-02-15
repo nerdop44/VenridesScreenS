@@ -200,6 +200,7 @@ class Message(Base):
     is_read = Column(Boolean, default=False)
     is_alert = Column(Boolean, default=False)
     alert_duration = Column(Integer, default=15) # Segundos a mostrar en TV
+    session_id = Column(String, index=True, nullable=True) # For guest/Benry sessions
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     company = relationship("Company", back_populates="messages")
