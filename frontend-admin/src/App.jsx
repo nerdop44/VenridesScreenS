@@ -2735,6 +2735,8 @@ const CrmPanel = ({ token }) => {
     const [showActivityModal, setShowActivityModal] = useState(false);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
     const [showNewTemplateModal, setShowNewTemplateModal] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [previewTemplate, setPreviewTemplate] = useState(null);
     const [showMassEmailModal, setShowMassEmailModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -2806,13 +2808,16 @@ const CrmPanel = ({ token }) => {
                                         <div style={{ fontSize: '0.7rem', opacity: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tmpl.subject}</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                                        <button onClick={() => { setPreviewTemplate(tmpl); setShowPreviewModal(true); }} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }} title="Ver vista previa">👁️</button>
                                         {tmpl.is_system ? (
                                             <button onClick={() => openDuplicateEditor(tmpl)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }} title="Crear copia editable">📋 Duplicar</button>
                                         ) : (
                                             <button onClick={() => openCustomEditor(tmpl)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }}>✏️ Editar</button>
                                         )}
                                         {!tmpl.is_system && <button onClick={() => handleDeleteTemplate(tmpl.id)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px', color: '#ef4444', borderColor: '#ef4444' }}>✕</button>}
-                                        <label className="toggle-switch" style={{ transform: 'scale(0.8)' }}><input type="checkbox" checked={tmpl.is_active} onChange={() => toggleTemplate(tmpl)} /><span className="slider round"></span></label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} title={tmpl.is_active ? 'Activo' : 'Inactivo'}>
+                                            <input type="checkbox" checked={tmpl.is_active} onChange={() => toggleTemplate(tmpl)} style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#c8ff00' }} />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -2934,6 +2939,14 @@ const CrmPanel = ({ token }) => {
                         </div>
                     </div>
                     <button className="btn btn-primary" onClick={handleSendMassEmail} disabled={!massEmail.template_id || sending} style={{ width: '100%', opacity: (!massEmail.template_id || sending) ? 0.5 : 1 }}>{sending ? '⏳ Enviando...' : '📨 Enviar'}</button>
+                </div>
+            </Modal>
+            <Modal isOpen={showPreviewModal} onClose={() => setShowPreviewModal(false)} title={previewTemplate ? `Vista Previa: ${previewTemplate.name}` : 'Vista Previa'}>
+                <div style={{ background: '#fff', color: '#000', padding: '1.5rem', borderRadius: '8px', maxHeight: '70vh', overflowY: 'auto', border: '1px solid #ddd' }}>
+                    {previewTemplate && <div dangerouslySetInnerHTML={{ __html: previewTemplate.body }} />}
+                </div>
+                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                    <button className="btn" onClick={() => setShowPreviewModal(false)}>Cerrar</button>
                 </div>
             </Modal>
         </div>
