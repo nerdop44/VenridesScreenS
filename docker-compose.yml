@@ -49,7 +49,11 @@ services:
     restart: always
 
   frontend-admin:
-    build: ./frontend-admin
+    build:
+      context: ./frontend-admin
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://apitv.venrides.com}
+        - VITE_TV_URL=${VITE_TV_URL:-https://tv.venrides.com}
     container_name: venrides_admin
     deploy:
       resources:
