@@ -343,7 +343,7 @@ function applyBranding(data) {
 
     const body = document.body;
 
-    if (!data.is_active) {
+    if (!data.is_active && !previewCompanyId) {
         showSuspended();
         return;
     } else {
