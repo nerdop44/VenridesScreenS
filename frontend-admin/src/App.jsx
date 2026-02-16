@@ -1987,7 +1987,11 @@ function App() {
 
                     <div className="tab-content" style={{ flex: 1 }}>
                         {clientTab === 'profile' && (() => {
-                            const isEditable = (f) => isAdmin || (localCompany?.client_editable_fields || "").split(",").includes(f);
+                            const isEditable = (f) => {
+                                if (isAdmin) return true;
+                                const allowed = (localCompany?.client_editable_fields || "").split(",").map(i => i.trim());
+                                return allowed.includes(f);
+                            };
 
                             return (
                                 <div className="company-form-full">
@@ -2407,6 +2411,10 @@ const BrandingEditor = ({ company, onChange }) => {
                 <div>
                     <label style={{ fontSize: '0.75rem' }}>Tamaño ({ds.name_size || '1.2rem'})</label>
                     <input type="range" min="0.8" max="4" step="0.1" value={parseFloat(ds.name_size) || 1.2} onChange={e => update('name_size', `${e.target.value}rem`)} />
+                </div>
+                <div>
+                    <label>Margen de Seguridad / Overscan (%) <Tooltip text="Aumente si el contenido se corta en los bordes del televisor físico." /></label>
+                    <input type="range" min="0" max="10" step="0.5" value={ds.safety_margin || 0} onChange={e => updateDesign('safety_margin', parseFloat(e.target.value))} />
                 </div>
                 <div>
                     <label style={{ fontSize: '0.75rem' }}>Grosor</label>
@@ -3653,8 +3661,8 @@ const PaymentForm = ({ companies, onSave, onCancel }) => {
 };
 
 const SidebarEditor = ({ company, onChange, disabled }) => {
-    const ds = company?.design_settings || {};
-    const content = company?.sidebar_content || [];
+    const ds = (typeof company?.design_settings === 'string' ? safeParse(company.design_settings) : company?.design_settings) || {};
+    const content = (typeof company?.sidebar_content === 'string' ? safeParse(company.sidebar_content, []) : company?.sidebar_content) || [];
     const updateDesign = (f, v) => !disabled && onChange({ design_settings: { ...ds, [f]: v } });
     const updateContent = (val) => !disabled && onChange({ sidebar_content: val });
 
@@ -3707,18 +3715,20 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                 </div>
 
                 <div className="ad-blocks-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {Array.from({ length: ds.sidebar_layout || 1 }).map((_, idx) => {
-                        const block = (content[idx] || { type: 'image', value: '', items: [] });
+                    {content.map((block, idx) => {
                         const updateBlock = (k, v) => {
                             const newContent = [...content];
-                            // Ensure array fits layout
-                            while (newContent.length <= idx) newContent.push({ type: 'image', value: '' });
                             newContent[idx] = { ...newContent[idx], [k]: v };
+                            updateContent(newContent);
+                        };
+                        const removeBlock = () => {
+                            const newContent = content.filter((_, i) => i !== idx);
                             updateContent(newContent);
                         };
 
                         return (
-                            <div key={idx} className="glass-card" style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem' }}>
+                            <div key={idx} className="glass-card" style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', position: 'relative' }}>
+                                <button onClick={removeBlock} style={{ position: 'absolute', top: '5px', right: '5px', background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer' }}><X size={14} /></button>
                                 <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--primary-color)' }}>BLOQUE #{idx + 1}</div>
                                 <div className="grid-2">
                                     <div>
@@ -3763,6 +3773,7 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                         );
                     })}
                 </div>
+                <button onClick={() => updateContent([...content, { type: 'image', value: '' }])} className="btn" style={{ marginTop: '1rem', width: '100%', fontSize: '0.75rem' }}>+ Añadir Nuevo Bloque (Rotación)</button>
             </div>
 
             <div className="glass-card">
@@ -3778,8 +3789,8 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
 };
 
 const BottomBarEditor = ({ company, onChange, disabled }) => {
-    const data = company?.bottom_bar_content || {};
-    const ds = company?.design_settings || {};
+    const data = (typeof company?.bottom_bar_content === 'string' ? safeParse(company.bottom_bar_content) : company?.bottom_bar_content) || {};
+    const ds = (typeof company?.design_settings === 'string' ? safeParse(company.design_settings) : company?.design_settings) || {};
 
     const update = (k, v) => !disabled && onChange({ bottom_bar_content: { ...data, [k]: v } });
     const updateDesign = (k, v) => !disabled && onChange({ design_settings: { ...ds, [k]: v } });
