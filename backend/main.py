@@ -3517,6 +3517,50 @@ async def seed_venezuelan_holidays(db: AsyncSession = Depends(get_db)):
     await db.commit()
     return {"status": "success", "created": created, "updated": updated}
 
+@app.post("/admin/crm/templates/seed")
+async def seed_email_templates(db: AsyncSession = Depends(get_db)):
+    """Seed default system email templates"""
+    from models import EmailTemplate
+    from services.template_service import template_service
+    
+    created = 0
+    updated = 0
+    
+    for key, data in template_service.DEFAULT_TEMPLATES.items():
+        # Check by name AND is_system=True (so we don't overwrite user custom templates validly named same)
+        # Actually name identifies the template type for system templates
+        existing = (await db.execute(
+            select(EmailTemplate).where(EmailTemplate.name == key, EmailTemplate.is_system == True)
+        )).scalar_one_or_none()
+        
+        category = "general"
+        if key in ["sales_proposal", "follow_up", "recovery", "welcome_crm"]:
+            category = "marketing"
+        elif key in ["payment_confirmation", "payment_instructions", "expiry_reminder"]:
+            category = "billing"
+            
+        if not existing:
+            new_tmpl = EmailTemplate(
+                name=key,
+                subject=data["subject"],
+                body=data["body"],
+                is_system=True,
+                is_active=True,
+                category=category
+            )
+            db.add(new_tmpl)
+            created += 1
+        else:
+            # Update system templates to latest version
+            if existing.body != data["body"] or existing.subject != data["subject"]:
+                existing.body = data["body"]
+                existing.subject = data["subject"]
+                existing.category = category
+                updated += 1
+                
+    await db.commit()
+    return {"status": "success", "created": created, "updated": updated}
+
 @app.get("/admin/crm/calendar")
 async def get_calendar(db: AsyncSession = Depends(get_db)):
     from models import CalendarActivity
