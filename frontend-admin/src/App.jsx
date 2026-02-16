@@ -3,6 +3,7 @@ import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layou
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const TV_URL = import.meta.env.VITE_TV_URL || "http://localhost:8080";
 
 // --- HELPERS ---
 const safeParse = (str, fallback = {}) => {
@@ -2186,7 +2187,7 @@ function App() {
                             }}>
                                 <iframe
                                     id="preview-frame"
-                                    src={`${window.location.protocol}//${window.location.hostname}:8080/?preview=${localCompany?.id}`}
+                                    src={`${TV_URL}/?preview=${localCompany?.id}`}
                                     style={{ width: '100%', height: '100%', border: 'none' }}
                                     title="TV Preview"
                                     onLoad={(e) => {
@@ -2206,7 +2207,7 @@ function App() {
                                 <strong>Tip:</strong> Sincronización 1:1 activa. Lo que ves aquí es exactamente lo que se muestra en las pantallas.
                             </div>
                             <button className="btn" style={{ width: '100%', fontSize: '0.75rem', justifyContent: 'center' }} onClick={() => {
-                                const tvUrl = `${window.location.protocol}//${window.location.hostname}:8080`;
+                                const tvUrl = TV_URL;
                                 window.open(tvUrl, '_blank');
                             }}><Eye size={14} /> Abrir en Pantalla Completa</button>
                         </div>
@@ -2301,7 +2302,7 @@ const OperatorView = ({ company, token, onLogout }) => {
                 <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
                     <h4>Previsualización TV</h4>
                     <iframe
-                        src={`${window.location.protocol}//${window.location.hostname}:8080/?preview=${company?.id}`}
+                        src={`${TV_URL}/?preview=${company?.id}`}
                         style={{ width: '100%', height: '400px', border: 'none', borderRadius: '12px', background: '#000' }}
                         title="TV Preview"
                     />
