@@ -1245,53 +1245,45 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
         raise HTTPException(404, "Código inválido")
         
     now_utc = datetime.utcnow()
-    # Normalize DB datetime (if it has tzinfo, make it naive to match utcnow)
+    # Normalize DB datetime
+    if not reg_code.expires_at:
+        reg_code.expires_at = now_utc + timedelta(minutes=10)
+        
     expires_at = reg_code.expires_at.replace(tzinfo=None) if reg_code.expires_at.tzinfo else reg_code.expires_at
     
-    print(f"DEBUG AUTH: Validating code {code}. Expires (Naive): {expires_at}, Now: {now_utc}")
-    
     if now_utc > expires_at:
-        print(f"DEBUG AUTH: Código expirado. Diff: {(now_utc - expires_at).total_seconds()}s")
         await db.delete(reg_code)
         await db.commit()
         raise HTTPException(400, "Código expirado")
         
     company_id = reg_code.company_id
-    
-    # Check limit
-    active_count = await db.execute(select(func.count()).select_from(Device).where(Device.company_id == company_id))
-    count = active_count.scalar()
-    
     company_res = await db.execute(select(Company).where(Company.id == company_id))
     company = company_res.scalar_one()
     
-    if count >= company.max_screens:
+    # Check screen limit
+    active_count = await db.execute(select(func.count()).select_from(Device).where(Device.company_id == company_id))
+    if active_count.scalar() >= company.max_screens:
         raise HTTPException(400, "Límite de pantallas alcanzado")
     
-    # Check Free Plan Usage (Block Reuse)
+    # Handle Free Plan Restrictions
     if company.plan == 'free':
         usage_res = await db.execute(select(FreePlanUsage).where(FreePlanUsage.uuid == device_uuid))
-        existing_usage = usage_res.scalar_one_or_none()
-        if existing_usage:
-             # Check if it is the same company? The user said "no se pueda volver a vincular a otro plan free".
-             # If it's the same company, maybe it's a re-link (e.g. WiFi reset)? 
-             # User said: "los planes free debe ser de un solo uso". Strict interpretation: Once used, never again on another free plan.
-             # But if I unlink and re-link to SAME company, should it block? 
-             # "importante el tiempo de vencimiento no se reinicia pos las vinculaciones nuevas" -> implies re-linking is allowed.
-             # So: If UUID used previously on Company A (Free), and now trying to link to Company B (Free) -> BLOCK.
-             # If linking back to Company A -> ALLOW (but time continues).
-             
-             if existing_usage.company_id != company_id:
-                  # USED ON ANOTHER COMPANY -> BLOCK
-                  raise HTTPException(403, "DEVICE_BLOCKED_FREE_TRIAL_USED")
-             else:
-                  # SAME COMPANY -> ALLOW (Time continues from first_screen_connected_at)
-                  pass
-        else:
-             # First time usage, will register at end
-             pass
+        usage = usage_res.scalar_one_or_none()
         
-    # Link Device
+        if usage:
+            if usage.company_id != company_id:
+                raise HTTPException(403, "DEVICE_BLOCKED_FREE_TRIAL_USED")
+        else:
+            # Register first-time usage
+            db.add(FreePlanUsage(uuid=device_uuid, company_id=company_id))
+
+        # Start Trial Timer if first screen
+        if not company.first_screen_connected_at:
+            company.first_screen_connected_at = now_utc
+            company.valid_until = now_utc + timedelta(days=60)
+            db.add(company)
+
+    # Link/Register Device
     dev_res = await db.execute(select(Device).where(Device.uuid == device_uuid))
     device = dev_res.scalar_one_or_none()
     
@@ -1302,42 +1294,15 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
         device = Device(uuid=device_uuid, company_id=company_id, name=f"TV-{device_uuid[:8]}")
         db.add(device)
     
-    # Free Plan Trial Logic (Phase 10 Supervisor)
-    if company.plan == 'free' and not company.first_screen_connected_at:
-        company.first_screen_connected_at = now_utc
-        company.valid_until = now_utc + timedelta(days=60)
-        db.add(company) # Ensure update
-        print(f"DEBUG SUPERVISOR: Started Free Trial for {company.name}. Valid until {company.valid_until}")
-        
-    # Free Plan Blocking Logic (One-Time Use)
-    if company.plan == 'free':
-        # Check if UUID exists in FreePlanUsage
-        usage_res = await db.execute(select(FreePlanUsage).where(FreePlanUsage.uuid == device_uuid))
-        usage = usage_res.scalar_one_or_none()
-        
-        # If it exists and belongs to a DIFFERENT company (or even same, to be strict), block.
-        # Requirement: "no se pueda volver a vincular a otro plan free... un solo uso".
-        if usage:
-             # If it was used before, we MUST BLOCK IT.
-             await db.commit() # Create device transaction might have passed, rollback?
-             # Actually, we should check this BEFORE linking. Moving logic up.
-             pass 
-        else:
-             # Register usage
-             new_usage = FreePlanUsage(uuid=device_uuid, company_id=company_id)
-             db.add(new_usage)
-
-    
-    # Register Usage if Free and not existing
-    if company.plan == 'free':
-         # Idempotency check handled by logic above or insert ignore
-         # We already checked 'existing_usage'. If it didn't exist, create it.
-         if not existing_usage:
-             db.add(FreePlanUsage(uuid=device_uuid, company_id=company_id))
-
-    await db.commit()
+    # Consume Registration Code
     await db.delete(reg_code)
-    await db.commit()
+    
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        print(f"CRITICAL: Link Failure: {str(e)}")
+        raise HTTPException(500, "Error interno al vincular dispositivo")
     
     return {"status": "success", "company_name": company.name}
 
