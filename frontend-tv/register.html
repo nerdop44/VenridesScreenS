@@ -82,7 +82,7 @@
 
 <body>
     <div class="registration-box">
-        <h2 style="color: #10b981;">Vincular Pantalla</h2>
+        <h2 style="color: #10b981;">Vincular Pantalla (v1.4-DIRECT)</h2>
         <p class="info-text">Ingresa el código de 6 dígitos generado en tu Panel Administrativo</p>
 
         <div class="code-input-container">
@@ -100,7 +100,7 @@
     </div>
 
     <script>
-        const API_URL = "/api";
+        const API_URL = "http://37.60.242.112:8000";
         const CLIENT_ID_STORAGE_KEY = "device_uuid";
         let deviceUuid = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
 
@@ -130,7 +130,7 @@
                     alert("Error: " + data.detail);
                 }
             } catch (e) {
-                alert("Error de conexión");
+                alert("DETALLE DEL FALLO DE RED (ALT): " + (e.message || "Error desconocido/timeout"));
             }
         };
     </script>
