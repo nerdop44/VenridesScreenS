@@ -2122,7 +2122,7 @@ function App() {
                             <BottomBarEditor
                                 company={localCompany}
                                 onChange={handleLocalChange}
-                                disabled={false}
+                                disabled={localCompany?.plan?.toLowerCase() === 'free' && localStorage.getItem('user_role') !== 'admin_master'}
                             />
                         )}
 

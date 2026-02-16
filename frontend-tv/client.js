@@ -273,29 +273,27 @@ async function fetchConfig() {
         }
 
         const data = await res.json();
+        console.log("Config fetch success. Last updated:", data.last_updated);
 
         // Optimización: Evitar re-renderizado si no hay cambios
         if (data.last_updated && lastConfigTimestamp === data.last_updated) {
-            console.log("Config is up to date (Timestamp match). Skipping render.");
-            // Still check for ping command as it might be ephemeral
+            // Still check for ping command
             if (data.ping_command) handlePing(true, data.name);
             return;
         }
 
         window.currentConfig = data;
         lastConfigTimestamp = data.last_updated;
-        console.log("Config received/updated:", data);
+        console.log("New config applied:", data);
         applyBranding(data);
     } catch (e) {
         console.error("Fetch Config Error:", e);
 
-        // Show visibility on why it failed
         const nameEl = document.getElementById("company-name");
         if (nameEl) {
-            nameEl.innerHTML = `Sin Conexión <br/><span style="font-size:0.5em; opacity:0.7;">${e.message}</span>`;
+            nameEl.innerHTML = `Reconectando... <br/><span style="font-size:0.5em; opacity:0.7;">${e.message}</span>`;
         }
 
-        // Even if offline, show registration screen so they can see the UUID
         if (!window.currentConfig && !previewCompanyId) {
             showRegistrationScreen();
             const uuidDisplay = document.getElementById("device-uuid-display");
@@ -303,8 +301,9 @@ async function fetchConfig() {
                 uuidDisplay.innerHTML = `${deviceUuid}<br/><span style="font-size:0.5em; color:#f87171;">Buscando servidor...</span>`;
             }
         }
-
-        setTimeout(fetchConfig, 10000); // Retry in 10s
+    } finally {
+        // Precise scheduling of next fetch to ensure continuity
+        setTimeout(fetchConfig, 10000);
     }
 }
 
