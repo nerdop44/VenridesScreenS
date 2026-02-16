@@ -907,6 +907,10 @@ function hideAlert() {
 }
 
 function showSuspended() {
+    if (previewCompanyId) {
+        console.log("Blocking showSuspended because we are in Preview Mode");
+        return;
+    }
     document.getElementById("kill-switch").classList.remove("hidden");
 }
 
@@ -935,8 +939,8 @@ function showBlockingScreen() {
 }
 
 function showRegistrationScreen() {
+    if (previewCompanyId) return;
     const reg = document.getElementById("registration-overlay");
-    if (!reg) return;
 
     // PREVENT RE-RENDERING IF ALREADY SHOWN (Fixes disappearing input while typing)
     if (!reg.classList.contains("hidden") && document.getElementById("reg-code-input")) {
