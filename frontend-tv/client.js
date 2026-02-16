@@ -260,23 +260,27 @@ async function fetchConfig() {
 }
 
 function getContrastColor(hex) {
-    if (!hex) return '#ffffff';
+    if (!hex || hex === 'transparent') return '#ffffff';
     const r = parseInt(hex.substring(1, 3), 16);
     const g = parseInt(hex.substring(3, 5), 16);
     const b = parseInt(hex.substring(5, 7), 16);
-    return ((r * 299) + (g * 587) + (b * 114)) / 1000 >= 128 ? '#000000' : '#ffffff';
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#000000' : '#ffffff';
 }
 
 function applyBranding(data) {
+    if (!data) return;
+
     handlePriorityContent(data.priority_content_url);
     handleAlert(data.active_alert);
     handlePing(data.ping_command, data.name);
+
     const regOverlay = document.getElementById("registration-overlay");
     const mainContainer = document.querySelector(".screen-container");
 
     if (regOverlay) regOverlay.classList.add("hidden");
     if (mainContainer) {
-        mainContainer.style.display = "grid"; // Show main layout only now
+        mainContainer.style.display = "grid";
     }
 
     const root = document.documentElement;
@@ -339,13 +343,15 @@ function applyBranding(data) {
 
     // Apply Content
     const nameEl = document.getElementById("company-name");
-    nameEl.innerText = data.name;
-    if (data.design_settings) {
-        // ds already defined above
-        nameEl.style.fontFamily = ds.name_font || 'inherit';
-        nameEl.style.fontSize = ds.name_size || '1.2rem';
-        nameEl.style.color = ds.name_color || 'inherit';
-        nameEl.style.fontWeight = ds.name_weight || 'bold';
+    if (nameEl) {
+        nameEl.innerText = data.name || "Venrides Screen";
+        if (data.design_settings) {
+            const ds = data.design_settings;
+            nameEl.style.fontFamily = ds.name_font || 'inherit';
+            nameEl.style.fontSize = ds.name_size || '1.2rem';
+            nameEl.style.color = ds.name_color || 'inherit';
+            nameEl.style.fontWeight = ds.name_weight || 'bold';
+        }
     }
 
     // Logo Handling (Bottom Logo)
@@ -900,7 +906,7 @@ function showRegistrationScreen() {
             }
         } catch (e) {
             console.error("Link Error:", e);
-            alert("Error de conexión");
+            alert("Error de conexión: " + (e.message || "Error desconocido"));
         }
     };
 }
