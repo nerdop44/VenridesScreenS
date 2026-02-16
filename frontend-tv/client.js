@@ -1,5 +1,6 @@
 const API_URL = "https://apitv.venrides.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
+console.log("Venrides TV Client v1.6 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
 
 const urlParams = new URLSearchParams(window.location.search);
 const previewCompanyId = urlParams.get('preview');
