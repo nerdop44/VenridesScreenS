@@ -43,50 +43,50 @@
 
 <body>
 
-    <!-- Video -->
-    <div id="video-container">
-        <div id="main-video-player" style="width: 100%; height: 100%;"></div>
-        <video id="drive-player" class="hidden" autoplay muted loop playsinline
-            style="width: 100%; height: 100%; object-fit: cover;"></video>
-    </div>
+    <div class="screen-container">
+        <!-- Video -->
+        <div id="video-container">
+            <div id="main-video-player" style="width: 100%; height: 100%;"></div>
+            <video id="drive-player" class="hidden" autoplay muted loop playsinline
+                style="width: 100%; height: 100%; object-fit: cover;"></video>
+        </div>
 
-    <!-- Sidebar -->
-    <div id="sidebar" style="display: flex; flex-direction: column; height: 100%;">
-        <h1 id="company-name"
-            style="text-align:center; font-size: 1.2rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; width: 100%;">
-            Cargando...</h1>
-        <div id="sidebar-content"
-            style="flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; width: 100%; overflow: hidden; padding: 1vh 0;">
-            <div id="sidebar-slot-1" class="sidebar-slot"
-                style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+        <!-- Sidebar -->
+        <div id="sidebar" style="display: flex; flex-direction: column; height: 100%;">
+            <h1 id="company-name"
+                style="text-align:center; font-size: 1.2rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; width: 100%;">
+                Cargando...</h1>
+            <div id="sidebar-content"
+                style="flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; width: 100%; overflow: hidden; padding: 1vh 0;">
+                <div id="sidebar-slot-1" class="sidebar-slot"
+                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+                </div>
+                <div id="sidebar-slot-2" class="sidebar-slot"
+                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+                </div>
+                <div id="sidebar-slot-3" class="sidebar-slot"
+                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+                </div>
             </div>
-            <div id="sidebar-slot-2" class="sidebar-slot"
-                style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
-            </div>
-            <div id="sidebar-slot-3" class="sidebar-slot"
-                style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+            <div id="logo-container"
+                style="width: 100%; height: auto; padding: 10px; display: flex; justify-content: center; align-items: center; margin-top: auto;">
+                <img id="logo" src="venrides_logo.png"
+                    style="width: 100%; max-height: 20vh; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 4px 10px rgba(0,0,0,0.5));" />
             </div>
         </div>
-        <div id="logo-container"
-            style="width: 100%; height: auto; padding: 10px; display: flex; justify-content: center; align-items: center; margin-top: auto;">
-            <img id="logo" src="venrides_logo.png"
-                style="width: 100%; max-height: 20vh; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 4px 10px rgba(0,0,0,0.5));" />
-        </div>
-    </div>
 
-    <!-- Empty slot for Layout C symmetry -->
-    <div id="empty-slot" style="grid-area: empty; background: rgba(0,0,0,0.1);"></div>
-
-    <!-- Bottom Bar -->
-    <div id="bottom-bar">
-        <div id="ticker-container"
-            style="display: flex; align-items: center; height: 100%; width: 100%; overflow: hidden;">
-            <div id="ticker-wrapper">
-                <!-- Content injected via JS -->
+        <!-- Bottom Bar -->
+        <div id="bottom-bar">
+            <div id="ticker-container"
+                style="display: flex; align-items: center; height: 100%; width: 100%; overflow: hidden;">
+                <div id="ticker-wrapper">
+                    <!-- Content injected via JS -->
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Overlays (Outside container for full-screen fixed positioning) -->
     <!-- Kill Switch Overlay -->
     <div id="kill-switch" class="overlay hidden">
         <div style="margin-bottom: 1rem;">
@@ -100,12 +100,20 @@
 
     <!-- Registration Overlay -->
     <div id="registration-overlay" class="overlay hidden">
-        <div class="info-text">Dispositivo No Registrado</div>
-        <div class="info-text" style="font-size: 1em; margin-top: 10px;">ID de Dispositivo:</div>
-        <div id="device-uuid-display" style="font-size: 1.2em; color: #aaa; margin-bottom: 20px;">Computing...</div>
+        <div style="margin-bottom: 20px;">
+            <img src="venrides_logo.png" style="height: 120px; filter: drop-shadow(0 0 10px rgba(0,157,255,0.5));" />
+        </div>
+        <div class="info-text" style="font-weight: bold; font-size: 1.5em; color: #009DFF;">Dispositivo No Registrado
+        </div>
+        <div class="info-text" style="font-size: 1em; margin-top: 20px; opacity: 0.8;">ID DE VINCULACIÓN:</div>
+        <div id="device-uuid-display"
+            style="font-size: 1.8em; color: #fff; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 10px; border: 1px solid rgba(0,157,255,0.3); font-family: monospace;">
+            Computing...</div>
 
-        <div class="info-text">Para vincular, ingrese al Panel Administrativo y use el ID de arriba.</div>
-        <div style="margin-top: 40px; font-size: 0.8em; opacity: 0.5;">Esperando configuración...</div>
+        <div class="info-text" style="max-width: 600px; line-height: 1.4;">Para activar esta pantalla, ingrese al Panel
+            Administrativo de Venrides y use el ID mostrado arriba.</div>
+        <div style="margin-top: 40px; font-size: 0.9em; color: #009DFF; animation: pulse 2s infinite;">Esperando señal
+            del servidor...</div>
     </div>
 
     <div id="priority-player-container" class="overlay hidden" style="background: black; z-index: 1000;">
@@ -113,7 +121,7 @@
     </div>
 
     <!-- Live Alert Overlay -->
-    <div id="alert-overlay" class="hidden">
+    <div id="alert-overlay" class="overlay hidden">
         <div class="alert-box">
             <div id="alert-title" class="alert-title">¡AVISO IMPORTANTE!</div>
             <div id="alert-body" class="alert-body"></div>
@@ -121,15 +129,15 @@
     </div>
 
     <!-- Ping Overlay -->
-    <div id="ping-overlay" class="overlay hidden" style="background: rgba(0,0,0,0.8);">
+    <div id="ping-overlay" class="overlay hidden" style="background: rgba(0,0,0,0.85);">
         <div style="text-align: center; animation: pulse 1s infinite alternate;">
             <div style="font-size: 8rem;">👀</div>
-            <div style="font-size: 3rem; font-weight: bold; margin-top: 2rem;">AQUÍ ESTOY</div>
-            <div id="ping-device-name" style="font-size: 2rem; color: #fbbf24; margin-top: 1rem;"></div>
+            <div style="font-size: 3.5rem; font-weight: bold; margin-top: 2rem; color: #fff;">AQUÍ ESTOY</div>
+            <div id="ping-device-name"
+                style="font-size: 2.2rem; color: #fbbf24; margin-top: 1rem; text-shadow: 0 0 10px rgba(251,191,36,0.5);">
+            </div>
         </div>
     </div>
-
-    <!-- Brand Watermark Removed -->
 
     <script src="client.js"></script>
 </body>

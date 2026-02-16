@@ -35,31 +35,43 @@ def generate_icons():
         img.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'ic_launcher_round.png'))
         print(f"Generated Icon {folder}")
 
-    # Splashes - simplified: we centers the logo on a black background
-    # Standard sizes for splashes vary, let's use 1024x1024 as a safe middle ground for many
+    # Splashes - Center logo on Dark Blue/Black background to prevent distortion
+    BG_COLOR = (0, 11, 26) # Dark Navy Blue
+    
     for folder in SPLASH_FOLDERS:
         out_folder = os.path.join(ANDROID_RES, folder)
         if not os.path.exists(out_folder): os.makedirs(out_folder)
         
-        # Simple resize of logo as splash (Android will scale/center based on theme)
-        # Note: Ideally splash is a separate design, but using logo is better than "other image"
-        img.resize((512, 512), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'splash.png'))
-        print(f"Generated Splash {folder}")
+        # Determine orientation from folder name
+        is_land = 'land' in folder
+        size = (1280, 720) if is_land else (720, 1280)
+        if folder == 'drawable': size = (1024, 1024) # Default square fallback
 
-    # TV Banner (320x180)
+        splash_bg = Image.new('RGB', size, color=BG_COLOR)
+        
+        # Resize logo to fit nicely in the center (avoiding edges)
+        logo_fit = img.copy()
+        max_logo_w = int(size[0] * 0.6)
+        max_logo_h = int(size[1] * 0.5)
+        logo_fit.thumbnail((max_logo_w, max_logo_h), Image.Resampling.LANCZOS)
+        
+        # Center logo
+        offset = ((size[0] - logo_fit.width) // 2, (size[1] - logo_fit.height) // 2)
+        splash_bg.paste(logo_fit, offset, logo_fit if logo_fit.mode == 'RGBA' else None)
+        splash_bg.save(os.path.join(out_folder, 'splash.png'))
+        print(f"Generated Centered Splash {folder} ({size[0]}x{size[1]})")
+
+    # TV Banner (320x180) - Must be solid and centered
     banner_folder = os.path.join(ANDROID_RES, 'drawable')
     if not os.path.exists(banner_folder): os.makedirs(banner_folder)
     
-    # Create black background for banner
-    banner_bg = Image.new('RGB', (320, 180), color=(0, 0, 0))
-    # Resize logo to fit in banner (with padding)
+    banner_bg = Image.new('RGB', (320, 180), color=BG_COLOR)
     logo_for_banner = img.copy()
-    logo_for_banner.thumbnail((280, 140), Image.Resampling.LANCZOS)
-    # Center logo
+    logo_for_banner.thumbnail((260, 120), Image.Resampling.LANCZOS)
     offset = ((320 - logo_for_banner.width) // 2, (180 - logo_for_banner.height) // 2)
-    banner_bg.paste(logo_for_banner, offset)
+    banner_bg.paste(logo_for_banner, offset, logo_for_banner if logo_for_banner.mode == 'RGBA' else None)
     banner_bg.save(os.path.join(banner_folder, 'banner.png'))
-    print("Generated TV Banner (320x180)")
+    print("Generated Fixed TV Banner (320x180)")
 
 if __name__ == '__main__':
     generate_icons()
