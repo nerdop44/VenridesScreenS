@@ -1522,7 +1522,8 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
         "sidebar_header_type": company.sidebar_header_type,
         "sidebar_header_value": company.sidebar_header_value or company.name,
         "menus": [ {"name": i.name, "price": i.price, "category": i.category} for i in company.menus ],
-        "ping_command": False
+        "ping_command": False,
+        "last_updated": company.updated_at.isoformat() if company.updated_at else None
     }
 
     # Internal Ping Check (Low Level)
