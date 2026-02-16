@@ -2728,6 +2728,62 @@ async def get_table_data(table_name: str, limit: int = 100, db: AsyncSession = D
     except Exception as e:
         raise HTTPException(500, f"Error al leer tabla {table_name}: {str(e)}")
 
+@app.delete("/admin/maintenance/table/{table_name}/{row_id}")
+async def delete_table_row(table_name: str, row_id: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
+    """Borra un registro específico por ID"""
+    from sqlalchemy import text
+    if not all(c.isalnum() or c == '_' for c in table_name):
+        raise HTTPException(400, "Nombre de tabla inválido")
+    
+    try:
+        # Intentar borrar por id (es el estándar en este proyecto)
+        query = text(f"DELETE FROM {table_name} WHERE id = :rid")
+        # Intentamos parsear a int si es posible para mayor seguridad
+        try: rid = int(row_id)
+        except: rid = row_id
+        
+        result = await db.execute(query, {"rid": rid})
+        await db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(404, "Registro no encontrado o la columna 'id' no existe")
+        return {"status": "success", "message": f"Registro {row_id} eliminado de {table_name}"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(500, f"Error al borrar: {str(e)}")
+
+@app.put("/admin/maintenance/table/{table_name}/{row_id}")
+async def update_table_row(table_name: str, row_id: str, data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
+    """Actualiza un registro específico por ID"""
+    from sqlalchemy import text
+    if not all(c.isalnum() or c == '_' for c in table_name):
+        raise HTTPException(400, "Nombre de tabla inválido")
+    if not data:
+        raise HTTPException(400, "No hay datos para actualizar")
+    
+    try:
+        # Construir set clause dinámicamente (escapando ligeramente nombres de columnas alfanuméricas)
+        set_parts = []
+        params = {"rid": int(row_id) if row_id.isdigit() else row_id}
+        for k, v in data.items():
+            if not all(c.isalnum() or c == '_' for c in k): continue
+            if k == "id": continue # No permitir cambiar el ID
+            set_parts.append(f"{k} = :{k}")
+            params[k] = v
+        
+        if not set_parts:
+            raise HTTPException(400, "No se encontraron campos válidos para actualizar")
+            
+        sql = f"UPDATE {table_name} SET {', '.join(set_parts)} WHERE id = :rid"
+        result = await db.execute(text(sql), params)
+        await db.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(404, "Registro no encontrado")
+        return {"status": "success", "message": f"Registro {row_id} actualizado en {table_name}"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(500, f"Error al actualizar: {str(e)}")
+
 @app.post("/admin/maintenance/execute-sql")
 async def execute_raw_sql(data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Ejecuta SQL directo (SOLO PARA SUPER ADMIN)"""
