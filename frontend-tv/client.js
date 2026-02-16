@@ -4,6 +4,8 @@ console.log("Venrides TV Client v1.6 - Preview Mode:", new URLSearchParams(windo
 
 const urlParams = new URLSearchParams(window.location.search);
 const previewCompanyId = urlParams.get('preview');
+console.log("Full TV App URL:", window.location.href);
+console.log("Detected Preview ID:", previewCompanyId);
 
 // Generate or Retrieve Device UUID
 // Simple UUID Generator for compatibility with old Smart TV browsers
