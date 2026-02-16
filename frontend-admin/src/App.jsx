@@ -2777,7 +2777,7 @@ const CrmPanel = ({ token }) => {
     };
     const insertVariable = (v) => { if (editingCopy) setEditingCopy({ ...editingCopy, body: (editingCopy.body || '') + v }); };
     const insertVariableNew = (v) => { setNewTemplate({ ...newTemplate, body: (newTemplate.body || '') + v }); };
-    const getDaysInMonth = (date) => { const y = date.getFullYear(), m = date.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = [], pld = new Date(y, m, 0).getDate(); for (let i = fd - 1; i >= 0; i--) days.push({ date: new Date(y, m - 1, pld - i), otherMonth: true }); for (let i = 1; i <= dim; i++) days.push({ date: new Date(y, m, i), currentMonth: true }); const rem = 42 - days.length; for (let i = 1; i <= rem; i++) days.push({ date: new Date(y, m + 1, i), otherMonth: true }); return days; };
+    const getDaysInMonth = (date) => { const y = date.getFullYear(), m = date.getMonth(); let fd = new Date(y, m, 1).getDay(); fd = (fd === 0 ? 6 : fd - 1); const dim = new Date(y, m + 1, 0).getDate(), days = [], pld = new Date(y, m, 0).getDate(); for (let i = fd - 1; i >= 0; i--) days.push({ date: new Date(y, m - 1, pld - i), otherMonth: true }); for (let i = 1; i <= dim; i++) days.push({ date: new Date(y, m, i), currentMonth: true }); const rem = 42 - days.length; for (let i = 1; i <= rem; i++) days.push({ date: new Date(y, m + 1, i), otherMonth: true }); return days; };
     const monthName = currentMonth.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
     const calendarDays = getDaysInMonth(currentMonth);
     const catLabels = { bienvenida: '👋 Bienvenida', cobranza: '💰 Cobranza', marketing: '📣 Marketing', soporte: '🛠️ Soporte', general: '📋 General' };
@@ -2831,7 +2831,7 @@ const CrmPanel = ({ token }) => {
                 </div>
                 <div className="calendar-container">
                     <div className="calendar-grid">
-                        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => <div key={d} className="calendar-day-header">{d}</div>)}
+                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => <div key={d} className="calendar-day-header">{d}</div>)}
                         {calendarDays.map((day, i) => {
                             const ds = day.date.toISOString().split('T')[0];
                             const evts = activities.filter(a => a.activity_date && a.activity_date.split('T')[0] === ds);
