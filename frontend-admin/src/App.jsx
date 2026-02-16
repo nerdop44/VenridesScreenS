@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi, BarChart, Activity, ShoppingCart, Gift, Target } from 'lucide-react';
+import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi, BarChart, Activity, ShoppingCart, Gift, Target, Database, RotateCcw } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -1280,6 +1280,7 @@ function App() {
                     { id: 'users', label: 'Usuarios', icon: <Users size={18} />, perm: 'users' },
                     { id: 'devices', label: 'Dispositivos', icon: <Monitor size={18} />, perm: 'devices' },
                     { id: 'payments', label: 'Pagos', icon: <DollarSign size={18} />, perm: 'payments' },
+                    { id: 'maintenance', label: 'Mantenimiento', icon: <ShieldCheck size={18} />, perm: 'admin_master' },
                 ]
             },
             {
@@ -1328,7 +1329,8 @@ function App() {
                             <div key={group.title} className="sidebar-group-custom">
                                 <div className="sidebar-group-title-custom">{group.title}</div>
                                 {group.items.map(item => {
-                                    if (item.perm && !hasPermission(item.perm)) return null;
+                                    const isAllowed = isAdmin || isMaster || !item.perm || hasPermission(item.perm);
+                                    if (!isAllowed) return null;
                                     return (
                                         <button
                                             key={item.id}
@@ -1664,6 +1666,12 @@ function App() {
                         <div className="glass-card">
                             <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BarChart size={20} /> SEO & Analítica de Landing</h2>
                             <SeoPanel token={token} />
+                        </div>
+                    )}
+                    {adminTab === 'maintenance' && (
+                        <div className="glass-card">
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={20} /> Mantenimiento del Sistema</h2>
+                            <MaintenancePanel token={token} />
                         </div>
                     )}
 
@@ -2722,6 +2730,173 @@ const EcosystemDashboard = ({ token }) => {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const MaintenancePanel = ({ token }) => {
+    const [tables, setTables] = useState([]);
+    const [selectedTable, setSelectedTable] = useState(null);
+    const [tableData, setTableData] = useState([]);
+    const [sqlQuery, setSqlQuery] = useState('');
+    const [sqlResult, setSqlResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const fetchTables = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/tables`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setTables(data.tables || []);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    const fetchTableData = async (tableName) => {
+        setSelectedTable(tableName);
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/table/${tableName}?limit=50`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setTableData(data.data || []);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    const executeSql = async () => {
+        if (!sqlQuery.trim()) return;
+        if (sqlQuery.toUpperCase().includes('DELETE') || sqlQuery.toUpperCase().includes('DROP') || sqlQuery.toUpperCase().includes('UPDATE')) {
+            if (!confirm('⚠️ ESTA ACCIÓN ES DESTRUCTIVA. ¿Estás seguro de ejecutar este SQL?')) return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/execute-sql`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ sql: sqlQuery })
+            });
+            const data = await res.json();
+            setSqlResult(data);
+            if (data.status === 'success') {
+                alert('SQL Ejecutado correctamente');
+                fetchTables();
+            } else {
+                alert('Error en SQL: ' + data.detail);
+            }
+        } catch (e) { alert('Error de conexión'); }
+        finally { setLoading(false); }
+    };
+
+    const cleanupDB = async () => {
+        if (!confirm('🚨 ATENCIÓN: Se borrarán TODOS los dispositivos, códigos y usos de plan gratuitos. ¿Continuar?')) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/db-cleanup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert('✅ Base de datos limpiada correctamente. Los TVs pedirán vinculación de nuevo.');
+                fetchTables();
+            }
+        } catch (e) { alert('Error'); }
+        finally { setLoading(false); }
+    };
+
+    const triggerBackup = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/backup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            alert(data.message || 'Respaldo iniciado');
+        } catch (e) { alert('Error'); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => { fetchTables(); }, [token]);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="grid-2" style={{ gridTemplateColumns: '1fr 2fr' }}>
+                <section className="glass-card" style={{ padding: '1.5rem', height: 'fit-content' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Database size={18} /> Tablas</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto' }}>
+                        {tables.map(t => (
+                            <button
+                                key={t}
+                                onClick={() => fetchTableData(t)}
+                                className={`btn ${selectedTable === t ? 'btn-primary' : ''}`}
+                                style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem' }}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <button onClick={cleanupDB} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: '#ef4444', width: '100%' }}>
+                            <RotateCcw size={16} /> Limpiar Registros TVs
+                        </button>
+                        <button onClick={triggerBackup} className="btn" style={{ width: '100%' }}>
+                            <HardDrive size={16} /> Respaldar Base Datos
+                        </button>
+                    </div>
+                </section>
+
+                <section className="glass-card" style={{ padding: '1.5rem' }}>
+                    {selectedTable ? (
+                        <>
+                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Datos de {selectedTable} (Limit 50)</h3>
+                            <div className="table-responsive" style={{ maxHeight: '500px' }}>
+                                <table className="admin-table" style={{ fontSize: '0.75rem' }}>
+                                    <thead>
+                                        <tr>
+                                            {tableData.length > 0 && Object.keys(tableData[0]).map(k => <th key={k}>{k}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tableData.map((row, idx) => (
+                                            <tr key={idx}>
+                                                {Object.values(row).map((v, i) => <td key={i}>{String(v)}</td>)}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '5rem', opacity: 0.5 }}>
+                            <Database size={48} style={{ marginBottom: '1rem' }} />
+                            <p>Seleccione una tabla para inspeccionar</p>
+                        </div>
+                    )}
+                </section>
+            </div>
+
+            <section className="glass-card" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Terminal SQL Directo (Solo Super Admin)</h3>
+                <textarea
+                    value={sqlQuery}
+                    onChange={e => setSqlQuery(e.target.value)}
+                    placeholder="SELECT * FROM devices WHERE is_active = false;"
+                    rows={4}
+                    style={{ width: '100%', background: '#000', color: '#0f0', fontFamily: 'monospace', padding: '1rem', borderRadius: '8px', border: '1px solid var(--primary-color)' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                    <button onClick={executeSql} className="btn btn-primary" disabled={loading}>Ejecutar SQL</button>
+                </div>
+                {sqlResult && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.5)', borderRadius: '8px', overflowX: 'auto' }}>
+                        <pre style={{ fontSize: '0.75rem' }}>{JSON.stringify(sqlResult, null, 2)}</pre>
+                    </div>
+                )}
+            </section>
         </div>
     );
 };
