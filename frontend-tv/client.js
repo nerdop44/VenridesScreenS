@@ -132,6 +132,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize config fetch immediately
     fetchConfig();
+
+    // Listen for Real-Time Preview Updates (Admin Iframe)
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'PREVIEW_UPDATE') {
+            console.log("⚡ Preview Update Received:", event.data.payload);
+            const newData = event.data.payload;
+
+            // Merge into current config
+            window.currentConfig = { ...(window.currentConfig || {}), ...newData };
+
+            // Re-apply visual settings immediately
+            applyBranding(window.currentConfig);
+
+            // Force text updates that might not be caught by generic applyBranding if needed
+            // e.g. update sidebar items specifically if changed
+            try {
+                if (newData.sidebar_content) {
+                    sidebarItems = Array.isArray(newData.sidebar_content) ? newData.sidebar_content : JSON.parse(newData.sidebar_content || '[]');
+                    startSidebarRotation();
+                }
+                if (newData.bottom_bar_content) {
+                    bottomData = (typeof newData.bottom_bar_content === 'object') ? newData.bottom_bar_content : JSON.parse(newData.bottom_bar_content || '{}');
+                    updateBottomBar();
+                }
+            } catch (e) { console.error("Preview Update Parse Error", e); }
+        }
+    });
 });
 
 // Helper to transform Drive URLs for Images (View)
@@ -318,6 +345,19 @@ function applyBranding(data) {
     root.style.setProperty('--sidebar-text', ds.sidebar_text || getContrastColor(data.primary_color));
     root.style.setProperty('--bottom-bg', ds.bottom_bar_bg || data.accent_color || '#8d6e63');
     root.style.setProperty('--ticker-text-color', ds.bottom_bar_text || getContrastColor(data.accent_color));
+
+    // Dynamic Dimensions (Fix for Sidebar/Footer sizing)
+    if (ds.sidebar_width) {
+        root.style.setProperty('--sidebar-width', `${ds.sidebar_width}vw`);
+    } else {
+        root.style.setProperty('--sidebar-width', '22vw'); // Fallback
+    }
+
+    if (ds.bottom_bar_height) {
+        root.style.setProperty('--bottom-height', `${ds.bottom_bar_height}vh`);
+    } else {
+        root.style.setProperty('--bottom-height', '10vh'); // Fallback
+    }
 
     // Sidebar Background Image & Effects
     const sidebar = document.getElementById("sidebar");

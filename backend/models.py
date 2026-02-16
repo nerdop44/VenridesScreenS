@@ -159,6 +159,7 @@ class FreePlanUsage(Base):
     __tablename__ = "free_plan_usages"
     
     uuid = Column(String, primary_key=True, index=True)
+    id = Column(Integer, unique=True, autoincrement=True) # Added for generic maintenance
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=True) # First company that used it
     used_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)

@@ -2160,10 +2160,30 @@ function App() {
                                 width: '200%' /* Double width */
                             }}>
                                 <iframe
+                                    id="preview-frame"
                                     src={`${window.location.protocol}//${window.location.hostname}:8080/?preview=${localCompany?.id}`}
                                     style={{ width: '100%', height: '100%', border: 'none' }}
                                     title="TV Preview"
+                                    onLoad={(e) => {
+                                        // Send initial data once loaded
+                                        if (localCompany) {
+                                            e.target.contentWindow.postMessage({
+                                                type: 'PREVIEW_UPDATE',
+                                                payload: localCompany
+                                            }, '*');
+                                        }
+                                    }}
                                 />
+                                {/* Real-time Preview Sync */}
+                                {React.useEffect(() => {
+                                    const iframe = document.getElementById('preview-frame');
+                                    if (iframe && iframe.contentWindow && localCompany) {
+                                        iframe.contentWindow.postMessage({
+                                            type: 'PREVIEW_UPDATE',
+                                            payload: localCompany
+                                        }, '*');
+                                    }
+                                }, [localCompany])}
                             </div>
                         </div>
                         <div style={{ padding: '1.2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
