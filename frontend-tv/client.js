@@ -1,4 +1,4 @@
-const API_URL = "https://apitv.venrides.com/api";
+const API_URL = "https://apitv.venrides.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -272,7 +272,13 @@ function applyBranding(data) {
     handleAlert(data.active_alert);
     handlePing(data.ping_command, data.name);
     const regOverlay = document.getElementById("registration-overlay");
+    const mainContainer = document.querySelector(".screen-container");
+
     if (regOverlay) regOverlay.classList.add("hidden");
+    if (mainContainer) {
+        mainContainer.style.display = "grid"; // Show main layout only now
+    }
+
     const root = document.documentElement;
     const body = document.body;
 
@@ -843,6 +849,11 @@ function showBlockingScreen() {
 function showRegistrationScreen() {
     const reg = document.getElementById("registration-overlay");
     if (!reg) return;
+
+    // Ensure main UI is hidden during registration
+    const mainContainer = document.querySelector(".screen-container");
+    if (mainContainer) mainContainer.style.display = "none";
+
     reg.classList.remove("hidden");
     reg.innerHTML = `
         <div class="registration-box">
