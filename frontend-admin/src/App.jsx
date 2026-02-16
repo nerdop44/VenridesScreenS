@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi, BarChart, Activity, ShoppingCart, Gift, Target, Database, RotateCcw } from 'lucide-react';
+import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Wifi, BarChart, Activity, ShoppingCart, Gift, Target, Database, RotateCcw, Search, RefreshCw } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -2741,6 +2741,8 @@ const MaintenancePanel = ({ token }) => {
     const [sqlQuery, setSqlQuery] = useState('');
     const [sqlResult, setSqlResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [tableFilter, setTableFilter] = useState('');
+    const [rowLimit, setRowLimit] = useState(50);
 
     const fetchTables = async () => {
         setLoading(true);
@@ -2754,11 +2756,15 @@ const MaintenancePanel = ({ token }) => {
         finally { setLoading(false); }
     };
 
-    const fetchTableData = async (tableName) => {
-        setSelectedTable(tableName);
+    const fetchTableData = async (tableName, limitOverride = null) => {
+        const targetTableName = tableName || selectedTable;
+        if (!targetTableName) return;
+
+        setSelectedTable(targetTableName);
         setLoading(true);
+        const limit = limitOverride || rowLimit;
         try {
-            const res = await fetch(`${API_BASE}/admin/maintenance/table/${tableName}?limit=50`, {
+            const res = await fetch(`${API_BASE}/admin/maintenance/table/${targetTableName}?limit=${limit}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -2827,13 +2833,23 @@ const MaintenancePanel = ({ token }) => {
             <div className="grid-2" style={{ gridTemplateColumns: '1fr 2fr' }}>
                 <section className="glass-card" style={{ padding: '1.5rem', height: 'fit-content' }}>
                     <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Database size={18} /> Tablas</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto' }}>
-                        {tables.map(t => (
+                    <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                        <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar tabla..."
+                            value={tableFilter}
+                            onChange={e => setTableFilter(e.target.value)}
+                            style={{ paddingLeft: '2.2rem', marginBottom: 0, fontSize: '0.8rem' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
+                        {tables.filter(t => t.toLowerCase().includes(tableFilter.toLowerCase())).map(t => (
                             <button
                                 key={t}
                                 onClick={() => fetchTableData(t)}
                                 className={`btn ${selectedTable === t ? 'btn-primary' : ''}`}
-                                style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem' }}
+                                style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem', justifyContent: 'flex-start' }}
                             >
                                 {t}
                             </button>
@@ -2852,12 +2868,35 @@ const MaintenancePanel = ({ token }) => {
                 <section className="glass-card" style={{ padding: '1.5rem' }}>
                     {selectedTable ? (
                         <>
-                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Datos de {selectedTable} (Limit 50)</h3>
-                            <div className="table-responsive" style={{ maxHeight: '500px' }}>
-                                <table className="admin-table" style={{ fontSize: '0.75rem' }}>
-                                    <thead>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h3 style={{ fontSize: '1rem', margin: 0 }}>Datos de {selectedTable}</h3>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <select
+                                        value={rowLimit}
+                                        onChange={e => {
+                                            const newLimit = parseInt(e.target.value);
+                                            setRowLimit(newLimit);
+                                            fetchTableData(selectedTable, newLimit);
+                                        }}
+                                        style={{ width: 'auto', marginBottom: 0, padding: '0.3rem 0.5rem', fontSize: '0.8rem' }}
+                                    >
+                                        <option value={50}>50 filas</option>
+                                        <option value={100}>100 filas</option>
+                                        <option value={500}>500 filas</option>
+                                        <option value={5000}>Todo (max 5000)</option>
+                                    </select>
+                                    <button onClick={() => fetchTableData()} className="btn" style={{ padding: '0.4rem' }}>
+                                        <RefreshCw size={14} className={loading ? 'spin' : ''} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="table-responsive" style={{ maxHeight: '600px', overflow: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                                <table className="admin-table" style={{ fontSize: '0.7rem', width: 'max-content', minWidth: '100%' }}>
+                                    <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 10 }}>
                                         <tr>
-                                            {tableData.length > 0 && Object.keys(tableData[0]).map(k => <th key={k}>{k}</th>)}
+                                            {tableData.length > 0 && Object.keys(tableData[0]).map(k => (
+                                                <th key={k} style={{ whiteSpace: 'nowrap', borderBottom: '2px solid var(--primary-color)' }}>{k}</th>
+                                            ))}
                                         </tr>
                                     </thead>
                                     <tbody>
