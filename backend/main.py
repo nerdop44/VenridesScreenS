@@ -2751,6 +2751,16 @@ async def submit_contact_form(data: ContactFormData, request: Request):
     except Exception as e:
         logger.warning(f"Failed to log contact to Sheets: {e}")
     
+    # 1b. Save lead to DB for mass-email
+    try:
+        from models import Lead
+        new_lead = Lead(name=data.nombre, email=data.email, phone=data.telefono, source="contact_form", notes=f"{data.asunto}: {data.mensaje}")
+        async with AsyncSessionLocal() as ldb:
+            ldb.add(new_lead)
+            await ldb.commit()
+    except Exception as e:
+        logger.warning(f"Failed to save lead to DB: {e}")
+    
     # 2. Send email notification
     try:
         notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
@@ -3041,10 +3051,21 @@ async def benry_save_lead(data: BenryLeadData):
             "tipo_lead": "contacto_directo"
         })
         
-        return {"message": "Lead registrado exitosamente", "status": "success"}
     except Exception as e:
-        logger.error(f"Failed to save Benry lead: {e}")
-        return {"message": "Información recibida", "status": "partial"}
+        logger.error(f"Failed to log Benry lead to Sheets: {e}")
+    
+    # Also save to DB for mass-email
+    try:
+        if data.email:
+            from models import Lead
+            new_lead = Lead(name=data.nombre, email=data.email, phone=data.telefono, source="benry", plan_interest=data.plan_interes, notes=f"Session: {data.session_id}")
+            async with AsyncSessionLocal() as ldb:
+                ldb.add(new_lead)
+                await ldb.commit()
+    except Exception as e:
+        logger.error(f"Failed to save Benry lead to DB: {e}")
+    
+    return {"message": "Lead registrado exitosamente", "status": "success"}
 
 @app.delete("/api/benry/session/{session_id}")
 async def benry_clear_session(session_id: str):
@@ -3533,20 +3554,18 @@ async def delete_calendar_activity(activity_id: int, db: AsyncSession = Depends(
 
 @app.post("/admin/crm/mass-email")
 async def send_mass_email(data: dict, db: AsyncSession = Depends(get_db)):
-    """Send mass email to all active companies using a template"""
-    from models import EmailTemplate, Company
+    """Send mass email to companies, leads, or both"""
+    from models import EmailTemplate, Company, Lead
     from utils.email_sender import send_email
     
     template_id = data.get("template_id")
-    custom_subject = data.get("subject")
-    custom_body = data.get("body")
+    target = data.get("target", "companies")  # companies, leads, all
     promo_name = data.get("promo_name", "")
     promo_code = data.get("promo_code", "")
     promo_discount = data.get("promo_discount", "")
+    subject = data.get("subject")
+    body_html = data.get("body")
     
-    # Get template if provided
-    body_html = custom_body or ""
-    subject = custom_subject or ""
     if template_id:
         tmpl = (await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))).scalar_one_or_none()
         if tmpl:
@@ -3556,17 +3575,12 @@ async def send_mass_email(data: dict, db: AsyncSession = Depends(get_db)):
     if not body_html or not subject:
         raise HTTPException(400, "Se requiere asunto y cuerpo del email")
     
-    # Get all active companies with email
-    companies_res = await db.execute(select(Company).where(Company.is_active == True, Company.email != None))
-    companies = companies_res.scalars().all()
+    recipients = []
     
-    sent = 0
-    errors = 0
-    for company in companies:
-        try:
-            # Replace variables
-            rendered_subject = subject
-            rendered_body = body_html
+    # Collect company emails
+    if target in ("companies", "all"):
+        companies_res = await db.execute(select(Company).where(Company.is_active == True, Company.email != None))
+        for company in companies_res.scalars().all():
             replacements = {
                 "{{nombre_empresa}}": company.name or "",
                 "{{contacto}}": company.contact_person or company.name or "",
@@ -3583,52 +3597,145 @@ async def send_mass_email(data: dict, db: AsyncSession = Depends(get_db)):
                 "{{descuento}}": promo_discount,
                 "{{whatsapp}}": company.whatsapp or "",
             }
-            for var, val in replacements.items():
+            recipients.append({"email": company.email, "replacements": replacements})
+    
+    # Collect lead emails
+    if target in ("leads", "all"):
+        leads_res = await db.execute(select(Lead).where(Lead.email != None))
+        for lead in leads_res.scalars().all():
+            if any(r["email"] == lead.email for r in recipients):
+                continue  # Skip duplicates
+            replacements = {
+                "{{nombre_empresa}}": lead.name or "Estimado/a",
+                "{{contacto}}": lead.name or "Estimado/a",
+                "{{email}}": lead.email or "",
+                "{{telefono}}": lead.phone or "",
+                "{{plan}}": lead.plan_interest or "",
+                "{{fecha_vencimiento}}": "",
+                "{{pantallas_activas}}": "",
+                "{{max_pantallas}}": "",
+                "{{monto_pago}}": "",
+                "{{fecha_hoy}}": datetime.utcnow().strftime("%d/%m/%Y"),
+                "{{nombre_promo}}": promo_name,
+                "{{codigo_promo}}": promo_code,
+                "{{descuento}}": promo_discount,
+                "{{whatsapp}}": "",
+            }
+            recipients.append({"email": lead.email, "replacements": replacements})
+    
+    sent = 0
+    errors = 0
+    for r in recipients:
+        try:
+            rendered_subject = subject
+            rendered_body = body_html
+            for var, val in r["replacements"].items():
                 rendered_subject = rendered_subject.replace(var, val)
                 rendered_body = rendered_body.replace(var, val)
-            
-            send_email(company.email, rendered_subject, rendered_body, html=True)
+            send_email(r["email"], rendered_subject, rendered_body, html=True)
             sent += 1
         except Exception as e:
-            logger.error(f"Mass email error for {company.email}: {e}")
+            logger.error(f"Mass email error for {r['email']}: {e}")
             errors += 1
     
-    return {"status": "success", "sent": sent, "errors": errors, "total": len(companies)}
+    return {"status": "success", "sent": sent, "errors": errors, "total": len(recipients)}
+
+# --- Send email to a specific company ---
+@app.post("/admin/crm/send-email-company/{company_id}")
+async def send_email_to_company(company_id: int, data: dict, db: AsyncSession = Depends(get_db)):
+    """Send a template email to a specific company"""
+    from models import EmailTemplate, Company
+    from utils.email_sender import send_email
+    
+    company = (await db.execute(select(Company).where(Company.id == company_id))).scalar_one_or_none()
+    if not company or not company.email:
+        raise HTTPException(404, "Empresa no encontrada o sin email")
+    
+    template_id = data.get("template_id")
+    subject = data.get("subject", "")
+    body_html = data.get("body", "")
+    
+    if template_id:
+        tmpl = (await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))).scalar_one_or_none()
+        if tmpl:
+            subject = tmpl.subject
+            body_html = tmpl.body
+    
+    if not subject or not body_html:
+        raise HTTPException(400, "Se requiere plantilla o asunto y cuerpo")
+    
+    replacements = {
+        "{{nombre_empresa}}": company.name or "",
+        "{{contacto}}": company.contact_person or company.name or "",
+        "{{email}}": company.email or "",
+        "{{telefono}}": company.phone or "",
+        "{{plan}}": (company.plan or "free").capitalize(),
+        "{{fecha_vencimiento}}": company.valid_until.strftime("%d/%m/%Y") if company.valid_until else "N/A",
+        "{{pantallas_activas}}": str(len([d for d in company.devices if d.is_active]) if company.devices else 0),
+        "{{max_pantallas}}": str(company.max_screens or 2),
+        "{{monto_pago}}": "",
+        "{{fecha_hoy}}": datetime.utcnow().strftime("%d/%m/%Y"),
+        "{{whatsapp}}": company.whatsapp or "",
+    }
+    for var, val in replacements.items():
+        subject = subject.replace(var, val)
+        body_html = body_html.replace(var, val)
+    
+    try:
+        send_email(company.email, subject, body_html, html=True)
+        return {"status": "success", "sent_to": company.email}
+    except Exception as e:
+        raise HTTPException(500, f"Error al enviar: {str(e)}")
+
+# --- Leads management ---
+@app.get("/admin/crm/leads")
+async def list_leads(db: AsyncSession = Depends(get_db)):
+    from models import Lead
+    result = await db.execute(select(Lead).order_by(Lead.created_at.desc()))
+    leads = result.scalars().all()
+    return [{"id": l.id, "name": l.name, "email": l.email, "phone": l.phone, "source": l.source, "plan_interest": l.plan_interest, "notes": l.notes, "created_at": l.created_at.isoformat() if l.created_at else None} for l in leads]
 
 
 @app.get("/admin/crm/promotions")
 async def list_promotions(db: AsyncSession = Depends(get_db)):
     from models import Promotion
-    res = await db.execute(select(Promotion).order_by(Promotion.created_at.desc()))
-    return res.scalars().all()
+    result = await db.execute(select(Promotion).order_by(Promotion.created_at.desc()))
+    promos = result.scalars().all()
+    return [{"id": p.id, "name": p.name, "code": p.code, "discount_pct": p.discount_pct, "valid_from": p.valid_from.isoformat() if p.valid_from else None, "valid_to": p.valid_to.isoformat() if p.valid_to else None, "is_active": p.is_active} for p in promos]
 
 @app.post("/admin/crm/promotions")
-async def save_promotion(data: PromotionSchema, db: AsyncSession = Depends(get_db)):
+async def save_promotion(data: dict, db: AsyncSession = Depends(get_db)):
     from models import Promotion
-    stmt = select(Promotion).where(Promotion.code == data.code)
-    existing = (await db.execute(stmt)).scalar_one_or_none()
-    
-    if existing:
-        existing.name = data.name
-        existing.description = data.description
-        existing.discount_pct = data.discount_pct
-        existing.valid_from = datetime.fromisoformat(data.valid_from)
-        existing.valid_to = datetime.fromisoformat(data.valid_to)
-        existing.is_active = data.is_active
+    promo_id = data.get("id")
+    if promo_id:
+        promo = (await db.execute(select(Promotion).where(Promotion.id == promo_id))).scalar_one_or_none()
+        if promo:
+            promo.name = data["name"]
+            promo.code = data["code"]
+            promo.discount_pct = data.get("discount_pct", 10.0)
+            promo.valid_from = datetime.fromisoformat(data["valid_from"])
+            promo.valid_to = datetime.fromisoformat(data["valid_to"])
+            promo.is_active = data.get("is_active", True)
     else:
         new_promo = Promotion(
-            name=data.name,
-            description=data.description,
-            code=data.code,
-            discount_pct=data.discount_pct,
-            valid_from=datetime.fromisoformat(data.valid_from),
-            valid_to=datetime.fromisoformat(data.valid_to),
-            is_active=data.is_active
+            name=data["name"],
+            code=data["code"],
+            discount_pct=data.get("discount_pct", 10.0),
+            valid_from=datetime.fromisoformat(data["valid_from"]),
+            valid_to=datetime.fromisoformat(data["valid_to"]),
+            is_active=data.get("is_active", True)
         )
         db.add(new_promo)
     
     await db.commit()
     return {"status": "success"}
+
+@app.get("/admin/crm/affiliates")
+async def list_affiliates(db: AsyncSession = Depends(get_db)):
+    from models import Affiliate
+    result = await db.execute(select(Affiliate).order_by(Affiliate.created_at.desc()))
+    affs = result.scalars().all()
+    return [{"id": a.id, "name": a.name, "email": a.email, "code": a.code, "commission_pct": a.commission_pct, "total_referred": a.total_referred, "total_earned": a.total_earned, "is_active": a.is_active} for a in affs]
 
 @app.post("/admin/crm/affiliates")
 async def save_affiliate(data: dict, db: AsyncSession = Depends(get_db)):
@@ -3642,3 +3749,4 @@ async def save_affiliate(data: dict, db: AsyncSession = Depends(get_db)):
     db.add(new_aff)
     await db.commit()
     return {"status": "success"}
+
