@@ -1304,7 +1304,9 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
         print(f"CRITICAL: Link Failure: {str(e)}")
         raise HTTPException(500, "Error interno al vincular dispositivo")
     
-    return {"status": "success", "company_name": company.name}
+    # Return FULL configuration in success response to avoid 
+    # frontend crash/alert in applyBranding
+    return await get_device_config(device_uuid, db)
 
 # --- Admin Stats & Payments ---
 
@@ -1406,7 +1408,6 @@ async def rename_device_endpoint(uuid: str, data: dict, db: AsyncSession = Depen
     if not device:
         raise HTTPException(404, "Dispositivo no encontrado")
         
-    # Permission Check
     if current_user.role != "admin_master":
         if device.company_id != current_user.company_id:
              raise HTTPException(403, "No autorizado")
@@ -1571,6 +1572,8 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
                        }
 
     return config
+
+
 
 @app.get("/companies/{company_id}/preview-config")
 async def get_company_preview_config(company_id: int, db: AsyncSession = Depends(get_db)):
