@@ -30,13 +30,6 @@
 
         </activity>
 
-        <receiver android:name=".BootReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -51,5 +44,4 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 </manifest>
