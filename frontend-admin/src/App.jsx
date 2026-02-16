@@ -2122,7 +2122,7 @@ function App() {
                             <BottomBarEditor
                                 company={localCompany}
                                 onChange={handleLocalChange}
-                                disabled={localCompany?.plan?.toLowerCase() === 'free'}
+                                disabled={false}
                             />
                         )}
 

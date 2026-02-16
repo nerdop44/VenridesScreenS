@@ -93,7 +93,7 @@ body {
 
 .footer {
     grid-area: footer;
-    background: var(--accent-color);
+    background: var(--bottom-bg, var(--accent-color));
     display: flex;
     align-items: center;
     overflow: hidden;
