@@ -1137,6 +1137,9 @@ async def update_company(company_id: int, update: CompanyUpdate, request: Reques
         elif hasattr(company, key) and key not in ['id', 'total_screens', 'active_screens']:
             setattr(company, key, val)
     
+    # Force Updated At for sync
+    company.updated_at = datetime.utcnow()
+    
     await db.commit()
     await db.refresh(company)
     return company
