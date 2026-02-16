@@ -2690,7 +2690,7 @@ async def delete_menu_item(menu_id: int, db: AsyncSession = Depends(get_db)):
 
 # --- Phase 23: Mantenimiento y Control Maestro ---
 
-@app.get("/api/admin/maintenance/tables")
+@app.get("/admin/maintenance/tables")
 async def list_db_tables(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Lista las tablas del sistema (Postgres)"""
     from sqlalchemy import text
@@ -2711,7 +2711,7 @@ async def list_db_tables(db: AsyncSession = Depends(get_db), current_user: User 
         tables = [row[0] for row in result.fetchall()]
         return {"tables": tables, "is_sqlite": True}
 
-@app.get("/api/admin/maintenance/table/{table_name}")
+@app.get("/admin/maintenance/table/{table_name}")
 async def get_table_data(table_name: str, limit: int = 100, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Obtiene los datos de una tabla específica"""
     from sqlalchemy import text
@@ -2728,7 +2728,7 @@ async def get_table_data(table_name: str, limit: int = 100, db: AsyncSession = D
     except Exception as e:
         raise HTTPException(500, f"Error al leer tabla {table_name}: {str(e)}")
 
-@app.post("/api/admin/maintenance/execute-sql")
+@app.post("/admin/maintenance/execute-sql")
 async def execute_raw_sql(data: dict, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Ejecuta SQL directo (SOLO PARA SUPER ADMIN)"""
     from sqlalchemy import text
@@ -2748,7 +2748,7 @@ async def execute_raw_sql(data: dict, db: AsyncSession = Depends(get_db), curren
         await db.rollback()
         raise HTTPException(500, f"SQL Error: {str(e)}")
 
-@app.post("/api/admin/maintenance/db-cleanup")
+@app.post("/admin/maintenance/db-cleanup")
 async def cleanup_devices(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Limpia registros de dispositivos para iniciar de cero"""
     from sqlalchemy import text
@@ -2765,7 +2765,7 @@ async def cleanup_devices(db: AsyncSession = Depends(get_db), current_user: User
         await db.rollback()
         raise HTTPException(500, f"Error en limpieza: {str(e)}")
 
-@app.post("/api/admin/maintenance/backup")
+@app.post("/admin/maintenance/backup")
 async def trigger_backup(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(["admin_master"]))):
     """Realiza un respaldo de la base de datos"""
     import subprocess
