@@ -1357,7 +1357,7 @@ function App() {
                 <main className="admin-main-content">
                     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <div style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', opacity: 0.5, letterSpacing: '0.1rem' }}>
-                            Venrides / {adminTab.replace('_', ' ')}
+                            VenridesScreenS / {adminTab.replace('_', ' ')}
                         </div>
                         {bcvRate && (
                             <div className="glass-card" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--primary-color)' }}>
@@ -1621,7 +1621,7 @@ function App() {
 
                     {adminTab === 'ecosystem' && (
                         <div className="glass-card">
-                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema Venrides</h2>
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema VenridesScreenS</h2>
                             <EcosystemDashboard token={token} />
                         </div>
                     )}
@@ -1832,9 +1832,9 @@ function App() {
             <GlobalStyles />
             <header className="dash-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/venrides_logo.png" alt="Venrides" className="app-logo" style={{ height: '125px' }} />
+                    <img src="/venrides_logo.png" alt="VenridesScreenS" className="app-logo" style={{ height: '125px' }} />
                     <div>
-                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenrideScreenS</h1>
+                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenridesScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
                     </div>
                 </div>
@@ -2066,7 +2066,7 @@ function App() {
                         <h2 style={{ fontSize: '1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary-color)' }}>
                             <Monitor size={18} /> Previsualización Real Time
                         </h2>
-                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VenrideScreenS</div>
+                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VenridesScreenS</div>
                     </div>
 
                     <div style={{
@@ -2371,7 +2371,7 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                         <div className="section-fields">
                             <div className="field-group">
                                 <label>Nombre Comercial</label>
-                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Venrides C.A." />
+                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: VenridesScreenS C.A." />
                             </div>
                             <div className="field-group">
                                 <label>RIF / Documento</label>
@@ -3347,7 +3347,7 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
             <div className="glass-card">
                 <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <Tooltip text="Mensaje que aparece en el texto corrido inferior." /></div>
                 <label>Mensaje Estático</label>
-                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VenrideScreenS" />
+                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VenridesScreenS" />
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>WhatsApp</label><input value={data.whatsapp || ''} onChange={e => update('whatsapp', e.target.value)} /></div>
                     <div><label>Instagram</label><input value={data.instagram || ''} onChange={e => update('instagram', e.target.value)} /></div>
