@@ -349,6 +349,27 @@ function App() {
     const [editingUser, setEditingUser] = useState(null);
     const [bcvRate, setBcvRate] = useState(null);
 
+    // Real-time Preview Sync Hook
+    useEffect(() => {
+        const iframe = document.getElementById('preview-frame');
+        if (iframe && iframe.contentWindow && localCompany) {
+            iframe.contentWindow.postMessage({
+                type: 'PREVIEW_UPDATE',
+                payload: localCompany
+            }, '*');
+        }
+    }, [localCompany]);
+
+    // BCV Sync
+    useEffect(() => {
+        fetch(`${API_BASE}/finance/bcv`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.usd_to_ves) setBcvRate(data.usd_to_ves);
+            })
+            .catch(err => console.error("BCV Error:", err));
+    }, []);
+
     // Email Modal State
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [emailData, setEmailData] = useState({ company: null, template_id: '', subject: '', body: '' });
@@ -2174,16 +2195,6 @@ function App() {
                                         }
                                     }}
                                 />
-                                {/* Real-time Preview Sync */}
-                                {React.useEffect(() => {
-                                    const iframe = document.getElementById('preview-frame');
-                                    if (iframe && iframe.contentWindow && localCompany) {
-                                        iframe.contentWindow.postMessage({
-                                            type: 'PREVIEW_UPDATE',
-                                            payload: localCompany
-                                        }, '*');
-                                    }
-                                }, [localCompany])}
                             </div>
                         </div>
                         <div style={{ padding: '1.2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
