@@ -2743,6 +2743,7 @@ const MaintenancePanel = ({ token }) => {
     const [loading, setLoading] = useState(false);
     const [tableFilter, setTableFilter] = useState('');
     const [rowLimit, setRowLimit] = useState(50);
+    const [editingRow, setEditingRow] = useState(null);
 
     const fetchTables = async () => {
         setLoading(true);
@@ -2770,6 +2771,46 @@ const MaintenancePanel = ({ token }) => {
             const data = await res.json();
             setTableData(data.data || []);
         } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    const deleteRow = async (row) => {
+        if (!row.id) { alert('No se puede borrar: esta tabla no tiene columna "id"'); return; }
+        if (!confirm(`¿Estás seguro de eliminar el registro ID: ${row.id} de la tabla ${selectedTable}?`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/table/${selectedTable}/${row.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert('Registro eliminado');
+                fetchTableData();
+            } else {
+                const d = await res.json();
+                alert('Error: ' + d.detail);
+            }
+        } catch (e) { alert('Error de conexión'); }
+    };
+
+    const saveRow = async () => {
+        if (!editingRow || !editingRow.id) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/maintenance/table/${selectedTable}/${editingRow.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(editingRow)
+            });
+            if (res.ok) {
+                alert('Registro actualizado');
+                setEditingRow(null);
+                fetchTableData();
+            } else {
+                const d = await res.json();
+                alert('Error: ' + d.detail);
+            }
+        } catch (e) { alert('Error de conexión'); }
         finally { setLoading(false); }
     };
 
@@ -2902,6 +2943,7 @@ const MaintenancePanel = ({ token }) => {
                                 <table className="admin-table" style={{ fontSize: '0.7rem', width: 'max-content', minWidth: '100%' }}>
                                     <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 10 }}>
                                         <tr>
+                                            <th style={{ sticky: 'left', background: 'var(--bg-surface)', zIndex: 11 }}>Acciones</th>
                                             {tableData.length > 0 && Object.keys(tableData[0]).map(k => (
                                                 <th key={k} style={{ whiteSpace: 'nowrap', borderBottom: '2px solid var(--primary-color)' }}>{k}</th>
                                             ))}
@@ -2910,7 +2952,15 @@ const MaintenancePanel = ({ token }) => {
                                     <tbody>
                                         {tableData.map((row, idx) => (
                                             <tr key={idx}>
-                                                {Object.values(row).map((v, i) => <td key={i}>{String(v)}</td>)}
+                                                <td style={{ display: 'flex', gap: '0.5rem', sticky: 'left', background: 'var(--bg-app)', borderRight: '1px solid var(--border-color)' }}>
+                                                    <button onClick={() => setEditingRow({ ...row })} className="action-btn edit" title="Editar"><Edit size={12} /></button>
+                                                    <button onClick={() => deleteRow(row)} className="action-btn delete" title="Borrar"><Trash2 size={12} /></button>
+                                                </td>
+                                                {Object.values(row).map((v, i) => (
+                                                    <td key={i} style={{ whiteSpace: 'nowrap', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                                                    </td>
+                                                ))}
                                             </tr>
                                         ))}
                                     </tbody>
@@ -2946,6 +2996,59 @@ const MaintenancePanel = ({ token }) => {
                     </div>
                 )}
             </section>
+
+            {editingRow && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '800px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>Editar Fila en {selectedTable}</h3>
+                            <button onClick={() => setEditingRow(null)} className="btn"><X size={18} /></button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', padding: '0.5rem' }}>
+                            {Object.keys(editingRow).map(key => (
+                                <div key={key} className="field-group">
+                                    <label style={{ fontSize: '0.8rem', opacity: 0.7 }}>{key}</label>
+                                    {key === 'id' ? (
+                                        <div style={{ padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>
+                                            {editingRow[key]}
+                                        </div>
+                                    ) : typeof editingRow[key] === 'boolean' ? (
+                                        <div
+                                            onClick={() => setEditingRow({ ...editingRow, [key]: !editingRow[key] })}
+                                            className="toggle-container"
+                                            style={{ marginTop: '0.5rem' }}
+                                        >
+                                            <div className={`toggle-switch ${editingRow[key] ? 'on' : ''}`} />
+                                            <span style={{ fontSize: '0.85rem' }}>{editingRow[key] ? 'Activado' : 'Desactivado'}</span>
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            value={editingRow[key] === null ? '' : typeof editingRow[key] === 'object' ? JSON.stringify(editingRow[key], null, 2) : editingRow[key]}
+                                            onChange={e => {
+                                                let val = e.target.value;
+                                                // Intentar parsear JSON si parece objeto
+                                                if (typeof editingRow[key] === 'object' && editingRow[key] !== null) {
+                                                    try { val = JSON.parse(e.target.value); } catch (err) { }
+                                                }
+                                                setEditingRow({ ...editingRow, [key]: val });
+                                            }}
+                                            rows={String(editingRow[key]).length > 50 ? 3 : 1}
+                                            style={{ marginBottom: 0 }}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                            <button onClick={() => setEditingRow(null)} className="btn">Cancelar</button>
+                            <button onClick={saveRow} className="btn btn-primary" disabled={loading}>
+                                {loading ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
