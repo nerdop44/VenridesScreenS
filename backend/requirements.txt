@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-sqlalchemy[asyncio]
+sqlalchemy[asyncio]>=2.0.0
 asyncpg
 aioredis
 python-jose[cryptography]
@@ -12,7 +12,7 @@ beautifulsoup4
 colorgram.py
 Pillow
 pydantic-settings
-httpx
+httpx>=0.28.1
 google-api-python-client
 google-auth
 python-dotenv

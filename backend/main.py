@@ -1127,11 +1127,12 @@ async def update_company(company_id: int, update: CompanyUpdate, request: Reques
 
     for key, val in data_dict.items():
         if key == 'design_settings' and val is not None:
-            # Merge design_settings instead of replacing
+            # Deep merge design_settings
             current_settings = company.design_settings or {}
-            if isinstance(current_settings, dict):
-                current_settings.update(val)
-                company.design_settings = dict(current_settings)  # Force SQLAlchemy to detect change
+            if isinstance(current_settings, dict) and isinstance(val, dict):
+                # Ensure we don't lose old keys if not provided in partial update
+                new_settings = {**current_settings, **val}
+                company.design_settings = new_settings
             else:
                 company.design_settings = val
         elif hasattr(company, key) and key not in ['id', 'total_screens', 'active_screens']:

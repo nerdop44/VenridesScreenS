@@ -5,6 +5,8 @@
     --text-color: #ffffff;
     --sidebar-width: 22vw;
     --bottom-height: 10vh;
+    --safe-area: 0px;
+    /* Dynamic margin for overscan */
 }
 
 * {
@@ -28,6 +30,7 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
+    padding: var(--safe-area);
     grid-template-areas:
         "video sidebar"
         "footer footer";

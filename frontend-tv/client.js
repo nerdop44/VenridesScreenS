@@ -77,7 +77,6 @@ function onPlayerReady(event) {
     event.target.setVolume(100);
     event.target.playVideo();
     console.log("YouTube Player Ready event fired.");
-    setInterval(fetchConfig, 30000);
 }
 
 function loadNextVideo(source) {
@@ -141,6 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Merge into current config
             window.currentConfig = { ...(window.currentConfig || {}), ...newData };
+
+            // Reset rotation state to show new changes from page 1
+            currentRotationPage = 0;
 
             // Re-apply visual settings immediately
             applyBranding(window.currentConfig);
@@ -250,7 +252,12 @@ async function fetchConfig() {
             url = `${API_URL}/companies/${previewCompanyId}/preview-config`;
         }
 
-        const res = await fetch(url);
+        // Cache busting: Add timestamp to prevent old config from being cached by proxy/browser
+        const timestamp = new Date().getTime();
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = `${url}${separator}_t=${timestamp}`;
+
+        const res = await fetch(finalUrl);
 
         if (res.status === 404) {
             console.log("Device not registered (404). Showing registration screen.");
@@ -309,6 +316,18 @@ function getContrastColor(hex) {
 
 function applyBranding(data) {
     if (!data) return;
+    const root = document.documentElement;
+
+    // Ensure nested objects are actual objects (robustness against stringified API responses)
+    if (typeof data.design_settings === 'string') {
+        try { data.design_settings = JSON.parse(data.design_settings); } catch (e) { }
+    }
+    if (typeof data.sidebar_content === 'string') {
+        try { data.sidebar_content = JSON.parse(data.sidebar_content); } catch (e) { }
+    }
+    if (typeof data.bottom_bar_content === 'string') {
+        try { data.bottom_bar_content = JSON.parse(data.bottom_bar_content); } catch (e) { }
+    }
 
     handlePriorityContent(data.priority_content_url);
     handleAlert(data.active_alert);
@@ -322,7 +341,6 @@ function applyBranding(data) {
         mainContainer.style.display = "grid";
     }
 
-    const root = document.documentElement;
     const body = document.body;
 
     if (!data.is_active) {
@@ -358,6 +376,10 @@ function applyBranding(data) {
     } else {
         root.style.setProperty('--bottom-height', '10vh'); // Fallback
     }
+
+    // Safety Margin (Overscan fix)
+    const safety = ds.safety_margin || 0;
+    root.style.setProperty('--safe-area', `${safety}vw`);
 
     // Sidebar Background Image & Effects
     const sidebar = document.getElementById("sidebar");
@@ -600,39 +622,43 @@ function transformDriveUrl(url) {
     return transformDriveImgUrl(url);
 }
 
+let currentRotationPage = 0;
+
 function startSidebarRotation() {
     if (rotationInterval) clearInterval(rotationInterval);
-    const slots = [
-        document.getElementById("sidebar-slot-1"),
-        document.getElementById("sidebar-slot-2"),
-        document.getElementById("sidebar-slot-3")
-    ];
 
-    const ds = window.currentConfig?.design_settings || {};
-    const layout = ds.sidebar_layout || 1;
-
-    // Apply Visibility based on layout
-    slots.forEach((slot, i) => {
-        if (!slot) return;
-        slot.style.display = (i < layout) ? 'flex' : 'none';
-        // Reset styles for clean state
-        slot.style.opacity = '1';
-        slot.style.transform = 'translateY(0)';
-    });
-
-    // Prepare "Pages" or "Groups"
-    // The new Admin UI saves a flat list of N blocks matching the layout.
-    // We treat this as a SINGLE group.
-
-    let currentBlocks = [...sidebarItems];
-
-    // Safety check: ensure we have blocks for the layout
-    while (currentBlocks.length < layout) {
-        currentBlocks.push({ type: 'text', value: '', color: 'transparent' });
-    }
-
-    // Animation Loop
     const animateBlocks = () => {
+        const slots = [
+            document.getElementById("sidebar-slot-1"),
+            document.getElementById("sidebar-slot-2"),
+            document.getElementById("sidebar-slot-3")
+        ];
+
+        const ds = window.currentConfig?.design_settings || {};
+        const layout = ds.sidebar_layout || 1;
+        const totalItems = sidebarItems.length;
+
+        if (totalItems === 0) {
+            slots.forEach(s => s && (s.style.display = 'none'));
+            return;
+        }
+
+        // Apply Visibility based on layout
+        slots.forEach((slot, i) => {
+            if (!slot) return;
+            slot.style.display = (i < layout) ? 'flex' : 'none';
+        });
+
+        // Calculate Items for this Page
+        // page 0: [0, layout-1]
+        // page 1: [layout, 2*layout-1]
+        const startIndex = (currentRotationPage * layout) % totalItems;
+        const pageItems = [];
+        for (let i = 0; i < layout; i++) {
+            const idx = (startIndex + i) % totalItems;
+            pageItems.push(sidebarItems[idx]);
+        }
+
         // Phase 1: Fade Out
         slots.forEach(slot => {
             if (slot && slot.style.display !== 'none') {
@@ -647,7 +673,7 @@ function startSidebarRotation() {
                 if (i >= layout || !slot) return;
                 slot.innerHTML = '';
 
-                const item = currentBlocks[i];
+                const item = pageItems[i];
                 if (item) {
                     const wrapper = document.createElement('div');
                     wrapper.style.width = '100%';
@@ -665,7 +691,6 @@ function startSidebarRotation() {
                         img.style.objectFit = 'contain';
                         img.style.borderRadius = '12px';
 
-                        // Dynamic Height adjustments
                         const maxH = layout === 1 ? '70vh' : (layout === 2 ? '35vh' : '23vh');
                         img.style.maxHeight = maxH;
 
@@ -675,7 +700,6 @@ function startSidebarRotation() {
                         txt.className = 'anim-slide';
                         txt.innerText = item.value;
                         txt.style.color = item.color || 'var(--sidebar-text, #fff)';
-                        // Font Size Boost for single block
                         txt.style.fontSize = item.font_size || (layout === 1 ? '2.5rem' : '1.4rem');
                         txt.style.fontWeight = item.weight || 'bold';
                         txt.style.fontFamily = item.font_family || 'inherit';
@@ -696,11 +720,17 @@ function startSidebarRotation() {
                 }, i * 300);
             });
 
+            // Advance Page
+            if (totalItems > layout) {
+                currentRotationPage = (currentRotationPage + 1) % Math.ceil(totalItems / layout);
+            } else {
+                currentRotationPage = 0;
+            }
+
         }, 800);
     };
 
     animateBlocks();
-    // Loop every N seconds (default 15s) to refresh/animate
     const duration = window.currentConfig?.pause_duration || 15;
     rotationInterval = setInterval(animateBlocks, duration * 1000);
 }
@@ -962,3 +992,7 @@ function showRegistrationScreen() {
         }
     };
 }
+
+// Initial fetch and start independent interval (Fix: runs even if YouTube fails)
+fetchConfig();
+setInterval(fetchConfig, 30000);
