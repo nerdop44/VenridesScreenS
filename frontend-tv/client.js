@@ -850,6 +850,12 @@ function showRegistrationScreen() {
     const reg = document.getElementById("registration-overlay");
     if (!reg) return;
 
+    // PREVENT RE-RENDERING IF ALREADY SHOWN (Fixes disappearing input while typing)
+    if (!reg.classList.contains("hidden") && document.getElementById("reg-code-input")) {
+        console.log("Registration screen already visible, skipping re-render to preserve input.");
+        return;
+    }
+
     // Ensure main UI is hidden during registration
     const mainContainer = document.querySelector(".screen-container");
     if (mainContainer) mainContainer.style.display = "none";
@@ -858,7 +864,7 @@ function showRegistrationScreen() {
     reg.innerHTML = `
         <div class="registration-box">
             <div style="margin-bottom: 2rem;">
-                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 180px; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
+                <img src="venrides_logo.png" alt="VenridesScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
             </div>
             <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>

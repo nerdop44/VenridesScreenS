@@ -35,8 +35,8 @@ def generate_icons():
         img.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'ic_launcher_round.png'))
         print(f"Generated Icon {folder}")
 
-    # Splashes - Center logo on Dark Blue/Black background to prevent distortion
-    BG_COLOR = (0, 11, 26) # Dark Navy Blue
+    # Splashes - Center logo on Professional Navy Blue background to prevent distortion
+    BG_COLOR = (0, 31, 63) # Lighter Professional Navy Blue
     
     for folder in SPLASH_FOLDERS:
         out_folder = os.path.join(ANDROID_RES, folder)
@@ -51,8 +51,8 @@ def generate_icons():
         
         # Resize logo to fit nicely in the center (avoiding edges)
         logo_fit = img.copy()
-        max_logo_w = int(size[0] * 0.6)
-        max_logo_h = int(size[1] * 0.5)
+        max_logo_w = int(size[0] * 0.75)
+        max_logo_h = int(size[1] * 0.65)
         logo_fit.thumbnail((max_logo_w, max_logo_h), Image.Resampling.LANCZOS)
         
         # Center logo
@@ -67,7 +67,7 @@ def generate_icons():
     
     banner_bg = Image.new('RGB', (320, 180), color=BG_COLOR)
     logo_for_banner = img.copy()
-    logo_for_banner.thumbnail((260, 120), Image.Resampling.LANCZOS)
+    logo_for_banner.thumbnail((290, 150), Image.Resampling.LANCZOS)
     offset = ((320 - logo_for_banner.width) // 2, (180 - logo_for_banner.height) // 2)
     banner_bg.paste(logo_for_banner, offset, logo_for_banner if logo_for_banner.mode == 'RGBA' else None)
     banner_bg.save(os.path.join(banner_folder, 'banner.png'))
