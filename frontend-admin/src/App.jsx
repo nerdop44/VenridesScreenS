@@ -2844,16 +2844,24 @@ const MaintenancePanel = ({ token }) => {
                         />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
-                        {tables.filter(t => t.toLowerCase().includes(tableFilter.toLowerCase())).map(t => (
-                            <button
-                                key={t}
-                                onClick={() => fetchTableData(t)}
-                                className={`btn ${selectedTable === t ? 'btn-primary' : ''}`}
-                                style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem', justifyContent: 'flex-start' }}
-                            >
-                                {t}
-                            </button>
-                        ))}
+                        {tables.length === 0 ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5, fontSize: '0.8rem' }}>
+                                <AlertCircle size={24} style={{ marginBottom: '0.5rem' }} />
+                                <p>No se encontraron tablas o cargando...</p>
+                                <button onClick={fetchTables} className="btn btn-primary" style={{ marginTop: '1rem', width: '100%' }}>Reintentar</button>
+                            </div>
+                        ) : (
+                            tables.filter(t => t.toLowerCase().includes(tableFilter.toLowerCase())).map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => fetchTableData(t)}
+                                    className={`btn ${selectedTable === t ? 'btn-primary' : ''}`}
+                                    style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem', justifyContent: 'flex-start' }}
+                                >
+                                    {t}
+                                </button>
+                            ))
+                        )}
                     </div>
                     <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <button onClick={cleanupDB} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: '#ef4444', width: '100%' }}>
@@ -2912,7 +2920,9 @@ const MaintenancePanel = ({ token }) => {
                     ) : (
                         <div style={{ textAlign: 'center', padding: '5rem', opacity: 0.5 }}>
                             <Database size={48} style={{ marginBottom: '1rem' }} />
-                            <p>Seleccione una tabla para inspeccionar</p>
+                            <h4 style={{ color: 'var(--primary-color)', marginBottom: '0.5rem' }}>Visor de Base de Datos</h4>
+                            <p>Selecciona una tabla de la lista lateral para inspeccionar sus registros.</p>
+                            <p style={{ fontSize: '0.8rem', marginTop: '1rem' }}>Usa el buscador para filtrar tablas específicas.</p>
                         </div>
                     )}
                 </section>
