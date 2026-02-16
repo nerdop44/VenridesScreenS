@@ -1,4 +1,4 @@
-const API_URL = "https://apitv.venrides.com/api";
+const API_URL = "https://apitv.venrides.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -75,7 +75,6 @@ function onPlayerReady(event) {
     event.target.setVolume(100);
     event.target.playVideo();
     console.log("YouTube Player Ready event fired.");
-    fetchConfig();
     setInterval(fetchConfig, 30000);
 }
 
@@ -128,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isInterrupted = false;
         console.log("Priority video ended, resuming normal loop.");
     };
+
+    // Initialize config fetch immediately
+    fetchConfig();
 });
 
 // Helper to transform Drive URLs for Images (View)
@@ -196,8 +198,22 @@ function handlePriorityContent(url) {
     isInterrupted = true;
 }
 
+// Global Error Handler for debugging on TV
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    const nameEl = document.getElementById("company-name");
+    if (nameEl) {
+        nameEl.style.color = "#ff8e8e";
+        nameEl.innerText = "Error: " + msg;
+    }
+    // Also show on registration screen if possible
+    const uuidDisplay = document.getElementById("device-uuid-display");
+    if (uuidDisplay) uuidDisplay.innerHTML += `<div style="color:red; font-size:0.6em; margin-top:20px;">[DEBUG] ${msg}</div>`;
+    return false;
+};
+
 async function fetchConfig() {
     try {
+        console.log("Fetching config for UUID:", deviceUuid);
         let url = `${API_URL}/devices/${deviceUuid}/config`;
 
         if (previewCompanyId) {
@@ -206,32 +222,67 @@ async function fetchConfig() {
         }
 
         const res = await fetch(url);
+
         if (res.status === 404) {
+            console.log("Device not registered (404). Showing registration screen.");
             if (!previewCompanyId) showRegistrationScreen();
             return;
         }
+
+        if (!res.ok) {
+            throw new Error(`HTTP Error ${res.status}`);
+        }
+
         const data = await res.json();
         window.currentConfig = data;
         console.log("Config received:", data);
         applyBranding(data);
     } catch (e) {
         console.error("Fetch Config Error:", e);
+
+        // Show visibility on why it failed
+        const nameEl = document.getElementById("company-name");
+        if (nameEl) {
+            nameEl.innerHTML = `Sin Conexión <br/><span style="font-size:0.5em; opacity:0.7;">${e.message}</span>`;
+        }
+
+        // Even if offline, show registration screen so they can see the UUID
+        if (!window.currentConfig && !previewCompanyId) {
+            showRegistrationScreen();
+            const uuidDisplay = document.getElementById("device-uuid-display");
+            if (uuidDisplay) {
+                uuidDisplay.innerHTML = `${deviceUuid}<br/><span style="font-size:0.5em; color:#f87171;">Buscando servidor...</span>`;
+            }
+        }
+
+        setTimeout(fetchConfig, 10000); // Retry in 10s
     }
 }
 
 function getContrastColor(hex) {
-    if (!hex) return '#ffffff';
+    if (!hex || hex === 'transparent') return '#ffffff';
     const r = parseInt(hex.substring(1, 3), 16);
     const g = parseInt(hex.substring(3, 5), 16);
     const b = parseInt(hex.substring(5, 7), 16);
-    return ((r * 299) + (g * 587) + (b * 114)) / 1000 >= 128 ? '#000000' : '#ffffff';
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#000000' : '#ffffff';
 }
 
 function applyBranding(data) {
+    if (!data) return;
+
     handlePriorityContent(data.priority_content_url);
     handleAlert(data.active_alert);
+    handlePing(data.ping_command, data.name);
+
     const regOverlay = document.getElementById("registration-overlay");
+    const mainContainer = document.querySelector(".screen-container");
+
     if (regOverlay) regOverlay.classList.add("hidden");
+    if (mainContainer) {
+        mainContainer.style.display = "grid";
+    }
+
     const root = document.documentElement;
     const body = document.body;
 
@@ -292,13 +343,15 @@ function applyBranding(data) {
 
     // Apply Content
     const nameEl = document.getElementById("company-name");
-    nameEl.innerText = data.name;
-    if (data.design_settings) {
-        // ds already defined above
-        nameEl.style.fontFamily = ds.name_font || 'inherit';
-        nameEl.style.fontSize = ds.name_size || '1.2rem';
-        nameEl.style.color = ds.name_color || 'inherit';
-        nameEl.style.fontWeight = ds.name_weight || 'bold';
+    if (nameEl) {
+        nameEl.innerText = data.name || "Venrides Screen";
+        if (data.design_settings) {
+            const ds = data.design_settings;
+            nameEl.style.fontFamily = ds.name_font || 'inherit';
+            nameEl.style.fontSize = ds.name_size || '1.2rem';
+            nameEl.style.color = ds.name_color || 'inherit';
+            nameEl.style.fontWeight = ds.name_weight || 'bold';
+        }
     }
 
     // Logo Handling (Bottom Logo)
@@ -632,8 +685,9 @@ function updateBottomBar() {
     });
 
     // 4. Inject Ad Scripts (Google/Meta if provided)
-    if (data.ad_scripts && Array.isArray(data.ad_scripts)) {
-        data.ad_scripts.forEach(scriptCode => {
+    const configData = window.currentConfig || {};
+    if (configData.ad_scripts && Array.isArray(configData.ad_scripts)) {
+        configData.ad_scripts.forEach(scriptCode => {
             if (!document.querySelector(`[data-ad-script="${btoa(scriptCode).substring(0, 20)}"]`)) {
                 const container = document.createElement('div');
                 container.setAttribute('data-ad-script', btoa(scriptCode).substring(0, 20));
@@ -726,6 +780,23 @@ function handleAlert(alert) {
     showAlert(alert);
 }
 
+function handlePing(shouldPing, deviceName) {
+    if (!shouldPing) return;
+
+    const overlay = document.getElementById("ping-overlay");
+    const nameEl = document.getElementById("ping-device-name");
+
+    if (overlay && nameEl) {
+        nameEl.innerText = deviceName || "Este Dispositivo";
+        overlay.classList.remove("hidden");
+
+        // Hide after 10s
+        setTimeout(() => {
+            overlay.classList.add("hidden");
+        }, 10000);
+    }
+}
+
 function showAlert(alert) {
     const overlay = document.getElementById("alert-overlay");
     const body = document.getElementById("alert-body");
@@ -784,11 +855,22 @@ function showBlockingScreen() {
 function showRegistrationScreen() {
     const reg = document.getElementById("registration-overlay");
     if (!reg) return;
+
+    // PREVENT RE-RENDERING IF ALREADY SHOWN (Fixes disappearing input while typing)
+    if (!reg.classList.contains("hidden") && document.getElementById("reg-code-input")) {
+        console.log("Registration screen already visible, skipping re-render to preserve input.");
+        return;
+    }
+
+    // Ensure main UI is hidden during registration
+    const mainContainer = document.querySelector(".screen-container");
+    if (mainContainer) mainContainer.style.display = "none";
+
     reg.classList.remove("hidden");
     reg.innerHTML = `
         <div class="registration-box">
-            <div style="margin-bottom: 1rem;">
-                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 310px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
+            <div style="margin-bottom: 2rem;">
+                <img src="venrides_logo.png" alt="VenridesScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
             </div>
             <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>
@@ -811,18 +893,20 @@ function showRegistrationScreen() {
         if (code.length !== 6) return;
         try {
             const res = await fetch(`${API_URL}/devices/validate-code?code=${code}&device_uuid=${deviceUuid}`, { method: 'POST' });
-            applyBranding(data);
-        } else {
-            const errData = await res.json();
-            if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
-                showBlockingScreen();
+            if (res.ok) {
+                const data = await res.json();
+                applyBranding(data);
             } else {
-                alert("Código inválido o expirado");
+                const errData = await res.json();
+                if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
+                    showBlockingScreen();
+                } else {
+                    alert("Código inválido o expirado");
+                }
             }
+        } catch (e) {
+            console.error("Link Error:", e);
+            alert("Error de conexión: " + (e.message || "Error desconocido"));
         }
-    } catch (e) {
-        console.error("Link Error:", e);
-        alert("Error de conexión");
-    }
-};
+    };
 }

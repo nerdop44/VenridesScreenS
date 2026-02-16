@@ -8,7 +8,7 @@
 * {
     margin: 0;
     padding: 0;
-    box-バランス: border-box;
+    box-sizing: border-box;
 }
 
 body {
@@ -21,10 +21,11 @@ body {
 }
 
 .screen-container {
+    display: none;
+    /* Hidden by default until linked */
     position: relative;
     width: 100%;
     height: 100%;
-    display: grid;
     grid-template-areas:
         "video sidebar"
         "footer footer";
@@ -119,6 +120,109 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Global Overlays */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000b1a;
+    /* Match splash background */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    text-align: center;
+    color: #fff;
+}
+
+/* Registration Box */
+.registration-box {
+    background: #001529;
+    /* Deep blue professional background */
+    padding: 3rem;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 157, 255, 0.3);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 157, 255, 0.1);
+    max-width: 800px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.code-input-container input {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    letter-spacing: 5px;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.code-input-container button:hover {
+    transform: scale(1.05) !important;
+    background: #34d399 !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.red-text {
+    color: #f87171;
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 1rem;
+}
+
+.info-text {
+    font-size: 1.2rem;
+    color: #cbd5e0;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+}
+
+/* Alert Overlay Specifics */
+#alert-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.alert-box {
+    background: #fff;
+    color: #000;
+    padding: 2rem;
+    border-radius: 20px;
+    max-width: 80%;
+    box-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
+}
+
+.alert-title {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 1rem;
+    color: #e53e3e;
+}
+
+.alert-body {
+    font-size: 1.5rem;
 }
 
 /* Suspended Screen */
