@@ -80,7 +80,7 @@ class TemplateService:
                     <p><strong>Pasos para instalar:</strong></p>
                     <ol>
                         <li>Instala la app 'Downloader' en tu TV (Android TV / Google TV / Fire TV).</li>
-                        <li>Abre Downloader e ingresa este código corto: <strong>786543</strong> (Ejemplo) o la URL: <code>https://venrides.com/tv-app</code></li>
+                        <li>Abre Downloader e ingresa este código corto: <strong>786543</strong> (Ejemplo) o la URL: <code>https://screens.venrides.com/tv-app</code></li>
                         <li>Instala y abre la App.</li>
                         <li>Verás un código de 6 dígitos en la pantalla.</li>
                         <li>Ingresa ese código en tu Panel Administrativo -> "Vincular Pantalla".</li>
