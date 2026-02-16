@@ -198,8 +198,22 @@ function handlePriorityContent(url) {
     isInterrupted = true;
 }
 
+// Global Error Handler for debugging on TV
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    const nameEl = document.getElementById("company-name");
+    if (nameEl) {
+        nameEl.style.color = "#ff8e8e";
+        nameEl.innerText = "Error: " + msg;
+    }
+    // Also show on registration screen if possible
+    const uuidDisplay = document.getElementById("device-uuid-display");
+    if (uuidDisplay) uuidDisplay.innerHTML += `<div style="color:red; font-size:0.6em; margin-top:20px;">[DEBUG] ${msg}</div>`;
+    return false;
+};
+
 async function fetchConfig() {
     try {
+        console.log("Fetching config for UUID:", deviceUuid);
         let url = `${API_URL}/devices/${deviceUuid}/config`;
 
         if (previewCompanyId) {
@@ -208,21 +222,39 @@ async function fetchConfig() {
         }
 
         const res = await fetch(url);
+
         if (res.status === 404) {
+            console.log("Device not registered (404). Showing registration screen.");
             if (!previewCompanyId) showRegistrationScreen();
             return;
         }
+
+        if (!res.ok) {
+            throw new Error(`HTTP Error ${res.status}`);
+        }
+
         const data = await res.json();
         window.currentConfig = data;
         console.log("Config received:", data);
         applyBranding(data);
     } catch (e) {
         console.error("Fetch Config Error:", e);
-        // Show offline/error state instead of hanging on "Loading..."
-        const nameEl = document.getElementById("company-name");
-        if (nameEl) nameEl.innerText = "Sin Conexión - Reintentando...";
 
-        // If it's a 404 disguised as an error or network fail on first load, we might want to suggest checking internet
+        // Show visibility on why it failed
+        const nameEl = document.getElementById("company-name");
+        if (nameEl) {
+            nameEl.innerHTML = `Sin Conexión <br/><span style="font-size:0.5em; opacity:0.7;">${e.message}</span>`;
+        }
+
+        // Even if offline, show registration screen so they can see the UUID
+        if (!window.currentConfig && !previewCompanyId) {
+            showRegistrationScreen();
+            const uuidDisplay = document.getElementById("device-uuid-display");
+            if (uuidDisplay) {
+                uuidDisplay.innerHTML = `${deviceUuid}<br/><span style="font-size:0.5em; color:#f87171;">Buscando servidor...</span>`;
+            }
+        }
+
         setTimeout(fetchConfig, 10000); // Retry in 10s
     }
 }
