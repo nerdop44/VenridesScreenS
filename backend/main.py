@@ -3487,6 +3487,7 @@ async def seed_venezuelan_holidays(db: AsyncSession = Depends(get_db)):
     from models import CalendarActivity
     year = datetime.utcnow().year
     created = 0
+    updated = 0
     for h in VENEZUELAN_HOLIDAYS:
         date = datetime(year, h["month"], h["day"])
         # Check if already exists
@@ -3507,8 +3508,14 @@ async def seed_venezuelan_holidays(db: AsyncSession = Depends(get_db)):
             )
             db.add(new_act)
             created += 1
+        else:
+            # Update date if changed (fix for wrong dates)
+            if existing.activity_date != date:
+                existing.activity_date = date
+                updated += 1
+                
     await db.commit()
-    return {"status": "success", "created": created}
+    return {"status": "success", "created": created, "updated": updated}
 
 @app.get("/admin/crm/calendar")
 async def get_calendar(db: AsyncSession = Depends(get_db)):
