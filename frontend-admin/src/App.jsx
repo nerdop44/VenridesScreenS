@@ -348,6 +348,45 @@ function App() {
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [bcvRate, setBcvRate] = useState(null);
+
+    // Email Modal State
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailData, setEmailData] = useState({ company: null, template_id: '', subject: '', body: '' });
+    const [emailSending, setEmailSending] = useState(false);
+    const [emailTemplates, setEmailTemplates] = useState([]);
+
+    const handleOpenEmailModal = async (company) => {
+        setEmailData({ company, template_id: '', subject: '', body: '' });
+        setShowEmailModal(true);
+        try {
+            const r = await fetch(`${API_BASE}/admin/crm/templates`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const d = await r.json();
+            setEmailTemplates(Array.isArray(d) ? d : []);
+        } catch (e) { console.error(e); }
+    };
+
+    const handleSendEmail = async () => {
+        if (!emailData.company || !emailData.subject || !emailData.body) return;
+        setEmailSending(true);
+        try {
+            const r = await fetch(`${API_BASE}/admin/crm/send-email-company/${emailData.company.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    template_id: emailData.template_id || null,
+                    subject: emailData.subject,
+                    body: emailData.body
+                })
+            });
+            if (r.ok) {
+                alert('✅ Email enviado exitosamente');
+                setShowEmailModal(false);
+            } else {
+                alert('❌ Error al enviar email');
+            }
+        } catch (e) { alert('❌ Error de conexión'); }
+        setEmailSending(false);
+    };
     const [ytReady, setYtReady] = useState(false);
 
     // Remember Me & Password Recovery
@@ -1357,6 +1396,7 @@ function App() {
                                                 <td style={{ fontSize: '0.8rem' }}>{c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'N/A'}</td>
                                                 <td style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                                     <div className="action-buttons">
+                                                        <Tooltip text="Enviar Email"><button onClick={() => handleOpenEmailModal(c)} className="action-btn" style={{ color: '#a855f7' }}><Mail size={16} /></button></Tooltip>
                                                         <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
                                                         <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
                                                         <Tooltip text={c.is_active ? "Suspender Servicio" : "Reactivar Servicio"}>
@@ -1751,6 +1791,24 @@ function App() {
                         </div>
                     </Modal>
                 </main>
+                <Modal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} title={`✉️ Enviar Email a: ${emailData.company?.name}`}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>Email destino: <strong>{emailData.company?.email}</strong></div>
+                        <div>
+                            <label className="label">Plantilla (Opcional)</label>
+                            <select value={emailData.template_id} onChange={e => { const tid = parseInt(e.target.value); const t = emailTemplates.find(emp => emp.id === tid); setEmailData({ ...emailData, template_id: tid, subject: t ? t.subject : emailData.subject, body: t ? t.body : emailData.body }); }} className="input-field" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%', padding: '0.5rem', borderRadius: '8px' }}>
+                                <option value="">-- Sin plantilla / Personalizado --</option>
+                                {emailTemplates.filter(t => t.is_active).map(t => <option key={t.id} value={t.id}>{t.name} ({t.category})</option>)}
+                            </select>
+                        </div>
+                        <div><label className="label">Asunto</label><input className="input-field" value={emailData.subject} onChange={e => setEmailData({ ...emailData, subject: e.target.value })} placeholder="Asunto..." style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%', padding: '0.5rem', borderRadius: '8px' }} /></div>
+                        <div><label className="label">Mensaje (HTML)</label><textarea className="input-field" rows={8} value={emailData.body} onChange={e => setEmailData({ ...emailData, body: e.target.value })} placeholder="Contenido..." style={{ fontFamily: 'monospace', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%', padding: '0.5rem', borderRadius: '8px' }} /></div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                            <button className="btn" onClick={() => setShowEmailModal(false)}>Cancelar</button>
+                            <button className="btn btn-primary" onClick={handleSendEmail} disabled={emailSending || !emailData.subject || !emailData.body}>{emailSending ? 'Enviando...' : 'Enviar Email'}</button>
+                        </div>
+                    </div>
+                </Modal>
             </div>
         );
     }
@@ -2680,9 +2738,10 @@ const CrmPanel = ({ token }) => {
     const [showMassEmailModal, setShowMassEmailModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [editingCopy, setEditingCopy] = useState(null);
     const [newActivity, setNewActivity] = useState({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' });
     const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', body: '', category: 'general', is_active: true });
-    const [massEmail, setMassEmail] = useState({ template_id: null, promo_name: '', promo_code: '', promo_discount: '' });
+    const [massEmail, setMassEmail] = useState({ template_id: null, target: 'companies', promo_name: '', promo_code: '', promo_discount: '' });
     const [sending, setSending] = useState(false);
     const [seedStatus, setSeedStatus] = useState('');
     const fetchData = () => {
@@ -2695,13 +2754,28 @@ const CrmPanel = ({ token }) => {
     useEffect(() => { if (templates.length === 0 && !seedStatus) { setSeedStatus('seeding'); Promise.all([fetch(`${API_BASE}/admin/crm/templates/seed`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }), fetch(`${API_BASE}/admin/crm/calendar/holidays`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } })]).then(() => { setSeedStatus('done'); fetchData(); }).catch(() => setSeedStatus('error')); } }, [templates.length]);
     const handleSaveActivity = async () => { if (!newActivity.title || !selectedDate) return; const r = await fetch(`${API_BASE}/admin/crm/calendar`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ...newActivity, activity_date: selectedDate.toISOString() }) }); if (r.ok) { setShowActivityModal(false); setNewActivity({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' }); fetchData(); } };
     const handleDeleteActivity = async (id) => { if (!confirm('¿Eliminar esta actividad?')) return; await fetch(`${API_BASE}/admin/crm/calendar/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); fetchData(); };
-    const handleSaveTemplate = async (t) => { const r = await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(t) }); if (r.ok) { setShowTemplateModal(false); fetchData(); } };
+    const handleSaveEditingCopy = async () => {
+        if (!editingCopy) return;
+        const r = await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(editingCopy) });
+        if (r.ok) { setShowTemplateModal(false); setEditingCopy(null); fetchData(); }
+    };
     const handleCreateTemplate = async () => { if (!newTemplate.name || !newTemplate.subject) return; const r = await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(newTemplate) }); if (r.ok) { setShowNewTemplateModal(false); setNewTemplate({ name: '', subject: '', body: '', category: 'general', is_active: true }); fetchData(); } };
     const handleDeleteTemplate = async (id) => { if (!confirm('¿Eliminar esta plantilla personalizada?')) return; const r = await fetch(`${API_BASE}/admin/crm/templates/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (r.ok) fetchData(); else { const d = await r.json(); alert(d.detail || 'Error'); } };
     const handleRevertTemplate = async (id) => { if (!confirm('¿Restaurar esta plantilla a su versión original?')) return; const r = await fetch(`${API_BASE}/admin/crm/templates/${id}/revert`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); if (r.ok) { fetchData(); setShowTemplateModal(false); } };
     const toggleTemplate = async (t) => { await fetch(`${API_BASE}/admin/crm/templates`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ...t, is_active: !t.is_active }) }); fetchData(); };
     const handleSendMassEmail = async () => { setSending(true); try { const r = await fetch(`${API_BASE}/admin/crm/mass-email`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(massEmail) }); const d = await r.json(); alert(`✅ Enviados: ${d.sent} | Errores: ${d.errors} | Total: ${d.total}`); setShowMassEmailModal(false); } catch (e) { alert('Error al enviar'); } setSending(false); };
-    const insertVariable = (v) => { const ta = document.getElementById('tmpl-body-ed'); if (ta) { const s = ta.selectionStart, e = ta.selectionEnd, c = selectedTemplate?.body || ''; setSelectedTemplate({ ...selectedTemplate, body: c.substring(0, s) + v + c.substring(e) }); setTimeout(() => { ta.focus(); ta.setSelectionRange(s + v.length, s + v.length); }, 50); } else if (selectedTemplate) setSelectedTemplate({ ...selectedTemplate, body: (selectedTemplate.body || '') + v }); };
+    const openDuplicateEditor = (tmpl) => {
+        const copy = { ...tmpl, id: undefined, name: tmpl.name + '_copia', is_system: false };
+        setSelectedTemplate(tmpl);
+        setEditingCopy(copy);
+        setShowTemplateModal(true);
+    };
+    const openCustomEditor = (tmpl) => {
+        setSelectedTemplate(null);
+        setEditingCopy({ ...tmpl });
+        setShowTemplateModal(true);
+    };
+    const insertVariable = (v) => { if (editingCopy) setEditingCopy({ ...editingCopy, body: (editingCopy.body || '') + v }); };
     const insertVariableNew = (v) => { setNewTemplate({ ...newTemplate, body: (newTemplate.body || '') + v }); };
     const getDaysInMonth = (date) => { const y = date.getFullYear(), m = date.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = [], pld = new Date(y, m, 0).getDate(); for (let i = fd - 1; i >= 0; i--) days.push({ date: new Date(y, m - 1, pld - i), otherMonth: true }); for (let i = 1; i <= dim; i++) days.push({ date: new Date(y, m, i), currentMonth: true }); const rem = 42 - days.length; for (let i = 1; i <= rem; i++) days.push({ date: new Date(y, m + 1, i), otherMonth: true }); return days; };
     const monthName = currentMonth.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
@@ -2732,7 +2806,11 @@ const CrmPanel = ({ token }) => {
                                         <div style={{ fontSize: '0.7rem', opacity: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tmpl.subject}</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-                                        <button onClick={() => { setSelectedTemplate({ ...tmpl }); setShowTemplateModal(true); }} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }}>Editar</button>
+                                        {tmpl.is_system ? (
+                                            <button onClick={() => openDuplicateEditor(tmpl)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }} title="Crear copia editable">📋 Duplicar</button>
+                                        ) : (
+                                            <button onClick={() => openCustomEditor(tmpl)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px' }}>✏️ Editar</button>
+                                        )}
                                         {!tmpl.is_system && <button onClick={() => handleDeleteTemplate(tmpl.id)} className="btn" style={{ fontSize: '0.65rem', padding: '3px 10px', color: '#ef4444', borderColor: '#ef4444' }}>✕</button>}
                                         <label className="toggle-switch" style={{ transform: 'scale(0.8)' }}><input type="checkbox" checked={tmpl.is_active} onChange={() => toggleTemplate(tmpl)} /><span className="slider round"></span></label>
                                     </div>
@@ -2759,21 +2837,26 @@ const CrmPanel = ({ token }) => {
                             const evts = activities.filter(a => a.activity_date && a.activity_date.split('T')[0] === ds);
                             const dps = promos.filter(p => p.valid_from && p.valid_from.split('T')[0] <= ds && p.valid_to && p.valid_to.split('T')[0] >= ds);
                             const isToday = new Date().toDateString() === day.date.toDateString();
-                            const hasH = evts.some(e => e.is_holiday);
+                            const holidays = evts.filter(e => e.is_holiday);
+                            const hasH = holidays.length > 0;
                             return (
                                 <div key={i} className={`calendar-day ${day.otherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
-                                    style={hasH ? { background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.4)' } : {}}
+                                    style={hasH ? { background: 'rgba(239,68,68,0.18)', borderColor: 'rgba(239,68,68,0.5)', boxShadow: 'inset 0 0 12px rgba(239,68,68,0.15)' } : {}}
                                     onClick={() => { setSelectedDate(day.date); setNewActivity({ title: '', description: '', is_holiday: false, send_auto_greeting: false, type: 'evento' }); setShowActivityModal(true); }}>
-                                    <div className="calendar-date-number" style={hasH ? { color: '#ef4444', fontWeight: 'bold' } : {}}>{day.date.getDate()}</div>
-                                    {evts.map((e, idx) => (
-                                        <div key={idx} className={`calendar-event ${e.is_holiday ? 'event-holiday' : 'event-activity'}`}
-                                            style={e.is_holiday ? { background: 'rgba(239,68,68,0.3)', color: '#fca5a5', borderLeft: '2px solid #ef4444' } : {}}
-                                            onClick={ev => ev.stopPropagation()}>
-                                            {e.is_holiday ? '🔴' : '📅'} {e.title}
+                                    <div className="calendar-date-number" style={hasH ? { color: '#ef4444', fontWeight: 'bold', fontSize: '1rem' } : {}}>{day.date.getDate()}</div>
+                                    {holidays.map((h, idx) => (
+                                        <div key={`h-${idx}`} style={{ background: 'rgba(239,68,68,0.35)', color: '#fecaca', padding: '2px 4px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', lineHeight: '1.2', marginBottom: '2px', borderLeft: '3px solid #ef4444' }} onClick={ev => ev.stopPropagation()}>
+                                            🔴 {h.title}
+                                            <span onClick={ev => { ev.stopPropagation(); handleDeleteActivity(h.id); }} style={{ marginLeft: '3px', cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                                        </div>
+                                    ))}
+                                    {evts.filter(e => !e.is_holiday).map((e, idx) => (
+                                        <div key={`e-${idx}`} className="calendar-event event-activity" onClick={ev => ev.stopPropagation()}>
+                                            📅 {e.title}
                                             <span onClick={ev => { ev.stopPropagation(); handleDeleteActivity(e.id); }} style={{ marginLeft: '4px', cursor: 'pointer', opacity: 0.5, fontSize: '0.6rem' }}>✕</span>
                                         </div>
                                     ))}
-                                    {dps.map((p, idx) => <div key={idx} className="calendar-event event-promo">🏷️ {p.code}</div>)}
+                                    {dps.map((p, idx) => <div key={`p-${idx}`} className="calendar-event event-promo">🏷️ {p.code}</div>)}
                                 </div>
                             );
                         })}
@@ -2797,20 +2880,19 @@ const CrmPanel = ({ token }) => {
                     <button className="btn btn-primary" onClick={handleSaveActivity} style={{ width: '100%' }}>Guardar en Calendario</button>
                 </div>
             </Modal>
-            <Modal isOpen={showTemplateModal} onClose={() => setShowTemplateModal(false)} title={`Editor: ${selectedTemplate?.name?.replace(/_/g, ' ')}`}>
-                {selectedTemplate && (
+            <Modal isOpen={showTemplateModal} onClose={() => { setShowTemplateModal(false); setEditingCopy(null); setSelectedTemplate(null); }} title={selectedTemplate ? `Duplicar: ${selectedTemplate.name.replace(/_/g, ' ')}` : `Editar: ${editingCopy?.name?.replace(/_/g, ' ') || ''}`}>
+                {editingCopy && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div><label className="label">Asunto</label><input value={selectedTemplate.subject} onChange={e => setSelectedTemplate({ ...selectedTemplate, subject: e.target.value })} /></div>
-                        <div><label className="label">Categoría</label><select value={selectedTemplate.category || 'general'} onChange={e => setSelectedTemplate({ ...selectedTemplate, category: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="bienvenida">👋 Bienvenida</option><option value="cobranza">💰 Cobranza</option><option value="marketing">📣 Marketing</option><option value="soporte">🛠️ Soporte</option><option value="general">📋 General</option></select></div>
-                        <div><label className="label">Cuerpo (HTML)</label><textarea id="tmpl-body-ed" value={selectedTemplate.body} onChange={e => setSelectedTemplate({ ...selectedTemplate, body: e.target.value })} rows={12} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }} /></div>
+                        {selectedTemplate && <div style={{ background: 'rgba(200,255,0,0.08)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(200,255,0,0.2)', fontSize: '0.8rem' }}>📋 Estás creando una <strong>copia editable</strong> de la plantilla original. La plantilla original no será modificada.</div>}
+                        <div><label className="label">Nombre de la copia</label><input value={editingCopy.name} onChange={e => setEditingCopy({ ...editingCopy, name: e.target.value.toLowerCase().replace(/\s+/g, '_') })} /></div>
+                        <div><label className="label">Asunto</label><input value={editingCopy.subject} onChange={e => setEditingCopy({ ...editingCopy, subject: e.target.value })} /></div>
+                        <div><label className="label">Categoría</label><select value={editingCopy.category || 'general'} onChange={e => setEditingCopy({ ...editingCopy, category: e.target.value })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="bienvenida">👋 Bienvenida</option><option value="cobranza">💰 Cobranza</option><option value="marketing">📣 Marketing</option><option value="soporte">🛠️ Soporte</option><option value="general">📋 General</option></select></div>
+                        <div><label className="label">Cuerpo (HTML)</label><textarea id="tmpl-body-ed" value={editingCopy.body} onChange={e => setEditingCopy({ ...editingCopy, body: e.target.value })} rows={12} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }} /></div>
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(200,255,0,0.15)' }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#c8ff00', marginBottom: '0.5rem' }}>📋 Variables <span style={{ fontWeight: 'normal', opacity: 0.6 }}>(clic para insertar)</span></div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>{variables.map((v, i) => <button key={i} onClick={() => insertVariable(v.var)} title={`${v.desc} — Ej: ${v.example}`} style={{ background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: '#c8ff00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', cursor: 'pointer' }}>{v.var}</button>)}</div>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-primary" onClick={() => handleSaveTemplate(selectedTemplate)} style={{ flex: 2 }}>💾 Guardar</button>
-                            {selectedTemplate.is_system && selectedTemplate.default_body && <button className="btn" onClick={() => handleRevertTemplate(selectedTemplate.id)} style={{ flex: 1, color: '#fbbf24', borderColor: '#fbbf24', fontSize: '0.8rem' }}>↩ Original</button>}
-                        </div>
+                        <button className="btn btn-primary" onClick={handleSaveEditingCopy} style={{ width: '100%' }}>{selectedTemplate ? '📋 Crear Copia' : '💾 Guardar Cambios'}</button>
                     </div>
                 )}
             </Modal>
@@ -2829,7 +2911,19 @@ const CrmPanel = ({ token }) => {
             </Modal>
             <Modal isOpen={showMassEmailModal} onClose={() => setShowMassEmailModal(false)} title="📨 Envío Masivo de Emails">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', fontSize: '0.8rem' }}>⚠️ Se enviará a <strong>TODAS las empresas activas</strong> con email.</div>
+                    <div>
+                        <label className="label">Destinatarios</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[{ id: 'companies', label: '🏢 Empresas' }, { id: 'leads', label: '🧲 Leads/Contactos' }, { id: 'all', label: '📨 Todos' }].map(t => (
+                                <button key={t.id} onClick={() => setMassEmail({ ...massEmail, target: t.id })} className="btn" style={{ flex: 1, fontSize: '0.75rem', padding: '8px', background: massEmail.target === t.id ? 'rgba(168,85,247,0.25)' : '', borderColor: massEmail.target === t.id ? '#a855f7' : '' }}>{t.label}</button>
+                            ))}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '0.3rem' }}>
+                            {massEmail.target === 'companies' && 'Envía a todas las empresas activas registradas.'}
+                            {massEmail.target === 'leads' && 'Envía a contactos del formulario y leads capturados por Benry.'}
+                            {massEmail.target === 'all' && 'Envía a empresas activas + leads/contactos (sin duplicados).'}
+                        </div>
+                    </div>
                     <div><label className="label">Plantilla</label><select value={massEmail.template_id || ''} onChange={e => setMassEmail({ ...massEmail, template_id: e.target.value ? parseInt(e.target.value) : null })} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px' }}><option value="">-- Seleccionar --</option>{templates.filter(t => t.is_active).map(t => <option key={t.id} value={t.id}>{t.name.replace(/_/g, ' ')} ({t.category})</option>)}</select></div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.75rem' }}>
                         <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#c8ff00' }}>Variables de Promoción (opcional)</div>
@@ -2839,13 +2933,12 @@ const CrmPanel = ({ token }) => {
                             <input value={massEmail.promo_discount} onChange={e => setMassEmail({ ...massEmail, promo_discount: e.target.value })} placeholder="Descuento %" style={{ flex: 1, minWidth: '80px' }} />
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={handleSendMassEmail} disabled={!massEmail.template_id || sending} style={{ width: '100%', opacity: (!massEmail.template_id || sending) ? 0.5 : 1 }}>{sending ? '⏳ Enviando...' : '📨 Enviar a Todos'}</button>
+                    <button className="btn btn-primary" onClick={handleSendMassEmail} disabled={!massEmail.template_id || sending} style={{ width: '100%', opacity: (!massEmail.template_id || sending) ? 0.5 : 1 }}>{sending ? '⏳ Enviando...' : '📨 Enviar'}</button>
                 </div>
             </Modal>
         </div>
     );
 };
-
 
 const SalesPanel = ({ token }) => {
     const [promos, setPromos] = useState([]);

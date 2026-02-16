@@ -330,3 +330,14 @@ class CalendarActivity(Base):
     send_auto_greeting = Column(Boolean, default=False)
     greeting_template_id = Column(Integer, ForeignKey("email_templates.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Lead(Base):
+    __tablename__ = "leads"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=True)
+    email = Column(String, index=True)
+    phone = Column(String, nullable=True)
+    source = Column(String, default="contact_form")  # benry, contact_form, plan_signup
+    plan_interest = Column(String, nullable=True)
+    notes = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
