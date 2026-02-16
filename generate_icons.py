@@ -1,66 +1,65 @@
-from PIL import Image
-import os
-import shutil
 
-SOURCE_LOGO = "frontend-tv/venrides_logo.png"
-ICON_SIZES = {
-    "mipmap-mdpi": (48, 48),
-    "mipmap-hdpi": (72, 72),
-    "mipmap-xhdpi": (96, 96),
-    "mipmap-xxhdpi": (144, 144),
-    "mipmap-xxxhdpi": (192, 192)
+import os
+from PIL import Image
+
+SERVER_PATH = '/home/nerdop/VenridesScreenS/app-tv'
+ICON_PATH = os.path.join(SERVER_PATH, 'venrides_logo.png')
+ANDROID_RES = os.path.join(SERVER_PATH, 'android/app/src/main/res')
+
+MIPMAPS = {
+    'mipmap-mdpi': 48,
+    'mipmap-hdpi': 72,
+    'mipmap-xhdpi': 96,
+    'mipmap-xxhdpi': 144,
+    'mipmap-xxxhdpi': 192
 }
 
-PROJECTS = [
-    "app-mobile/android/app/src/main/res",
-    "app-tv/android/app/src/main/res"
+SPLASH_FOLDERS = [
+    'drawable',
+    'drawable-land-mdpi', 'drawable-land-hdpi', 'drawable-land-xhdpi', 'drawable-land-xxhdpi', 'drawable-land-xxxhdpi',
+    'drawable-port-mdpi', 'drawable-port-hdpi', 'drawable-port-xhdpi', 'drawable-port-xxhdpi', 'drawable-port-xxxhdpi'
 ]
 
 def generate_icons():
-    if not os.path.exists(SOURCE_LOGO):
-        # Try finding it based on find_by_name results
-        SOURCE_LOGO_ALT = "frontend-admin/public/venrides_logo.png"
-        if os.path.exists(SOURCE_LOGO_ALT):
-           img = Image.open(SOURCE_LOGO_ALT)
-           print(f"Using logo from {SOURCE_LOGO_ALT}")
-        else:
-           print("Error: Logo not found")
-           return
-    else:
-        img = Image.open(SOURCE_LOGO)
+    if not os.path.exists(ICON_PATH):
+        print(f"Icon not found at {ICON_PATH}")
+        return
 
-    # Convert to RGBA
-    img = img.convert("RGBA")
-
-    # Create a background-less version for foreground if needed, 
-    # but for now we'll use the logo as foreground (it should be transparent PNG)
+    img = Image.open(ICON_PATH)
     
-    # Ideally foregrounds are 108x108 dp for 48x48 icon (viewport is 72x72)
-    # But scaling simply to the same size is a common quick fix, 
-    # though technically foreground should be larger. 
-    # Let's scale it slightly larger to fill adaptive circle if needed, 
-    # or keep as is. Keeping as is is safer to avoid cropping.
+    # Icons
+    for folder, size in MIPMAPS.items():
+        out_folder = os.path.join(ANDROID_RES, folder)
+        if not os.path.exists(out_folder): os.makedirs(out_folder)
+        img.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'ic_launcher.png'))
+        img.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'ic_launcher_round.png'))
+        print(f"Generated Icon {folder}")
 
-    for project_res in PROJECTS:
-        print(f"Processing project: {project_res}")
-        for folder, size in ICON_SIZES.items():
-            target_dir = os.path.join(project_res, folder)
-            if not os.path.exists(target_dir):
-                os.makedirs(target_dir)
-            
-            # Resize
-            icon = img.resize(size, Image.Resampling.LANCZOS)
-            
-            # Save standard legacy icon
-            icon.save(os.path.join(target_dir, "ic_launcher.png"), "PNG")
-            
-            # Save round icon
-            icon.save(os.path.join(target_dir, "ic_launcher_round.png"), "PNG")
-            
-            # Save FOREGROUND icon for adaptive icons (Critical fix)
-            icon.save(os.path.join(target_dir, "ic_launcher_foreground.png"), "PNG")
-            
-            print(f"Generated icons in {folder}")
+    # Splashes - simplified: we centers the logo on a black background
+    # Standard sizes for splashes vary, let's use 1024x1024 as a safe middle ground for many
+    for folder in SPLASH_FOLDERS:
+        out_folder = os.path.join(ANDROID_RES, folder)
+        if not os.path.exists(out_folder): os.makedirs(out_folder)
+        
+        # Simple resize of logo as splash (Android will scale/center based on theme)
+        # Note: Ideally splash is a separate design, but using logo is better than "other image"
+        img.resize((512, 512), Image.Resampling.LANCZOS).save(os.path.join(out_folder, 'splash.png'))
+        print(f"Generated Splash {folder}")
 
-if __name__ == "__main__":
+    # TV Banner (320x180)
+    banner_folder = os.path.join(ANDROID_RES, 'drawable')
+    if not os.path.exists(banner_folder): os.makedirs(banner_folder)
+    
+    # Create black background for banner
+    banner_bg = Image.new('RGB', (320, 180), color=(0, 0, 0))
+    # Resize logo to fit in banner (with padding)
+    logo_for_banner = img.copy()
+    logo_for_banner.thumbnail((280, 140), Image.Resampling.LANCZOS)
+    # Center logo
+    offset = ((320 - logo_for_banner.width) // 2, (180 - logo_for_banner.height) // 2)
+    banner_bg.paste(logo_for_banner, offset)
+    banner_bg.save(os.path.join(banner_folder, 'banner.png'))
+    print("Generated TV Banner (320x180)")
+
+if __name__ == '__main__':
     generate_icons()
