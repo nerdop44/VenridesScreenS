@@ -244,10 +244,15 @@ allowed_origins = [
     "http://localhost:5174",
     "http://localhost:5175",
     "http://localhost:8005",
+    "http://localhost",
+    "https://localhost",
+    "capacitor://localhost",
+    "http://10.0.2.2",
+    "file://*",
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
