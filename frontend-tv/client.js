@@ -40,6 +40,8 @@ let currentVideoIndex = 0;
 let lastPlaylistStr = "";
 let lastAlertId = null;
 let isAlertShowing = false;
+let lastConfigTimestamp = null;
+let currentConfig = null;
 
 // Load YouTube API
 const tag = document.createElement('script');
@@ -234,8 +236,18 @@ async function fetchConfig() {
         }
 
         const data = await res.json();
+
+        // Optimización: Evitar re-renderizado si no hay cambios
+        if (data.last_updated && lastConfigTimestamp === data.last_updated) {
+            console.log("Config is up to date (Timestamp match). Skipping render.");
+            // Still check for ping command as it might be ephemeral
+            if (data.ping_command) handlePing(true, data.name);
+            return;
+        }
+
         window.currentConfig = data;
-        console.log("Config received:", data);
+        lastConfigTimestamp = data.last_updated;
+        console.log("Config received/updated:", data);
         applyBranding(data);
     } catch (e) {
         console.error("Fetch Config Error:", e);
