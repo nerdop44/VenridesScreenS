@@ -166,7 +166,7 @@ const BenryChat = ({ onOpenContact }) => {
                             <span className="material-symbols-outlined text-black">smart_toy</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-white text-sm">Benry AI</h3>
+                            <h3 className="font-bold text-white text-sm">Benry IA</h3>
                             <p className="text-xs text-green-400 flex items-center gap-1">
                                 <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
                                 En línea
