@@ -2795,7 +2795,14 @@ const CrmPanel = ({ token }) => {
         payment_instructions: 'Instrucciones de Pago',
         expiry_reminder: 'Recordatorio de Vencimiento',
         birthday_greeting: 'Felicitación de Cumpleaños',
-        holiday_greeting: 'Saludo de Festividades'
+        holiday_greeting: 'Saludo de Festividades',
+        expiry_7: 'Aviso de Vencimiento (7 días)',
+        expiry_1: 'Aviso de Vencimiento (1 día)',
+        welcome: 'Bienvenida (General)',
+        payment_received: 'Pago Recibido',
+        account_suspended: 'Cuenta Suspendida',
+        promo_announcement: 'Anuncio Promocional',
+        birthday: 'Aniversario de Empresa'
     };
     const grouped = {};
     templates.forEach(t => { const c = t.category || 'general'; if (!grouped[c]) grouped[c] = []; grouped[c].push(t); });
