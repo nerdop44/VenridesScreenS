@@ -2784,6 +2784,19 @@ const CrmPanel = ({ token }) => {
     const calendarDays = getDaysInMonth(currentMonth);
     const catLabels = { bienvenida: '👋 Bienvenida', cobranza: '💰 Cobranza', marketing: '📣 Marketing', soporte: '🛠️ Soporte', general: '📋 General' };
     const catColors = { bienvenida: '#10b981', cobranza: '#fbbf24', marketing: '#a855f7', soporte: '#00e5ff', general: '#6b7280' };
+    const templateNames = {
+        welcome_verification: 'Bienvenida (Verificación)',
+        welcome_crm: 'Bienvenida (CRM)',
+        sales_proposal: 'Propuesta Comercial',
+        follow_up: 'Seguimiento',
+        recovery: 'Recuperación de Cliente',
+        apk_download: 'Descarga de App TV',
+        payment_confirmation: 'Confirmación de Pago',
+        payment_instructions: 'Instrucciones de Pago',
+        expiry_reminder: 'Recordatorio de Vencimiento',
+        birthday_greeting: 'Felicitación de Cumpleaños',
+        holiday_greeting: 'Saludo de Festividades'
+    };
     const grouped = {};
     templates.forEach(t => { const c = t.category || 'general'; if (!grouped[c]) grouped[c] = []; grouped[c].push(t); });
     return (
@@ -2804,7 +2817,7 @@ const CrmPanel = ({ token }) => {
                             {tmpls.map(tmpl => (
                                 <div key={tmpl.id || tmpl.name} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `3px solid ${catColors[tmpl.category] || '#666'}` }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{tmpl.is_system && <span title="Sistema" style={{ fontSize: '0.7rem', opacity: 0.5 }}>🔒 </span>}{tmpl.name.replace(/_/g, ' ')}</div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{tmpl.is_system && <span title="Sistema" style={{ fontSize: '0.7rem', opacity: 0.5 }}>🔒 </span>}{templateNames[tmpl.name] || tmpl.name.replace(/_/g, ' ')}</div>
                                         <div style={{ fontSize: '0.7rem', opacity: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tmpl.subject}</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
