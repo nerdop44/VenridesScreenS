@@ -2179,7 +2179,6 @@ function App() {
                                 position: 'absolute',
                                 top: 0,
                                 left: 0,
-                                width: '100%',
                                 height: '200%', /* Double height to simulate scaling down */
                                 transform: 'scale(0.5)', /* Scale down to fit 100% width container */
                                 transformOrigin: 'top left',
