@@ -317,7 +317,8 @@ function App() {
     const [companies, setCompanies] = useState([]);
     const [payments, setPayments] = useState([]);
     const [users, setUsers] = useState([]);
-    const [allDevices, setAllDevices] = useState([]);
+    const [devices, setDevices] = useState([]);
+    const [bcvRate, setBcvRate] = useState(0);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -366,7 +367,7 @@ function App() {
         fetch(`${API_BASE}/finance/bcv`)
             .then(res => res.json())
             .then(data => {
-                if (data.usd_to_ves) setBcvRate(data.usd_to_ves);
+                if (data.rate) setBcvRate(data.rate);
             })
             .catch(err => console.error("BCV Error:", err));
     }, []);
@@ -566,7 +567,7 @@ function App() {
         fetch(`${API_BASE}/finance/bcv`)
             .then(res => res.json())
             .then(data => {
-                if (data.usd_to_ves) setBcvRate(data.usd_to_ves);
+                if (data.rate) setBcvRate(data.rate);
             })
             .catch(err => console.error("BCV Error:", err));
     }, []);
@@ -1931,7 +1932,10 @@ function App() {
                                     handleLocalChange({}); // Trigger a re-render/sync
                                     const iframe = document.getElementById('preview-frame');
                                     if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({ type: 'PREVIEW_UPDATE', payload: localCompany }, '*');
+                                        iframe.contentWindow.postMessage({
+                                            type: 'PREVIEW_UPDATE',
+                                            payload: { ...localCompany, bcv_rate: bcvRate }
+                                        }, '*');
                                     }
                                 }}
                                 className="btn btn-secondary"
@@ -3815,13 +3819,20 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
             <div className="glass-card" style={{ borderLeft: '4px solid #10b981' }}>
                 <div className="section-title"><Clock size={18} /> Ajustes Barra Inferior <Tooltip text="Ajuste la velocidad del texto y la altura de la franja informativa." /></div>
                 <div className="grid-2">
-                    <div><label>Velocidad (Seg)</label><input type="range" min="10" max="120" value={ds.ticker_speed || 30} onChange={e => updateDesign('ticker_speed', parseInt(e.target.value))} /></div>
+                    <div><label>Fondo Barra</label><input type="color" value={ds.bottom_bar_bg || '#8d6e63'} onChange={e => updateDesign('bottom_bar_bg', e.target.value)} /></div>
                     <div><label>Alto (%)</label><input type="range" min="5" max="25" value={ds.bottom_bar_height || 10} onChange={e => updateDesign('bottom_bar_height', parseInt(e.target.value))} /></div>
+                </div>
+                <div className="grid-2" style={{ marginTop: '0.8rem' }}>
+                    <div><label>Velocidad (Seg)</label><input type="range" min="5" max="120" value={ds.ticker_speed || 30} onChange={e => updateDesign('ticker_speed', parseInt(e.target.value))} /></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '1.5rem' }}>
+                        <label style={{ fontSize: '0.75rem' }}>Borde Sup.</label>
+                        <div className="toggle-container" onClick={() => updateDesign('bottom_bar_border', !ds.bottom_bar_border)}><div className={`toggle-switch ${ds.bottom_bar_border ? 'on' : 'off'}`}></div></div>
+                    </div>
                 </div>
             </div>
             <div className="glass-card">
                 <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <Tooltip text="Mensaje que aparece en el texto corrido inferior." /></div>
-                <label>Mensaje Estático</label>
+                <label>Mensaje del Cintillo (Animado)</label>
                 <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VenridesScreenS" />
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>WhatsApp</label><input value={data.whatsapp || ''} onChange={e => update('whatsapp', e.target.value)} /></div>
