@@ -157,6 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Re-apply visual settings immediately
             applyBranding(window.currentConfig);
+
+            // Special handling for BCV in preview if provided explicitly
+            if (typeof newData.bcv_rate !== 'undefined') {
+                bcvRate = newData.bcv_rate;
+                console.log("⚡ PREVIEW: Force BCV Update:", bcvRate);
+                updateBottomBar();
+            }
         }
     });
 });
@@ -359,7 +366,7 @@ function applyBranding(data) {
     root.style.setProperty('--sidebar-bg', ds.sidebar_bg || data.primary_color || '#3e2723');
     root.style.setProperty('--sidebar-text', ds.sidebar_text || getContrastColor(data.primary_color));
     root.style.setProperty('--bottom-bg', ds.bottom_bar_bg || data.accent_color || '#8d6e63');
-    root.style.setProperty('--ticker-text-color', ds.bottom_bar_text || getContrastColor(data.accent_color));
+    root.style.setProperty('--ticker-text-color', ds.ticker_color || ds.bottom_bar_text || getContrastColor(ds.bottom_bar_bg || data.accent_color));
 
     // Dynamic Dimensions (Fix for Sidebar/Footer sizing)
     if (ds.sidebar_width) {
@@ -475,6 +482,7 @@ function applyBranding(data) {
     } catch (e) { console.error("Sidebar parse error", e); sidebarItems = []; }
 
     try {
+        // Original parsing for bottomData
         bottomData = (data.bottom_bar_content && typeof data.bottom_bar_content === 'object') ? data.bottom_bar_content : JSON.parse(data.bottom_bar_content || '{}');
     } catch (e) { console.error("Bottom bar parse error", e); bottomData = {}; }
 
@@ -844,7 +852,17 @@ function updateBottomBar() {
 
     // Handle Animation Speed
     const speed = ds.ticker_speed || 30; // seconds
-    wrapper.style.animationDuration = `${speed}s`;
+    wrapper.style.animation = 'none';
+    void wrapper.offsetWidth; // Force reflow
+    wrapper.style.animation = `ticker ${speed}s linear infinite`;
+    console.log("PREVIEW: Restarting ticker animation with speed", speed, "s");
+    console.log("PREVIEW: Setting ticker speed to", speed, "s");
+
+    // Dynamic Border
+    const bottomBar = document.getElementById("bottom-bar");
+    if (bottomBar) {
+        bottomBar.style.borderTop = ds.bottom_bar_border ? "2px solid rgba(255,255,255,0.3)" : "none";
+    }
 
     // Duplicate content once to ensure seamless loop
     const children = Array.from(wrapper.children);
