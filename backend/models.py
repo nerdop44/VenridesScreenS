@@ -63,6 +63,7 @@ class Company(Base):
     # Permisos
     client_editable_fields = Column(String, default="")
     first_screen_connected_at = Column(DateTime(timezone=True), nullable=True)
+    plan_activated_at = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -127,6 +128,7 @@ class Device(Base):
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"))
     last_ping = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=True) # New Phase 9
+    last_ip = Column(String, nullable=True)
     
     company = relationship("Company", back_populates="devices")
 

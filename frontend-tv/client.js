@@ -1,6 +1,6 @@
 const API_URL = "https://apitv.venrides.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
-console.log("Venrides TV Client v1.6 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
+console.log("Venrides TV Client v1.8 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
 
 const urlParams = new URLSearchParams(window.location.search);
 const previewCompanyId = urlParams.get('preview');
@@ -981,7 +981,7 @@ function showRegistrationScreen() {
             <div style="margin-bottom: 2rem;">
                 <img src="venrides_logo.png" alt="VenridesScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
             </div>
-            <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla (v1.3c)</h2>
+            <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla (v1.8)</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>
             <div style="background:#222; padding:1.2rem; border-radius:12px; font-family:monospace; font-size:1.1rem; margin-bottom:1.5rem; word-break:break-all; border: 1px solid #333; color: #aaa;">
                 ${deviceUuid}
