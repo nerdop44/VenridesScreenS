@@ -1,5 +1,9 @@
 {
   "appId": "com.venrides.screens.tv",
   "appName": "VenridesScreenS",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://tv.venrides.com",
+    "cleartext": true
+  }
 }
