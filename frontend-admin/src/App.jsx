@@ -317,6 +317,7 @@ function App() {
     const [companies, setCompanies] = useState([]);
     const [payments, setPayments] = useState([]);
     const [users, setUsers] = useState([]);
+    const [allDevices, setAllDevices] = useState([]);
     const [devices, setDevices] = useState([]);
     const [bcvRate, setBcvRate] = useState(0);
     const [stats, setStats] = useState(null);
