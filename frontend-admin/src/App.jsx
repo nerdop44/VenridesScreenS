@@ -351,25 +351,34 @@ function App() {
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
 
-    // Real-time Preview Sync Hook
-    useEffect(() => {
+    // Helper to send data to preview iframe
+    const sendToPreview = (data) => {
         const iframe = document.getElementById('preview-frame');
-        if (iframe && iframe.contentWindow && localCompany) {
+        if (iframe && iframe.contentWindow) {
             iframe.contentWindow.postMessage({
                 type: 'PREVIEW_UPDATE',
-                payload: { ...localCompany, bcv_rate: bcvRate }
+                payload: { ...data, bcv_rate: bcvRate }
             }, '*');
         }
-    }, [localCompany]);
+    };
+
+    // Real-time Preview Sync Hook
+    useEffect(() => {
+        if (localCompany) {
+            sendToPreview(localCompany);
+        }
+    }, [localCompany, bcvRate]);
 
     // BCV Sync
     useEffect(() => {
-        fetch(`${API_BASE}/finance/bcv`)
-            .then(res => res.json())
-            .then(data => {
+        const fetchBCV = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/finance/bcv`);
+                const data = await res.json();
                 if (data.rate) setBcvRate(data.rate);
-            })
-            .catch(err => console.error("BCV Error:", err));
+            } catch (err) { console.error("BCV Error:", err); }
+        };
+        fetchBCV();
     }, []);
 
     // Email Modal State
@@ -1930,13 +1939,7 @@ function App() {
                             <button
                                 onClick={() => {
                                     handleLocalChange({}); // Trigger a re-render/sync
-                                    const iframe = document.getElementById('preview-frame');
-                                    if (iframe && iframe.contentWindow) {
-                                        iframe.contentWindow.postMessage({
-                                            type: 'PREVIEW_UPDATE',
-                                            payload: { ...localCompany, bcv_rate: bcvRate }
-                                        }, '*');
-                                    }
+                                    sendToPreview(localCompany);
                                 }}
                                 className="btn btn-secondary"
                                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -2205,16 +2208,12 @@ function App() {
                             }}>
                                 <iframe
                                     id="preview-frame"
-                                    src={`${TV_URL}/?preview=${localCompany?.id}`}
+                                    src={`${TV_URL}/?preview=${localCompany?.id}&t=${Date.now()}`}
                                     style={{ width: '100%', height: '100%', border: 'none' }}
                                     title="TV Preview"
                                     onLoad={(e) => {
-                                        // Send initial data once loaded
                                         if (localCompany) {
-                                            e.target.contentWindow.postMessage({
-                                                type: 'PREVIEW_UPDATE',
-                                                payload: localCompany
-                                            }, '*');
+                                            sendToPreview(localCompany);
                                         }
                                     }}
                                 />

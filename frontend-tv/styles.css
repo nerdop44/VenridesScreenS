@@ -106,8 +106,8 @@ body {
     align-items: center;
     white-space: nowrap;
     height: 100%;
-    min-width: 100.1%;
-    /* Force container overflow to ensure animation starts */
+    will-change: transform;
+    contain: layout;
     animation: ticker linear infinite;
     animation-duration: 20s;
     /* Default, overridden by JS */
