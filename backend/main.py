@@ -1245,7 +1245,8 @@ async def generate_code(company_id: int, db: AsyncSession = Depends(get_db)):
     return {"code": code, "expires_in_minutes": 10}
 
 @app.post("/devices/validate-code")
-async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(get_db)):
+async def validate_code(code: str, device_uuid: str, request: Request, db: AsyncSession = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
     res = await db.execute(select(RegistrationCode).where(RegistrationCode.code == code))
     reg_code = res.scalar_one_or_none()
     
@@ -1286,11 +1287,18 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
             # Register first-time usage
             db.add(FreePlanUsage(uuid=device_uuid, company_id=company_id))
 
-        # Start Trial Timer if first screen
+        # Plan Activation tracking (Company level, not device level)
+        if not company.plan_activated_at:
+            company.plan_activated_at = now_utc
+            # Trial expires in 60 days from activation
+            company.valid_until = now_utc + timedelta(days=60)
+            print(f"SECURITY: Company {company_id} FREE trial activated until {company.valid_until}")
+        
+        # Legacy support for first_screen_connected_at
         if not company.first_screen_connected_at:
             company.first_screen_connected_at = now_utc
-            company.valid_until = now_utc + timedelta(days=60)
-            db.add(company)
+
+        db.add(company)
 
     # Link/Register Device
     dev_res = await db.execute(select(Device).where(Device.uuid == device_uuid))
@@ -1298,6 +1306,11 @@ async def validate_code(code: str, device_uuid: str, db: AsyncSession = Depends(
     
     if device:
         device.company_id = company_id
+        device.last_ip = client_ip
+    else:
+        # Create new device if it doesn't exist (e.g. fresh install)
+        device = Device(uuid=device_uuid, company_id=company_id, name="Nueva Pantalla", last_ip=client_ip)
+        db.add(device)
         device.name = f"TV-{device_uuid[:8]}"
     else:
         device = Device(uuid=device_uuid, company_id=company_id, name=f"TV-{device_uuid[:8]}")
