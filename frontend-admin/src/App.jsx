@@ -350,7 +350,6 @@ function App() {
     const [showAdminPassModal, setShowAdminPassModal] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [bcvRate, setBcvRate] = useState(null);
 
     // Real-time Preview Sync Hook
     useEffect(() => {
@@ -358,7 +357,7 @@ function App() {
         if (iframe && iframe.contentWindow && localCompany) {
             iframe.contentWindow.postMessage({
                 type: 'PREVIEW_UPDATE',
-                payload: localCompany
+                payload: { ...localCompany, bcv_rate: bcvRate }
             }, '*');
         }
     }, [localCompany]);
