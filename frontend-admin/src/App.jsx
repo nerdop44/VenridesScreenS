@@ -1925,9 +1925,24 @@ function App() {
                 <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                     <ThemeSwitch theme={theme} toggle={toggleTheme} />
                     {unsavedChanges && (
-                        <button onClick={saveAllChanges} className="btn btn-primary" style={{ animation: 'pulse 2s infinite', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
-                            <Check size={18} /> Guardar
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <button
+                                onClick={() => {
+                                    handleLocalChange({}); // Trigger a re-render/sync
+                                    const iframe = document.getElementById('preview-frame');
+                                    if (iframe && iframe.contentWindow) {
+                                        iframe.contentWindow.postMessage({ type: 'PREVIEW_UPDATE', payload: localCompany }, '*');
+                                    }
+                                }}
+                                className="btn btn-secondary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <RefreshCw size={16} /> Sincronizar
+                            </button>
+                            <button onClick={saveAllChanges} className="btn btn-primary" style={{ animation: 'pulse 2s infinite', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
+                                <Power size={18} /> {loading ? 'Enviando...' : 'Aplicar en Vivo'}
+                            </button>
+                        </div>
                     )}
                     {impersonatingCompanyId ? (
                         <button onClick={exitImpersonation} className="btn" style={{ background: '#f59e0b', color: '#000', fontWeight: 'bold' }}>Volver Master</button>

@@ -142,26 +142,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const newData = event.data.payload;
 
             // Merge into current config
+            // Ensure strings are parsed if they come as strings from Admin state
+            ['design_settings', 'sidebar_content', 'bottom_bar_content'].forEach(key => {
+                if (typeof newData[key] === 'string') {
+                    try { newData[key] = JSON.parse(newData[key]); } catch (e) { }
+                }
+            });
+
             window.currentConfig = { ...(window.currentConfig || {}), ...newData };
+            console.log("Merged Config for Preview:", window.currentConfig);
 
             // Reset rotation state to show new changes from page 1
             currentRotationPage = 0;
 
             // Re-apply visual settings immediately
             applyBranding(window.currentConfig);
-
-            // Force text updates that might not be caught by generic applyBranding if needed
-            // e.g. update sidebar items specifically if changed
-            try {
-                if (newData.sidebar_content) {
-                    sidebarItems = Array.isArray(newData.sidebar_content) ? newData.sidebar_content : JSON.parse(newData.sidebar_content || '[]');
-                    startSidebarRotation();
-                }
-                if (newData.bottom_bar_content) {
-                    bottomData = (typeof newData.bottom_bar_content === 'object') ? newData.bottom_bar_content : JSON.parse(newData.bottom_bar_content || '{}');
-                    updateBottomBar();
-                }
-            } catch (e) { console.error("Preview Update Parse Error", e); }
         }
     });
 });
@@ -837,10 +832,6 @@ function updateBottomBar() {
     }
 
     // Render items to wrapper
-    // We duplicate items to fill space if needed, but for infinite loop CSS we just need enough content.
-    // CSS animation 'tickerMove' handles the scroll. Ideally we duplicate content to ensure smooth loop.
-    const contentNodes = [];
-
     items.forEach(item => {
         const el = document.createElement("div");
         el.className = "ticker-item";
@@ -849,11 +840,18 @@ function updateBottomBar() {
 
         Object.assign(el.style, item.style);
         wrapper.appendChild(el);
-        contentNodes.push(el.cloneNode(true)); // Keep copy for duplication
     });
 
+    // Handle Animation Speed
+    const speed = ds.ticker_speed || 30; // seconds
+    wrapper.style.animationDuration = `${speed}s`;
+
     // Duplicate content once to ensure seamless loop
-    contentNodes.forEach(node => wrapper.appendChild(node));
+    const children = Array.from(wrapper.children);
+    children.forEach(child => {
+        const clone = child.cloneNode(true);
+        wrapper.appendChild(clone);
+    });
 }
 
 function handleAlert(alert) {
