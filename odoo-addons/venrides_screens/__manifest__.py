@@ -25,8 +25,7 @@ Incluye:
     ],
     "data": [
         "security/groups.xml",
-        "security/ir.model.access.csv",
-        "security/record_rules.xml",
+        "security/ir.access.csv",
         "data/plans.xml",
         "data/global_ad.xml",
         "data/cron.xml",
