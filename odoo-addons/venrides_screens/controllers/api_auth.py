@@ -88,7 +88,7 @@ class VenridesAuthController(http.Controller):
                     "subject": "Recuperación de contraseña — VenridesScreenS",
                     "body_html": body,
                     "email_to": user.login,
-                    "email_from": request.env["ir.config_parameter"].sudo().get_param(
+                    "email_from": request.env["ir.config_parameter"].sudo().get_str(
                         "venrides.notification_email", "soporte@inverpave.com"
                     ),
                 })

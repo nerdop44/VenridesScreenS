@@ -24,7 +24,7 @@ def _send_notification(subject, body, email_to):
             "subject": subject,
             "body_html": body,
             "email_to": email_to,
-            "email_from": request.env["ir.config_parameter"].sudo().get_param(
+            "email_from": request.env["ir.config_parameter"].sudo().get_str(
                 "venrides.notification_email", "soporte@inverpave.com"
             ),
         }).send()
@@ -43,7 +43,7 @@ class VenridesPublicController(http.Controller):
         from ..models.venrides_currency import get_bcv_rate
 
         rate = get_bcv_rate(request.env)
-        updated = request.env["ir.config_parameter"].sudo().get_param("venrides.bcv_rate_updated", "")
+        updated = request.env["ir.config_parameter"].sudo().get_str("venrides.bcv_rate_updated", "")
         return json_response({"usd_to_ves": rate, "last_updated": updated or None})
 
     @http.route("/api/logos/<string:filename>", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -92,7 +92,7 @@ class VenridesPublicController(http.Controller):
         _send_notification(
             f"Nuevo contacto: {name}",
             f"<p><strong>Nombre:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Teléfono:</strong> {data.get('telefono','')}</p><p><strong>Mensaje:</strong> {data.get('mensaje','')}</p>",
-            request.env["ir.config_parameter"].sudo().get_param("venrides.notification_email", "soporte@inverpave.com"),
+            request.env["ir.config_parameter"].sudo().get_str("venrides.notification_email", "soporte@inverpave.com"),
         )
         return json_response({"message": "¡Gracias! Tu mensaje ha sido recibido. Te contactaremos pronto.", "status": "success"})
 
@@ -121,7 +121,7 @@ class VenridesPublicController(http.Controller):
         _send_notification(
             f"Nueva solicitud de plan {plan} — {name}",
             f"<p><strong>Plan:</strong> {plan}</p><p><strong>Nombre:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Empresa:</strong> {data.get('empresa','')}</p><p><strong>Teléfono:</strong> {data.get('telefono','')}</p>",
-            request.env["ir.config_parameter"].sudo().get_param("venrides.notification_email", "soporte@inverpave.com"),
+            request.env["ir.config_parameter"].sudo().get_str("venrides.notification_email", "soporte@inverpave.com"),
         )
         return json_response({"message": "¡Gracias! Hemos recibido tu solicitud. Te contactaremos pronto.", "status": "success"})
 
@@ -228,7 +228,7 @@ class VenridesPublicController(http.Controller):
 
     @http.route("/downloads/tv", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def download_tv(self, **kwargs):
-        path = request.env["ir.config_parameter"].sudo().get_param(
+        path = request.env["ir.config_parameter"].sudo().get_str(
             "venrides.apk_path", "/opt/venrides-screens/releases/VenridesScreenS_TV.apk"
         )
         if not path or not os.path.exists(path):

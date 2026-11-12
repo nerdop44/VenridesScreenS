@@ -85,7 +85,7 @@ def can_access_company(user, company):
 
 
 def public_url():
-    return request.env["ir.config_parameter"].sudo().get_param(
+    return request.env["ir.config_parameter"].sudo().get_str(
         "venrides.api_public_url", "https://venrides-api.inverpave.com"
     )
 

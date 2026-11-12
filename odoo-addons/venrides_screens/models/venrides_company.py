@@ -379,7 +379,7 @@ class VenridesCompany(models.Model):
 
     def action_preview_tv(self):
         self.ensure_one()
-        base = self.env["ir.config_parameter"].sudo().get_param(
+        base = self.env["ir.config_parameter"].sudo().get_str(
             "venrides.tv_url", "https://venrides-tv.inverpave.com"
         )
         return {

@@ -34,8 +34,8 @@ def _parse_rate(html):
 
 def get_bcv_rate(env):
     icp = env["ir.config_parameter"].sudo()
-    cached = icp.get_param(ICP_RATE, default="")
-    updated = icp.get_param(ICP_UPDATED, default="")
+    cached = icp.get_str(ICP_RATE, default="")
+    updated = icp.get_str(ICP_UPDATED, default="")
     try:
         cached_rate = float(cached) if cached else 0.0
     except ValueError:
@@ -65,8 +65,8 @@ def get_bcv_rate(env):
         response.raise_for_status()
         rate = _parse_rate(response.text)
         if rate:
-            icp.set_param(ICP_RATE, str(rate))
-            icp.set_param(ICP_UPDATED, datetime.now().isoformat())
+            icp.set_str(ICP_RATE, str(rate))
+            icp.set_str(ICP_UPDATED, datetime.now().isoformat())
             return rate
     except Exception as exc:
         _logger.warning("No se pudo obtener la tasa BCV: %s", exc)
