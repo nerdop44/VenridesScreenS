@@ -82,9 +82,10 @@ mail_vals = {
     'smtp_host': os.environ.get('MAIL_HOST', 'smtp.inverpave.com'),
     'smtp_port': int(os.environ.get('MAIL_PORT', '587')),
     'smtp_user': os.environ.get('MAIL_USER', 'info.vscreens@inverpave.com'),
-    'smtp_password': os.environ.get('MAIL_PASSWORD', ''),
+    'smtp_pass': os.environ.get('MAIL_PASSWORD', ''),
+    'smtp_authentication': 'login',
     'smtp_encryption': 'starttls',
-    'smtp_from': os.environ.get('MAIL_USER', 'info.vscreens@inverpave.com'),
+    'from_filter': os.environ.get('MAIL_USER', 'info.vscreens@inverpave.com'),
     'sequence': 1,
 }
 if server:
