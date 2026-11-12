@@ -29,6 +29,25 @@ class VScreenSTicket(models.Model):
     description = fields.Text()
     message_ids = fields.One2many("vscreens.ticket.message", "ticket_id", string="Mensajes")
 
+    @api.model
+    def message_new(self, msg_dict, custom_values=None):
+        vals = dict(custom_values or {})
+        subject = msg_dict.get("subject") or "Correo entrante"
+        body = msg_dict.get("body") or ""
+        email_from = msg_dict.get("email_from") or ""
+        user = self.env["res.users"].sudo().search([("login", "=", email_from)], limit=1)
+        company = user.vscreens_company_id if user else False
+        vals.update({
+            "name": subject,
+            "description": body,
+            "category": "general",
+            "priority": "normal",
+            "status": "open",
+            "user_id": user.id if user else False,
+            "company_id": company.id if company else False,
+        })
+        return self.create(vals)
+
     def api_dict(self):
         self.ensure_one()
         return {
