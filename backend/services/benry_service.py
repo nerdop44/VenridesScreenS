@@ -1,5 +1,5 @@
 """
-Benry AI Service — VenridesScreenS Commercial Chatbot
+Benry AI Service — VScreenS Commercial Chatbot
 Lightweight rule-based agent — ZERO external LLM dependencies.
 Pattern matching + keyword detection + decision tree for commercial conversations.
 """
@@ -17,7 +17,7 @@ load_dotenv()
 logger = logging.getLogger("VenrideScreenS.Benry")
 
 # Notification email for human handoff
-NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")
 
 # In-memory conversation store
 _conversations = {}
@@ -82,7 +82,7 @@ def search_knowledge_base(query: str, kb_content: str) -> Optional[str]:
     paragraphs = [p.strip() for p in re.split(r'\n\n+', kb_content) if len(p.strip()) > 20]
     
     # Simple semantic-ish search (keyword overlap)
-    keywords = [w.lower() for w in re.findall(r'\w{4,}', query) if w.lower() not in ["hola", "benry", "venrides"]]
+    keywords = [w.lower() for w in re.findall(r'\w{4,}', query) if w.lower() not in ["hola", "benry", "vscreens"]]
     
     best_match = None
     best_score = 0
@@ -127,7 +127,7 @@ FEATURES = [
 
 FAQ = {
     "que_es": (
-        "VenridesScreenS es una plataforma SaaS de gestión de pantallas inteligentes para negocios. "
+        "VScreenS es una plataforma SaaS de gestión de pantallas inteligentes para negocios. "
         "Permite gestionar contenido visual (videos, imágenes, tickers, menús) en Smart TVs desde un panel administrativo web. 📺"
     ),
     "como_funciona": (
@@ -140,12 +140,12 @@ FAQ = {
     ),
     "soporte": (
         "Puedes contactar soporte de varias formas:\n\n"
-        "📧 Email: info.venridesscreen@gmail.com\n"
+        "📧 Email: info.vscreens@inverpave.com\n"
         "💬 Chat de soporte integrado en el panel admin\n"
         "🎫 Sistema de tickets (Helpdesk) desde tu cuenta"
     ),
     "dispositivos": (
-        "VenridesScreenS funciona con:\n\n"
+        "VScreenS funciona con:\n\n"
         "📺 **Smart TVs Android** — Nuestra app dedicada\n"
         "🖥️ **Cualquier pantalla con Android TV Box**\n"
         "💻 **Navegador web** — Para gestión desde el panel admin"
@@ -200,7 +200,7 @@ def format_plans_table():
 
 def format_features():
     """Format features list"""
-    lines = ["✨ **VenridesScreenS incluye:**\n"]
+    lines = ["✨ **VScreenS incluye:**\n"]
     for f in FEATURES:
         lines.append(f"• {f}")
     lines.append("\n¿Quieres saber más sobre alguna función en particular?")
@@ -221,7 +221,7 @@ def generate_response(intents, user_msg, conv_history):
         return (
             "¡Por supuesto! 🙋 Un asesor humano se pondrá en contacto contigo muy pronto.\n\n"
             "Mientras tanto, puedes escribirnos a:\n"
-            "📧 info.venridesscreen@gmail.com\n\n"
+            "📧 info.vscreens@inverpave.com\n\n"
             "¿Hay algo más en lo que pueda ayudarte?",
             None, True
         )
@@ -229,7 +229,7 @@ def generate_response(intents, user_msg, conv_history):
     # Greeting
     if "saludo" in intents and len(intents) == 1:
         return (
-            "¡Hola! 👋 Soy **Benry**, el asistente de VenridesScreenS.\n\n"
+            "¡Hola! 👋 Soy **Benry**, el asistente de VScreenS.\n\n"
             "¿En qué puedo ayudarte hoy?\n\n"
             "🚀 Conocer nuestros **planes**\n"
             "✨ Ver las **características**\n"
@@ -242,8 +242,8 @@ def generate_response(intents, user_msg, conv_history):
     if "despedida" in intents:
         return (
             "¡Hasta luego! 👋 Fue un placer atenderte. Si necesitas algo más, aquí estaré.\n\n"
-            "📧 info.venridesscreen@gmail.com\n"
-            "🌐 venrides.inverpave.com",
+            "📧 info.vscreens@inverpave.com\n"
+            "🌐 vscreens.inverpave.com",
             None, False
         )
     
@@ -251,7 +251,7 @@ def generate_response(intents, user_msg, conv_history):
     if "gracias" in intents and len(intents) == 1:
         return (
             "¡Con mucho gusto! 😊 Si necesitas algo más, no dudes en preguntar.\n\n"
-            "Recuerda que puedes probar VenridesScreenS **gratis por 7 días** 🚀",
+            "Recuerda que puedes probar VScreenS **gratis por 7 días** 🚀",
             None, False
         )
     
@@ -282,7 +282,7 @@ def generate_response(intents, user_msg, conv_history):
         lead_type = "venta" if "contratar" in intents else None
         return format_plans_table(), lead_type, False
     
-    # What is VenridesScreenS
+    # What is VScreenS
     if "que_es" in intents:
         return FAQ["que_es"], None, False
     
@@ -324,7 +324,7 @@ def generate_response(intents, user_msg, conv_history):
     # Business type mentioned — opportunity
     if "negocio" in intents:
         return (
-            "¡Genial! VenridesScreenS es perfecto para tu tipo de negocio. 🏢\n\n"
+            "¡Genial! VScreenS es perfecto para tu tipo de negocio. 🏢\n\n"
             "Muchos de nuestros clientes lo usan para:\n"
             "• Mostrar menús y promociones\n"
             "• Publicar horarios y eventos\n"
@@ -347,7 +347,7 @@ def generate_response(intents, user_msg, conv_history):
         "📋 **Planes y precios** — Escribe \"planes\"\n"
         "✨ **Características** — Escribe \"funcionalidades\"\n"
         "📅 **Agendar demo** — Escribe \"demo\"\n"
-        "❓ **Qué es VenridesScreenS** — Escribe \"qué es\"\n"
+        "❓ **Qué es VScreenS** — Escribe \"qué es\"\n"
         "🙋 **Hablar con un asesor** — Escribe \"asesor\"\n\n"
         "¿En qué te puedo ayudar?",
         None, False
@@ -359,7 +359,7 @@ def generate_response(intents, user_msg, conv_history):
 # ============================================
 
 class BenryAIService:
-    """Lightweight rule-based chatbot for VenridesScreenS"""
+    """Lightweight rule-based chatbot for VScreenS"""
 
     def __init__(self):
         self._available = True  # Always available — no external dependencies

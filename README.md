@@ -1,4 +1,4 @@
-# VenridesScreenS
+# VScreenS
 
 Sistema completo de gestión de pantallas para negocios, con backend FastAPI, múltiples frontends (TV, Admin, Landing, Mobile) y arquitectura Dockerizada.
 
@@ -24,7 +24,7 @@ Sistema completo de gestión de pantallas para negocios, con backend FastAPI, m�
 
 ```bash
 git clone <repository-url>
-cd VenridesScreenS
+cd vscreens
 ```
 
 ### 2. Configurar Variables de Entorno
@@ -38,7 +38,7 @@ cp backend/.env.example backend/.env
 Edita `backend/.env` con tus valores:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@db/venrides_db
+DATABASE_URL=postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@db/vscreens_db
 SECRET_KEY=<genera-una-clave-secreta-fuerte>
 GMAIL_APP_PASSWORD=<tu-gmail-app-password>
 SMTP_USER=<tu-email>
@@ -124,19 +124,19 @@ Ver documentación detallada en:
 ### Resumen de Despliegue
 
 1. **Configurar DNS** para los dominios:
-   - `venrides-app.inverpave.com` → Admin Panel
-   - `venrides-api.inverpave.com` → Backend API  
-   - `venrides-tv.inverpave.com` → TV Client
-   - `venrides.inverpave.com` → Landing Page
+   - `vscreens-app.inverpave.com` → Admin Panel
+   - `vscreens-api.inverpave.com` → Backend API  
+   - `vscreens-tv.inverpave.com` → TV Client
+   - `vscreens.inverpave.com` → Landing Page
 
 2. **Configurar Nginx Proxy Manager**:
 
 | Dominio | Destination | SSL |
 |---------|-------------|-----|
-| venrides-app.inverpave.com | `http://venrides_admin:80` | Let's Encrypt |
-| venrides-api.inverpave.com | `http://venrides_api:8000` | Let's Encrypt |
-| venrides-tv.inverpave.com | `http://venrides_tv:80` | Let's Encrypt |
-| venrides.inverpave.com | `http://venrides_landing:80` | Let's Encrypt |
+| vscreens-app.inverpave.com | `http://vscreens_admin:80` | Let's Encrypt |
+| vscreens-api.inverpave.com | `http://vscreens_api:8000` | Let's Encrypt |
+| vscreens-tv.inverpave.com | `http://vscreens_tv:80` | Let's Encrypt |
+| vscreens.inverpave.com | `http://vscreens_landing:80` | Let's Encrypt |
 
 3. **Deploy**:
 
@@ -151,7 +151,7 @@ docker compose up -d
 ## 📁 Estructura del Proyecto
 
 ```
-VenridesScreenS/
+VScreenS/
 ├── backend/              # FastAPI backend
 │   ├── credentials/      # Service account keys (git-ignored)
 │   ├── utils/           # Utilidades (email, auth, etc.)
@@ -194,7 +194,7 @@ npm test
 
 # Migración de datos
 cd backend
-python migrate_venrides.py
+python migrate_vscreens.py
 ```
 
 ## 🐛 Troubleshooting
@@ -219,7 +219,7 @@ find . -name "*.log" -delete
 
 ## 📜 Licencia
 
-Privado - Venrides © 2026
+Privado - VScreenS © 2026
 
 ## 👥 Contacto
 

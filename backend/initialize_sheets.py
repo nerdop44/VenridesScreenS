@@ -1,5 +1,5 @@
 """
-Script to initialize Google Sheets for VenridesScreenS Forms
+Script to initialize Google Sheets for VScreenS Forms
 Creates spreadsheets with proper structure and headers
 """
 import os
@@ -29,7 +29,7 @@ def initialize_plans_sheet():
     print("\n📊 Creating Plans Spreadsheet...")
     
     folder_id = "1vgeveIrbdo12egt-RG2NbdZppsnEmLty"
-    title = "VenridesScreenS - Contrataciones"
+    title = "VScreenS - Contrataciones"
     sheets = ["Free", "Basico", "Plus", "Ultra", "Empresarial"]
     
     spreadsheet_id = sheets_service.create_spreadsheet(title, folder_id, sheets)
@@ -65,7 +65,7 @@ def initialize_contact_sheet():
     print("\n📊 Creating Contact Spreadsheet...")
     
     folder_id = "1mQXnR10ijFX8oBcd7hUWXiMdyRhqR8ly"
-    title = "VenridesScreenS - Contactos"
+    title = "VScreenS - Contactos"
     sheets = ["Contactos"]
     
     spreadsheet_id = sheets_service.create_spreadsheet(title, folder_id, sheets)
@@ -95,7 +95,7 @@ def initialize_contact_sheet():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 VenridesScreenS - Google Sheets Initialization")
+    print("🚀 VScreenS - Google Sheets Initialization")
     print("=" * 60)
     
     try:

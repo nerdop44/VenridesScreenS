@@ -1,11 +1,11 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: venrides_db
+    container_name: vscreens_db
     environment:
-      POSTGRES_USER: ${DB_USER:-venrides_user}
+      POSTGRES_USER: ${DB_USER:-vscreens_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      POSTGRES_DB: ${DB_NAME:-venrides_db}
+      POSTGRES_DB: ${DB_NAME:-vscreens_db}
     deploy:
       resources:
         limits:
@@ -15,26 +15,26 @@ services:
     ports:
       - "5433:5432" # Use 5433 to avoid conflict with host's 5432 (Odoo)
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   redis:
     image: redis:7-alpine
-    container_name: venrides_cache
+    container_name: vscreens_cache
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   backend:
     build: ./backend
-    container_name: venrides_api
+    container_name: vscreens_api
     volumes:
       - ./backend:/app
       - ./logos:/logos # Sync logos with host and nginx
     ports:
       - "8005:8000" # Changed from 8000 to 8005 to avoid conflict with Portainer on VPS
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-venrides_user}:${DB_PASSWORD:?DB_PASSWORD is required}@db/${DB_NAME:-venrides_db}
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-vscreens_user}:${DB_PASSWORD:?DB_PASSWORD is required}@db/${DB_NAME:-vscreens_db}
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - LOG_LEVEL=info
@@ -46,16 +46,16 @@ services:
       - db
       - redis
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   frontend-admin:
     build:
       context: ./frontend-admin
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://venrides-api.inverpave.com}
-        - VITE_TV_URL=${VITE_TV_URL:-https://venrides-tv.inverpave.com}
-    container_name: venrides_admin
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://vscreens-api.inverpave.com}
+        - VITE_TV_URL=${VITE_TV_URL:-https://vscreens-tv.inverpave.com}
+    container_name: vscreens_admin
     deploy:
       resources:
         limits:
@@ -63,12 +63,12 @@ services:
     depends_on:
       - backend
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   frontend-tv:
     build: ./frontend-tv
-    container_name: venrides_tv
+    container_name: vscreens_tv
     deploy:
       resources:
         limits:
@@ -76,12 +76,12 @@ services:
     depends_on:
       - backend
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   frontend-mobile:
     build: ./app-mobile
-    container_name: venrides_mobile
+    container_name: vscreens_mobile
     deploy:
       resources:
         limits:
@@ -89,12 +89,12 @@ services:
     depends_on:
       - backend
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   frontend-landing:
     build: ./frontend-landing
-    container_name: venrides_landing
+    container_name: vscreens_landing
     deploy:
       resources:
         limits:
@@ -102,12 +102,12 @@ services:
     depends_on:
       - backend
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
   nginx:
     image: nginx:alpine
-    container_name: venrides_proxy
+    container_name: vscreens_proxy
     ports:
       - "8080:80"
       - "8081:81"
@@ -124,11 +124,11 @@ services:
       - frontend-mobile
       - frontend-landing
     networks:
-      - venrides_network
+      - vscreens_network
     restart: always
 
 networks:
-  venrides_network:
+  vscreens_network:
     driver: bridge
 
 volumes:

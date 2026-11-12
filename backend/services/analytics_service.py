@@ -1,5 +1,5 @@
 """
-Analytics Service — VenridesScreenS
+Analytics Service — VScreenS
 Lightweight self-hosted analytics (no Google Analytics dependency).
 Tracks page visits, referrers, device types, and provides dashboard data.
 """
@@ -28,7 +28,7 @@ DATA_FILE = os.getenv("ANALYTICS_DATA_FILE", "/app/analytics_data.json")
 
 def _hash_ip(ip: str) -> str:
     """Hash IP for privacy"""
-    return hashlib.sha256(f"venrides-{ip}".encode()).hexdigest()[:12]
+    return hashlib.sha256(f"vscreens-{ip}".encode()).hexdigest()[:12]
 
 
 def _detect_device_type(user_agent_str: str) -> str:
@@ -75,7 +75,7 @@ def _extract_referrer_source(referrer: str) -> str:
         return "LinkedIn"
     elif "youtube" in ref_lower:
         return "YouTube"
-    elif "venrides" in ref_lower:
+    elif "vscreens" in ref_lower:
         return "interno"
     else:
         return referrer[:50]

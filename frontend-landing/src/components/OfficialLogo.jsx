@@ -15,8 +15,9 @@ const OfficialLogo = ({ className = "h-16", showSlogan = true, variant = "full" 
         <div className={`flex items-center gap-4 ${className} hover:scale-105 transition-transform cursor-pointer`} style={{ minHeight: className.includes('h-') ? undefined : '64px' }}>
             <img
                 src={logoPng}
-                alt="Venrides Screens Official Logo"
+                alt="VScreenS — Pantallas inteligentes"
                 style={logoStyle}
+                decoding="async"
             />
         </div>
     );

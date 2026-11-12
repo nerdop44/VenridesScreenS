@@ -9,9 +9,9 @@ import datetime
 import subprocess
 
 # Configuration
-CONTAINER_NAME = "venrides_db" # From docker-compose
-DB_USER = "venrides_user"
-DB_NAME = "venrides_db"
+CONTAINER_NAME = "vscreens_db" # From docker-compose
+DB_USER = "vscreens_user"
+DB_NAME = "vscreens_db"
 BACKUP_DIR = "backups/postgres"
 
 def backup_postgres():
@@ -20,7 +20,7 @@ def backup_postgres():
         os.makedirs(BACKUP_DIR)
         
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"venrides_full_{timestamp}.sql.gz"
+    filename = f"vscreens_full_{timestamp}.sql.gz"
     filepath = os.path.join(BACKUP_DIR, filename)
     
     print(f"📦 Starting backup of {DB_NAME} from container {CONTAINER_NAME}...")

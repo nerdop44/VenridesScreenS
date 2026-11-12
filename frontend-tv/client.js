@@ -1,6 +1,6 @@
-const API_URL = "https://venrides-api.inverpave.com";
+const API_URL = "https://vscreens-api.inverpave.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
-console.log("Venrides TV Client v1.8 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
+console.log("VScreenS TV Client v1.8 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
 
 const urlParams = new URLSearchParams(window.location.search);
 const previewCompanyId = urlParams.get('preview');
@@ -426,7 +426,7 @@ function applyBranding(data) {
     // Apply Content
     const nameEl = document.getElementById("company-name");
     if (nameEl) {
-        nameEl.innerText = data.name || "Venrides Screen";
+        nameEl.innerText = data.name || "VScreenS Screen";
         if (data.design_settings) {
             const ds = data.design_settings;
             nameEl.style.fontFamily = ds.name_font || 'inherit';
@@ -763,7 +763,7 @@ function updateBottomBar() {
     };
 
     // 1. Multiple Scrolling Messages (Ticker)
-    const msgs = Array.isArray(bottomData.messages) ? bottomData.messages : [bottomData.static || "Venrides Pantallas Inteligentes"];
+    const msgs = Array.isArray(bottomData.messages) ? bottomData.messages : [bottomData.static || "VScreenS Pantallas Inteligentes"];
 
     msgs.forEach(text => {
         items.push({
@@ -944,7 +944,7 @@ function showBlockingScreen() {
     reg.innerHTML = `
         <div class="registration-box" style="border-color: #ef4444;">
             <div style="margin-bottom: 1rem;">
-                <img src="venrides_logo.png" alt="VenridesScreenS" style="height: 150px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
+                <img src="vscreens_logo.png" alt="VScreenS" style="height: 150px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
             </div>
             <h1 style="color: #ef4444; margin-bottom: 1rem; font-size: 2.5rem;">⚠️ DISPOSITIVO BLOQUEADO</h1>
             <p style="font-size: 1.4rem; color: #fff; margin-bottom: 2rem;">
@@ -979,7 +979,7 @@ function showRegistrationScreen() {
     reg.innerHTML = `
         <div class="registration-box">
             <div style="margin-bottom: 2rem;">
-                <img src="venrides_logo.png" alt="VenridesScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
+                <img src="vscreens_logo.png" alt="VScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
             </div>
             <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla (v1.8)</h2>
             <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>

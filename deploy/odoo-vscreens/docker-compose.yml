@@ -1,0 +1,143 @@
+services:
+  vscreens-db:
+    image: postgres:16-alpine
+    container_name: vscreens-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-vscreens}
+      POSTGRES_USER: ${DB_USER:-vscreens}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - vscreens_pgdata:/var/lib/postgresql/data
+    networks:
+      - vscreens-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vscreens} -d ${DB_NAME:-vscreens}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vscreens-odoo:
+    image: odoo:20.0
+    container_name: vscreens-odoo
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/usr/local/bin/vscreens-entrypoint.sh"]
+    env_file:
+      - /opt/vscreens/.env
+    ports:
+      - "127.0.0.1:8075:8069"
+    depends_on:
+      vscreens-db:
+        condition: service_healthy
+    volumes:
+      - ./scripts/entrypoint.sh:/usr/local/bin/vscreens-entrypoint.sh:ro
+      - ../../odoo-addons:/mnt/extra-addons:ro
+      - vscreens_odoo_data:/var/lib/odoo
+      - ../../releases:/opt/vscreens/releases:ro
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  vscreens-gateway:
+    image: nginx:alpine
+    container_name: vscreens-gateway
+    restart: unless-stopped
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - vscreens-odoo
+      - vscreens-admin
+      - vscreens-tv
+      - vscreens-landing
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vscreens-admin:
+    build:
+      context: ../../frontend-admin
+      args:
+        VITE_API_BASE_URL: https://vscreens-api.inverpave.com
+        VITE_TV_URL: https://vscreens-tv.inverpave.com
+    container_name: vscreens-admin
+    restart: unless-stopped
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vscreens-tv:
+    build: ../../frontend-tv
+    container_name: vscreens-tv
+    restart: unless-stopped
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  vscreens-uptime:
+    image: louislam/uptime-kuma:1
+    container_name: vscreens-uptime
+    restart: unless-stopped
+    volumes:
+      - vscreens_uptime_data:/app/data
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  vscreens-landing:
+    build: ../../frontend-landing
+    container_name: vscreens-landing
+    restart: unless-stopped
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  vscreens_pgdata:
+    name: vscreens_pgdata
+  vscreens_odoo_data:
+    name: vscreens_odoo_data
+  vscreens_uptime_data:
+    name: vscreens_uptime_data
+
+networks:
+  vscreens-net:
+    name: vscreens-net
+    driver: bridge

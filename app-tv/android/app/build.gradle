@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.venrides.tv"
+    namespace "com.vscreens.tv"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.venrides.tv"
+        applicationId "com.vscreens.tv"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

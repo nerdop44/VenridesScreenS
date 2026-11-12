@@ -1,0 +1,52 @@
+<odoo>
+    <menuitem id="menu_vscreens_root" name="VScreenS" sequence="15"
+              groups="vscreens.group_vscreens_master"/>
+
+    <menuitem id="menu_vscreens_dashboard" name="Dashboard" parent="menu_vscreens_root"
+              action="action_vscreens_dashboard" sequence="10"/>
+
+    <menuitem id="menu_vscreens_clients" name="Clientes" parent="menu_vscreens_root" sequence="20"/>
+    <menuitem id="menu_vscreens_companies" name="Empresas" parent="menu_vscreens_clients"
+              action="action_vscreens_company" sequence="10"/>
+    <menuitem id="menu_vscreens_devices" name="Pantallas" parent="menu_vscreens_clients"
+              action="action_vscreens_device" sequence="20"/>
+    <menuitem id="menu_vscreens_plans" name="Planes" parent="menu_vscreens_clients"
+              action="action_vscreens_plan" sequence="30"/>
+    <menuitem id="menu_vscreens_payments" name="Pagos" parent="menu_vscreens_clients"
+              action="action_vscreens_payment" sequence="40"/>
+
+    <menuitem id="menu_vscreens_content" name="Contenido" parent="menu_vscreens_root" sequence="30"/>
+    <menuitem id="menu_vscreens_global_ad" name="Publicidad global" parent="menu_vscreens_content"
+              action="action_vscreens_global_ad" sequence="10"/>
+    <menuitem id="menu_vscreens_menus" name="Menús de clientes" parent="menu_vscreens_content"
+              action="action_vscreens_menu_item" sequence="20"/>
+    <menuitem id="menu_vscreens_email_templates" name="Plantillas de email" parent="menu_vscreens_content"
+              action="action_vscreens_email_template" sequence="30"/>
+
+    <menuitem id="menu_vscreens_messaging" name="Mensajería" parent="menu_vscreens_root" sequence="40"/>
+    <menuitem id="menu_vscreens_messages" name="Mensajes y alertas" parent="menu_vscreens_messaging"
+              action="action_vscreens_message" sequence="10"/>
+    <menuitem id="menu_vscreens_chat" name="Chat interno" parent="menu_vscreens_messaging"
+              action="action_vscreens_chat_thread" sequence="20"/>
+    <menuitem id="menu_vscreens_blocked" name="Usuarios bloqueados" parent="menu_vscreens_messaging"
+              action="action_vscreens_blocked_user" sequence="30"/>
+
+    <menuitem id="menu_vscreens_support" name="Soporte" parent="menu_vscreens_root" sequence="50"/>
+    <menuitem id="menu_vscreens_tickets" name="Tickets" parent="menu_vscreens_support"
+              action="action_vscreens_ticket" sequence="10"/>
+
+    <menuitem id="menu_vscreens_crm" name="CRM y marketing" parent="menu_vscreens_root" sequence="60"/>
+    <menuitem id="menu_vscreens_leads" name="Leads" parent="menu_vscreens_crm"
+              action="action_vscreens_crm_leads" sequence="10"/>
+    <menuitem id="menu_vscreens_promotions" name="Promociones" parent="menu_vscreens_crm"
+              action="action_vscreens_promotion" sequence="20"/>
+    <menuitem id="menu_vscreens_affiliates" name="Afiliados" parent="menu_vscreens_crm"
+              action="action_vscreens_affiliate" sequence="30"/>
+    <menuitem id="menu_vscreens_calendar" name="Calendario y feriados" parent="menu_vscreens_crm"
+              action="action_vscreens_calendar_activity" sequence="40"/>
+
+    <menuitem id="menu_vscreens_intelligence" name="Inteligencia" parent="menu_vscreens_root" sequence="70"/>
+    <menuitem id="menu_vscreens_analytics" name="Analítica web" parent="menu_vscreens_intelligence"
+              action="action_vscreens_analytics_visit" sequence="10"/>
+
+</odoo>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'venrides_cookie_consent';
+const STORAGE_KEY = 'vscreens_cookie_consent';
 
 export function getConsent() {
   try {
@@ -24,13 +24,13 @@ export function saveConsent(analytics) {
     version: 1,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-  window.dispatchEvent(new Event('venrides-consent-change'));
+  window.dispatchEvent(new Event('vscreens-consent-change'));
   return value;
 }
 
 export function resetConsent() {
   localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new Event('venrides-consent-change'));
+  window.dispatchEvent(new Event('vscreens-consent-change'));
 }
 
 export default function CookieConsent() {
@@ -39,8 +39,8 @@ export default function CookieConsent() {
   useEffect(() => {
     const check = () => setVisible(!getConsent());
     check();
-    window.addEventListener('venrides-consent-change', check);
-    return () => window.removeEventListener('venrides-consent-change', check);
+    window.addEventListener('vscreens-consent-change', check);
+    return () => window.removeEventListener('vscreens-consent-change', check);
   }, []);
 
   if (!visible) return null;

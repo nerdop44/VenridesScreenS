@@ -1,7 +1,7 @@
 
 import sys
 
-filename = "/home/nerdop/VenridesScreenS/backend/main.py"
+filename = "/home/nerdop/VScreenS/backend/main.py"
 try:
     with open(filename, "r") as f:
         lines = f.readlines()

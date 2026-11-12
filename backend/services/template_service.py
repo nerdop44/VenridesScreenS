@@ -11,7 +11,7 @@ class TemplateService:
 
     DEFAULT_TEMPLATES = {
         "welcome_verification": { # Used for Auth flow
-            "subject": "¡Bienvenido a VenridesScreenS! Verifica tu cuenta",
+            "subject": "¡Bienvenido a VScreenS! Verifica tu cuenta",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px; color: #1a202c;">
                     <h1 style="color: #3b82f6;">¡Hola, {{name}}!</h1>
@@ -22,11 +22,11 @@ class TemplateService:
             """
         },
         "welcome_crm": { # New Welcome to CRM
-            "subject": "¡Bienvenido a VenridesScreenS! 📺",
+            "subject": "¡Bienvenido a VScreenS! 📺",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h1 style="color: #3b82f6;">Hola {{contacto}} de {{nombre_empresa}}</h1>
-                    <p>Es un placer darte la bienvenida a <strong>VenridesScreenS</strong>.</p>
+                    <p>Es un placer darte la bienvenida a <strong>VScreenS</strong>.</p>
                     <p>Con nuestra plataforma podrás gestionar tus pantallas, programar contenido y monetizar tu audiencia de manera sencilla.</p>
                     <p>Si tienes dudas, nuestro equipo de soporte está listo para ayudarte: <a href="https://wa.me/584120000000">Contactar Soporte</a></p>
                 </div>
@@ -36,7 +36,7 @@ class TemplateService:
             "subject": "Propuesta Comercial para {{nombre_empresa}} 📊",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
-                    <h2 style="color: #10b981;">Potencia tu marca con VenridesScreenS</h2>
+                    <h2 style="color: #10b981;">Potencia tu marca con VScreenS</h2>
                     <p>Estimado/a {{contacto}},</p>
                     <p>Hemos analizado el potencial de {{nombre_empresa}} y creemos que nuestras soluciones de Digital Signage pueden aumentar tus ventas significativamente.</p>
                     <p><strong>Beneficios:</strong></p>
@@ -54,14 +54,14 @@ class TemplateService:
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
                     <p>Hola {{contacto}},</p>
-                    <p>Hace unos días conversamos sobre cómo VenridesScreenS puede ayudar a {{nombre_empresa}}.</p>
+                    <p>Hace unos días conversamos sobre cómo VScreenS puede ayudar a {{nombre_empresa}}.</p>
                     <p>¿Tienes alguna duda o te gustaría ver una demostración en vivo?</p>
                     <p>Responde a este correo y coordinamos.</p>
                 </div>
             """
         },
         "recovery": { # New Recovery
-            "subject": "¡Te extrañamos en VenridesScreenS! 💔",
+            "subject": "¡Te extrañamos en VScreenS! 💔",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2 style="color: #f43f5e;">{{contacto}}, queremos que vuelvas</h2>
@@ -72,11 +72,11 @@ class TemplateService:
             """
         },
         "apk_download": {
-            "subject": "Tu App VenridesScreenS para Smart TV 📺",
+            "subject": "Tu App VScreenS para Smart TV 📺",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px; color: #1a202c;">
                     <h1 style="color: #10b981;">¡Pago Verificado!</h1>
-                    <p>Hola {{contacto}}, ya puedes instalar VenridesScreenS en tu Smart TV.</p>
+                    <p>Hola {{contacto}}, ya puedes instalar VScreenS en tu Smart TV.</p>
                     <p><strong>Pasos para instalar:</strong></p>
                     <ol>
                         <li>Instala la app 'Downloader' en tu TV (Android TV / Google TV / Fire TV).</li>
@@ -84,7 +84,7 @@ class TemplateService:
                         <ul>
                             <li>Código: <strong>8744763</strong></li>
                             <li>URL Corta: <code>http://aftv.news/8744763</code></li>
-                            <li>URL Directa: <code>https://venrides.inverpave.com/tv-app</code></li>
+                            <li>URL Directa: <code>https://vscreens.inverpave.com/tv-app</code></li>
                         </ul>
                         <li>Instala y abre la App.</li>
                         <li>Verás un código de 6 dígitos en la pantalla.</li>
@@ -94,7 +94,7 @@ class TemplateService:
             """
         },
         "payment_confirmation": {
-            "subject": "Confirmación de Pago - VenridesScreenS ✅",
+            "subject": "Confirmación de Pago - VScreenS ✅",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h2>Hemos recibido tu pago</h2>
@@ -113,11 +113,11 @@ class TemplateService:
             "subject": "Instrucciones de Pago y Validación 💰",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px;">
-                    <h2>Datos Bancarios - VenridesScreenS</h2>
+                    <h2>Datos Bancarios - VScreenS</h2>
                     <p>Para activar o renovar tu plan, por favor realiza el pago a:</p>
                     <div style="background: #f3f4f6; padding: 15px; border-radius: 8px;">
                         <p><strong>Banco:</strong> Banco de Venezuela</p>
-                        <p><strong>Titular:</strong> Venrides C.A.</p>
+                        <p><strong>Titular:</strong> VScreenS C.A.</p>
                         <p><strong>RIF:</strong> J-12345678-9</p>
                         <p><strong>Cuenta:</strong> 0102-0000-00-0000000000</p>
                         <p><strong>Pago Móvil:</strong> 0412-1234567 / J-123456789</p>
@@ -134,12 +134,12 @@ class TemplateService:
                     <h2>¡Hola, {{contacto}}!</h2>
                     <p>Te recordamos que el plan <strong>{{plan}}</strong> de {{nombre_empresa}} vence el <strong>{{fecha_vencimiento}}</strong>.</p>
                     <p>Para evitar interrupciones en la transmisión de tus pantallas, por favor realiza tu renovación a tiempo.</p>
-                    <p><a href="https://venrides-app.inverpave.com/payments" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Renovar Ahora</a></p>
+                    <p><a href="https://vscreens-app.inverpave.com/payments" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Renovar Ahora</a></p>
                 </div>
             """
         },
         "birthday_greeting": {
-            "subject": "¡Feliz Cumpleaños de parte de VenridesScreenS! 🎂",
+            "subject": "¡Feliz Cumpleaños de parte de VScreenS! 🎂",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px; text-align: center;">
                     <h1 style="color: #f43f5e;">¡Felicidades, {{contacto}}!</h1>
@@ -149,7 +149,7 @@ class TemplateService:
             """
         },
         "holiday_greeting": {
-            "subject": "¡VenridesScreenS te desea Felices Fiestas! 🎄",
+            "subject": "¡VScreenS te desea Felices Fiestas! 🎄",
             "body": """
                 <div style="font-family: sans-serif; padding: 20px; text-align: center; border: 2px solid #3b82f6; border-radius: 15px;">
                     <h1 style="color: #3b82f6;">🇻🇪 ¡Felices Fiestas!</h1>
@@ -184,7 +184,7 @@ class TemplateService:
 
         if not body:
             logger.warning(f"Template '{template_name}' not found.")
-            return {"subject": "Aviso de VenridesScreenS", "body": "Contenido no disponible."}
+            return {"subject": "Aviso de VScreenS", "body": "Contenido no disponible."}
 
         # Replace placeholders {{key}}
         for key, value in context.items():

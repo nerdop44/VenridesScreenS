@@ -1,10 +1,10 @@
-# VenridesScreenS — Robots.txt
+# VScreenS — Robots.txt
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://venrides.inverpave.com/sitemap.xml
+Sitemap: https://vscreens.inverpave.com/sitemap.xml
 
 # Block common bad bots
 User-agent: AhrefsBot

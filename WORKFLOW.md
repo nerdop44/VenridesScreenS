@@ -1,4 +1,4 @@
-# Flujo de Trabajo: Desarrollo y Producción VenridesScreenS
+# Flujo de Trabajo: Desarrollo y Producción VScreenS
 
 Este documento explica cómo trabajar de forma segura entre tu entorno local y el servidor VPS, garantizando que **Odoo** permanezca intacto.
 
@@ -20,18 +20,18 @@ Cuando termines una mejora y quieras llevarla al servidor:
 ## 3. Despliegue en Producción (VPS)
 Entra a tu servidor VPS vía SSH y ejecuta estos comandos para aplicar las mejoras:
 ```bash
-cd /opt/VenridesScreenS
+cd /opt/vscreens
 git pull origin main
 docker compose up -d --build
 ```
 
 **Beneficios de este flujo:**
-- **Seguridad:** Los secretos y contraseñas de producción están en el archivo `/opt/VenridesScreenS/.env` del VPS, el cual Git ignora por seguridad.
+- **Seguridad:** Los secretos y contraseñas de producción están en el archivo `/opt/vscreens/.env` del VPS, el cual Git ignora por seguridad.
 - **Limpieza:** Al usar Docker, no ensuciaremos el sistema operativo principal ni chocaremos con las instalaciones de Odoo.
 - **Rapidez:** Solo descargas lo que cambió en el código.
 
 ## 4. Apps Móviles y TV
 He actualizado las aplicaciones para que, por defecto, intenten conectarse a:
-- `https://venrides-api.inverpave.com`
+- `https://vscreens-api.inverpave.com`
 
 Si necesitas probar contra un servidor de desarrollo diferente en la app móvil, recuerda que tienes la opción de cambiar la URL en el panel de configuración de la app.

@@ -1,20 +1,20 @@
 ---
 name: continuity
-description: Instrucciones para retomar el hilo de trabajo de VenridesScreenS sin exponer credenciales.
+description: Instrucciones para retomar el hilo de trabajo de VScreenS sin exponer credenciales.
 ---
 
-# Skill de Continuidad - VenridesScreenS
+# Skill de Continuidad - VScreenS
 
 ## Contexto
 
 - El proyecto migra su backend y dashboard maestro a **Odoo 20 CE**.
 - El dashboard del cliente, la app de TV y la landing se conservan.
 - Dominios de producción:
-  - Landing: `https://venrides.inverpave.com`
-  - Panel cliente: `https://venrides-app.inverpave.com`
-  - API: `https://venrides-api.inverpave.com`
-  - TV: `https://venrides-tv.inverpave.com`
-  - Odoo maestro: `https://venrides-erp.inverpave.com`
+  - Landing: `https://vscreens.inverpave.com`
+  - Panel cliente: `https://vscreens-app.inverpave.com`
+  - API: `https://vscreens-api.inverpave.com`
+  - TV: `https://vscreens-tv.inverpave.com`
+  - Odoo maestro: `https://vscreens-erp.inverpave.com`
 - El plan completo está en `PLAN_MIGRACION_ODOO.md` (documento interno, ignorado por Git).
 
 ## Pasos de activación
@@ -27,7 +27,7 @@ description: Instrucciones para retomar el hilo de trabajo de VenridesScreenS si
 ## Reglas de oro
 
 - **Nunca** escribir credenciales, tokens, llaves privadas ni IPs internas en el repositorio.
-- Los secretos viven en `/opt/venrides-screens/.env` o en el gestor de secretos.
+- Los secretos viven en `/opt/vscreens/.env` o en el gestor de secretos.
 - No tocar la base `vencafedb` ni el Odoo del café.
 - Mantener la compatibilidad de la API para el dashboard del cliente y la TV.
 - Versionar assets de TV (`?v=...`) para forzar actualización en Smart TVs.

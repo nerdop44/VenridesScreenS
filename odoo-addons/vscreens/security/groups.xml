@@ -1,0 +1,39 @@
+<odoo>
+    <record id="module_category_vscreens" model="ir.module.category">
+        <field name="name">VScreenS</field>
+        <field name="description">Acceso a la plataforma de señalización digital</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="privilege_vscreens" model="res.groups.privilege">
+        <field name="name">VScreenS</field>
+        <field name="description">Roles de acceso a la plataforma</field>
+        <field name="category_id" ref="module_category_vscreens"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="group_vscreens_master" model="res.groups">
+        <field name="name">Maestro</field>
+        <field name="privilege_id" ref="privilege_vscreens"/>
+        <field name="sequence">10</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_vscreens_company_admin" model="res.groups">
+        <field name="name">Administrador de empresa</field>
+        <field name="privilege_id" ref="privilege_vscreens"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_vscreens_operator" model="res.groups">
+        <field name="name">Operador de empresa</field>
+        <field name="privilege_id" ref="privilege_vscreens"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="group_vscreens_basic" model="res.groups">
+        <field name="name">Usuario básico</field>
+        <field name="privilege_id" ref="privilege_vscreens"/>
+        <field name="sequence">40</field>
+    </record>
+</odoo>

@@ -3,27 +3,27 @@
  * Los datos marcados como [COMPLETAR] deben confirmarse antes de producción.
  */
 export const site = {
-  brand: 'VenridesScreenS',
-  domain: 'venrides.inverpave.com',
-  landingUrl: import.meta.env.VITE_LANDING_URL || 'https://venrides.inverpave.com',
-  appUrl: import.meta.env.VITE_ADMIN_PANEL_URL || 'https://venrides-app.inverpave.com',
-  apiUrl: import.meta.env.VITE_API_BASE_URL || 'https://venrides-api.inverpave.com',
-  tvUrl: import.meta.env.VITE_TV_URL || 'https://venrides-tv.inverpave.com',
-  odooUrl: import.meta.env.VITE_ODOO_URL || 'https://venrides-erp.inverpave.com',
+  brand: 'VScreenS',
+  domain: 'vscreens.inverpave.com',
+  landingUrl: import.meta.env.VITE_LANDING_URL || 'https://vscreens.inverpave.com',
+  appUrl: import.meta.env.VITE_ADMIN_PANEL_URL || 'https://vscreens-app.inverpave.com',
+  apiUrl: import.meta.env.VITE_API_BASE_URL || 'https://vscreens-api.inverpave.com',
+  tvUrl: import.meta.env.VITE_TV_URL || 'https://vscreens-tv.inverpave.com',
+  odooUrl: import.meta.env.VITE_ODOO_URL || 'https://vscreens-erp.inverpave.com',
 
   // Titular del servicio. [COMPLETAR / CONFIRMAR]
   legalName: 'Inverpave, C.A.',
-  commercialName: 'VenridesScreenS',
+  commercialName: 'VScreenS',
   rif: '[COMPLETAR RIF]',
   address: '[COMPLETAR DOMICILIO FISCAL]',
   country: 'Venezuela',
   jurisdiction: 'República Bolivariana de Venezuela',
 
   // Contactos. [CONFIRMAR BUZONES]
-  contactEmail: 'soporte@inverpave.com',
-  billingEmail: 'pagos@inverpave.com',
-  privacyEmail: 'privacidad@inverpave.com',
-  securityEmail: 'seguridad@inverpave.com',
+  contactEmail: 'info.vscreens@inverpave.com',
+  billingEmail: 'pagos.vscreens@inverpave.com',
+  privacyEmail: 'privacidad.vscreens@inverpave.com',
+  securityEmail: 'seguridad.vscreens@inverpave.com',
   phone: '[COMPLETAR TELÉFONO]',
   whatsapp: '[COMPLETAR WHATSAPP]',
 

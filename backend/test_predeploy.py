@@ -1,5 +1,5 @@
 """
-VenridesScreenS — Pre-deployment System Test
+VScreenS — Pre-deployment System Test
 Tests Gmail SMTP, imports, services, and endpoint validation
 Run WITHOUT Docker — standalone validation
 """
@@ -34,7 +34,7 @@ def test(name, func):
         return False
 
 print("=" * 60)
-print("VenridesScreenS — Pre-deployment System Test")
+print("VScreenS — Pre-deployment System Test")
 print(f"Timestamp: {datetime.now().isoformat()}")
 print("=" * 60)
 
@@ -106,13 +106,13 @@ def test_gmail_send():
     """Actually send a test email"""
     from utils.email_sender import send_email
     
-    notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+    notification_email = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")
     
     test_body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
         <div style="max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 15px; border: 1px solid #333;">
-            <h2 style="color: #c8ff00; margin-bottom: 20px;">🧪 Test de Email — VenridesScreenS</h2>
+            <h2 style="color: #c8ff00; margin-bottom: 20px;">🧪 Test de Email — VScreenS</h2>
             <p style="color: #e0e0e0;">Este es un email de prueba del sistema.</p>
             <table style="width: 100%; border-collapse: collapse; color: #e0e0e0; margin-top: 15px;">
                 <tr><td style="padding: 8px; color: #c8ff00; font-weight: bold;">Timestamp:</td><td style="padding: 8px;">{datetime.now().isoformat()}</td></tr>
@@ -120,7 +120,7 @@ def test_gmail_send():
                 <tr><td style="padding: 8px; color: #c8ff00; font-weight: bold;">Estado:</td><td style="padding: 8px; color: #4ade80;">✅ Funcional</td></tr>
             </table>
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
-            <p style="font-size: 11px; color: #666;">VenridesScreenS — Sistema de Gestión de Pantallas</p>
+            <p style="font-size: 11px; color: #666;">VScreenS — Sistema de Gestión de Pantallas</p>
         </div>
     </body>
     </html>
@@ -128,7 +128,7 @@ def test_gmail_send():
     
     result = send_email(
         to=notification_email,
-        subject=f"🧪 VenridesScreenS Test — {datetime.now().strftime('%H:%M:%S')}",
+        subject=f"🧪 VScreenS Test — {datetime.now().strftime('%H:%M:%S')}",
         body=test_body,
         html=True
     )
@@ -184,7 +184,7 @@ def test_import_main_models():
         email="juan@test.com",
         telefono="+584121234567",
         asunto="Consulta",
-        mensaje="Quiero información sobre VenridesScreenS"
+        mensaje="Quiero información sobre VScreenS"
     )
     assert data.nombre == "Juan Pérez"
     
@@ -222,7 +222,7 @@ test("Pydantic Models Validation", test_import_main_models)
 print("\n📁 4. File Integrity Tests")
 
 def test_apk_exists():
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "releases", "VenridesScreenS_TV.apk")
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "releases", "VScreenS_TV.apk")
     assert os.path.exists(path), f"APK not found at {path}"
     size_mb = os.path.getsize(path) / (1024 * 1024)
     return f"Found ({size_mb:.1f} MB)"

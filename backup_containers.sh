@@ -3,8 +3,8 @@
 # Configuration
 BACKUP_DIR="./backups/containers"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-DB_CONTAINER="venrides_db"
-VOLUME_NAME="venrides_screens_postgres_data"  # Check actual volume name with docker volume ls
+DB_CONTAINER="vscreens_db"
+VOLUME_NAME="vscreens_postgres_data"  # Check actual volume name with docker volume ls
 
 mkdir -p "$BACKUP_DIR"
 

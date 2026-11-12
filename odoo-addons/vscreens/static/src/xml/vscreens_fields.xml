@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="vscreens.SidebarField">
+        <div class="vscreens-editor">
+            <div class="vscreens-editor-toolbar">
+                <button type="button" class="btn btn-sm btn-primary" t-on-click="addText">+ Texto</button>
+                <button type="button" class="btn btn-sm btn-secondary" t-on-click="addImage">+ Imagen</button>
+            </div>
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Contenido / URL</th>
+                        <th>Duración (s)</th>
+                        <th>Tamaño</th>
+                        <th>Peso</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="state.items" t-as="item" t-key="item_index">
+                        <tr>
+                            <td>
+                                <select class="form-select form-select-sm" t-model="item.type" t-on-change="commit">
+                                    <option value="text">Texto</option>
+                                    <option value="image">Imagen</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm" t-model="item.value" t-on-change="commit"/>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" t-model="item.duration" t-on-change="commit" min="1"/>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm" t-model="item.font_size" t-on-change="commit" placeholder="1.4rem"/>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm" t-model="item.weight" t-on-change="commit">
+                                    <option value="normal">Normal</option>
+                                    <option value="bold">Negrita</option>
+                                </select>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-link text-danger" t-on-click="() => this.removeItem(item_index)">Eliminar</button>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+            <p class="text-muted" t-if="!state.items.length">No hay bloques. Agrega texto o imágenes.</p>
+        </div>
+    </t>
+
+    <t t-name="vscreens.BottomBarField">
+        <div class="vscreens-editor">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Texto fijo</label>
+                    <input class="form-control" t-model="state.data.static" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">WhatsApp</label>
+                    <input class="form-control" t-model="state.data.whatsapp" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Instagram</label>
+                    <input class="form-control" t-model="state.data.instagram" t-on-change="commit"/>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tamaño</label>
+                    <input class="form-control" t-model="state.data.font_size" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Color de texto</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.color" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Peso</label>
+                    <select class="form-select" t-model="state.data.weight" t-on-change="commit">
+                        <option value="normal">Normal</option>
+                        <option value="bold">Negrita</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-sm btn-primary" t-on-click="addMessage">+ Mensaje ticker</button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="form-label">Mensajes del ticker</label>
+                <div class="d-flex mb-2" t-foreach="state.data.messages" t-as="msg" t-key="msg_index">
+                    <input class="form-control me-2" t-att-value="msg" t-on-input="(ev) => this.setMessage(msg_index, ev.target.value)"/>
+                    <button type="button" class="btn btn-sm btn-outline-danger" t-on-click="() => this.removeMessage(msg_index)">×</button>
+                </div>
+                <p class="text-muted" t-if="!state.data.messages.length">Sin mensajes de ticker.</p>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="vscreens.VideosField">
+        <div class="vscreens-editor">
+            <div class="vscreens-editor-toolbar">
+                <button type="button" class="btn btn-sm btn-primary" t-on-click="addVideo">+ Video</button>
+            </div>
+            <div class="d-flex mb-2" t-foreach="state.items" t-as="video" t-key="video_index">
+                <input class="form-control me-2" placeholder="https://www.youtube.com/watch?v=..." t-att-value="video" t-on-input="(ev) => this.setVideo(video_index, ev.target.value)"/>
+                <button type="button" class="btn btn-sm btn-outline-danger" t-on-click="() => this.removeVideo(video_index)">×</button>
+            </div>
+            <p class="text-muted" t-if="!state.items.length">No hay videos en la playlist.</p>
+        </div>
+    </t>
+
+    <t t-name="vscreens.DesignField">
+        <div class="vscreens-editor">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Color primario</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.primary_color" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Color secundario</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.secondary_color" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Color de acento</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.accent_color" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fondo sidebar</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.sidebar_bg" t-on-change="commit"/>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Texto sidebar</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.sidebar_text" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fondo barra inferior</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.bottom_bar_bg" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Texto barra inferior</label>
+                    <input type="color" class="form-control form-control-color" t-model="state.data.bottom_bar_text" t-on-change="commit"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Efecto sidebar</label>
+                    <select class="form-select" t-model="state.data.sidebar_effect" t-on-change="commit">
+                        <option value="none">Ninguno</option>
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <label class="form-label">Ancho sidebar (%)</label>
+                    <input type="number" class="form-control" t-model="state.data.sidebar_width" t-on-change="commit" min="5" max="60"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Alto barra inferior (%)</label>
+                    <input type="number" class="form-control" t-model="state.data.bottom_bar_height" t-on-change="commit" min="5" max="30"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Velocidad ticker</label>
+                    <input type="number" class="form-control" t-model="state.data.ticker_speed" t-on-change="commit" min="5"/>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" t-model="state.data.show_bcv" t-on-change="commit"/>
+                        <label class="form-check-label">Mostrar BCV</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

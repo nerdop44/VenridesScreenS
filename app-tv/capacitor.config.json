@@ -1,9 +1,9 @@
 {
-  "appId": "com.venrides.screens.tv",
-  "appName": "VenridesScreenS",
+  "appId": "com.vscreens.tv",
+  "appName": "VScreenS",
   "webDir": "dist",
   "server": {
-    "url": "https://venrides-tv.inverpave.com",
+    "url": "https://vscreens-tv.inverpave.com",
     "cleartext": true
   }
 }

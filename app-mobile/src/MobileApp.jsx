@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-const API_BASE = localStorage.getItem('server_url') || 'https://venrides-api.inverpave.com';
+const API_BASE = localStorage.getItem('server_url') || 'https://vscreens-api.inverpave.com';
 
 const MobileApp = ({ token, userObj, onLogout }) => {
     // Derived State
@@ -629,7 +629,7 @@ const MobileProfile = ({ user, company, onLogout }) => {
             </button>
 
             <div className="mt-8 text-center text-xs opacity-30">
-                VenridesScreenS Mobile v2.2
+                VScreenS Mobile v2.2
             </div>
 
             {/* Config Modal */}

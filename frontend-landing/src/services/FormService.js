@@ -1,9 +1,9 @@
 /**
- * Form Service for VenridesScreenS
+ * Form Service for VScreenS
  * Handles form submissions to backend API
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://venrides-api.inverpave.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://vscreens-api.inverpave.com';
 
 class FormService {
     /**

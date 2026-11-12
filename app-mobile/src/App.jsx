@@ -1041,7 +1041,7 @@ function App() {
                 />}
                 <div className="glass-card login-card">
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <img src="/venrides_logo.png" alt="VenridesScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
+                        <img src="/vscreens_logo.png" alt="VScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
                         <p style={{ opacity: 0.6, fontSize: '1.2rem', marginTop: '-20px' }}>Panel de Gestión</p>
                     </div>
                     <form onSubmit={handleLogin}>
@@ -1104,7 +1104,7 @@ function App() {
                 <GlobalStyles />
                 <header className="dash-header">
                     <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', fontSize: '1.2rem' }}>
-                        <img src="/venrides_logo.png" alt="Admin" className="app-logo" style={{ maxHeight: '50px', width: 'auto' }} />
+                        <img src="/vscreens_logo.png" alt="Admin" className="app-logo" style={{ maxHeight: '50px', width: 'auto' }} />
                         <span>Panel Master</span>
                     </h1>
                     <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1547,7 +1547,7 @@ function App() {
             <GlobalStyles />
             <header className="dash-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/venrides_logo.png" alt="Venrides" className="app-logo" style={{ height: '125px' }} />
+                    <img src="/vscreens_logo.png" alt="VScreenS" className="app-logo" style={{ height: '125px' }} />
                     <div>
                         <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenrideScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
@@ -2086,7 +2086,7 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                         <div className="section-fields">
                             <div className="field-group">
                                 <label>Nombre Comercial</label>
-                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Venrides C.A." />
+                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: VScreenS C.A." />
                             </div>
                             <div className="field-group">
                                 <label>RIF / Documento</label>

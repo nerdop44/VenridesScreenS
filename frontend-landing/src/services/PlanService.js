@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://venrides-api.inverpave.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://vscreens-api.inverpave.com';
 
 /**
  * Planes por defecto (fallback). La fuente de verdad es el backend/Odoo.

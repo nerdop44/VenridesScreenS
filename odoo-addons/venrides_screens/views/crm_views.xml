@@ -1,9 +1,0 @@
-<odoo>
-    <record id="action_venrides_crm_leads" model="ir.actions.act_window">
-        <field name="name">Leads VenridesScreenS</field>
-        <field name="res_model">crm.lead</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="domain">[('venrides_source_detail', '!=', False)]</field>
-        <field name="context">{'default_type': 'lead'}</field>
-    </record>
-</odoo>

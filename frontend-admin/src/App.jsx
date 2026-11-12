@@ -1305,7 +1305,7 @@ function App() {
             <div className="login-screen">
                 <div className="glass-card login-card">
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <img src="/venrides_logo.png" alt="VenridesScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
+                        <img src="/vscreens_logo.png" alt="VScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
                         <p style={{ opacity: 0.6, fontSize: '1.2rem', marginTop: '-20px' }}>Panel de Gestión</p>
                     </div>
                     <form onSubmit={handleLogin}>
@@ -1404,7 +1404,7 @@ function App() {
                 <GlobalStyles />
                 <aside className="admin-sidebar">
                     <div className="sidebar-header-custom">
-                        <img src="/venrides_logo.png" alt="Logo" style={{ height: '60px', marginBottom: '0.5rem' }} />
+                        <img src="/vscreens_logo.png" alt="Logo" style={{ height: '60px', marginBottom: '0.5rem' }} />
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <div style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--primary-color)', lineHeight: 1, letterSpacing: '0.1rem' }}>MASTER</div>
                             <div style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 'bold', textTransform: 'uppercase', marginTop: '0.2rem' }}>Network Control Center</div>
@@ -1445,7 +1445,7 @@ function App() {
                 <main className="admin-main-content">
                     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <div style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', opacity: 0.5, letterSpacing: '0.1rem' }}>
-                            VenridesScreenS / {adminTab.replace('_', ' ')}
+                            VScreenS / {adminTab.replace('_', ' ')}
                         </div>
                         {bcvRate && (
                             <div className="glass-card" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--primary-color)' }}>
@@ -1709,7 +1709,7 @@ function App() {
 
                     {adminTab === 'ecosystem' && (
                         <div className="glass-card">
-                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema VenridesScreenS</h2>
+                            <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={20} /> Estatus del Ecosistema VScreenS</h2>
                             <EcosystemDashboard token={token} />
                         </div>
                     )}
@@ -1926,9 +1926,9 @@ function App() {
             <GlobalStyles />
             <header className="dash-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/venrides_logo.png" alt="VenridesScreenS" className="app-logo" style={{ height: '125px' }} />
+                    <img src="/vscreens_logo.png" alt="VScreenS" className="app-logo" style={{ height: '125px' }} />
                     <div>
-                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenridesScreenS</h1>
+                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
                     </div>
                 </div>
@@ -1973,7 +1973,12 @@ function App() {
                             { id: 'users', icon: Users, label: 'Usuarios' },
                             { id: 'helpdesk', icon: LifeBuoy, label: 'Soporte', badge: supportUnreadCount }
                         ].filter(tab => {
-                            if (tab.id === 'users' && (localCompany?.plan === 'free' || userRole === 'user_basic')) return false;
+                            const pf = localCompany?.plan_features || {};
+                            if (tab.id === 'users' && (userRole === 'user_basic' || pf.allow_multi_user === false || (pf.max_users && Number(pf.max_users) <= 1))) return false;
+                            if (tab.id === 'sidebar_tab' && pf.allow_sidebar === false) return false;
+                            if (tab.id === 'bottombar_tab' && pf.allow_bottom_bar === false) return false;
+                            if (tab.id === 'videos' && pf.allow_video_playlist === false && pf.allow_priority_content === false) return false;
+                            if (tab.id === 'helpdesk' && pf.allow_helpdesk === false) return false;
                             return true;
                         }).map(tab => (
                             <button
@@ -2136,7 +2141,7 @@ function App() {
                             <SidebarEditor
                                 company={localCompany}
                                 onChange={handleLocalChange}
-                                disabled={loading}
+                                disabled={loading || localCompany?.plan_features?.allow_sidebar === false}
                             />
                         )}
 
@@ -2144,7 +2149,7 @@ function App() {
                             <BottomBarEditor
                                 company={localCompany}
                                 onChange={handleLocalChange}
-                                disabled={localCompany?.plan?.toLowerCase() === 'free' && localStorage.getItem('user_role') !== 'admin_master'}
+                                disabled={localCompany?.plan_features?.allow_bottom_bar === false}
                             />
                         )}
 
@@ -2176,7 +2181,7 @@ function App() {
                         <h2 style={{ fontSize: '1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary-color)' }}>
                             <Monitor size={18} /> Previsualización Real Time
                         </h2>
-                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VenridesScreenS</div>
+                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VScreenS</div>
                     </div>
 
                     <div style={{
@@ -2507,7 +2512,7 @@ const CompanyForm = ({ company, isSuperAdmin, activeUsers, activeDevices, onSave
                         <div className="section-fields">
                             <div className="field-group">
                                 <label>Nombre Comercial</label>
-                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: VenridesScreenS C.A." />
+                                <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: VScreenS C.A." />
                             </div>
                             <div className="field-group">
                                 <label>RIF / Documento</label>
@@ -3832,7 +3837,7 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
             <div className="glass-card">
                 <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <Tooltip text="Mensaje que aparece en el texto corrido inferior." /></div>
                 <label>Mensaje del Cintillo (Animado)</label>
-                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VenridesScreenS" />
+                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VScreenS" />
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>WhatsApp</label><input value={data.whatsapp || ''} onChange={e => update('whatsapp', e.target.value)} /></div>
                     <div><label>Instagram</label><input value={data.instagram || ''} onChange={e => update('instagram', e.target.value)} /></div>

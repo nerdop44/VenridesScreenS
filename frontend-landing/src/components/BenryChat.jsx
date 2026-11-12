@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://venrides-api.inverpave.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://vscreens-api.inverpave.com';
 
 const BenryChat = ({ onOpenContact }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +15,7 @@ const BenryChat = ({ onOpenContact }) => {
         if (isOpen && messages.length === 0) {
             setMessages([{
                 role: 'assistant',
-                content: '¡Hola! 👋 Soy **Benry**, tu asistente de VenridesScreenS.\n\n¿En qué puedo ayudarte hoy?',
+                content: '¡Hola! 👋 Soy **Benry**, tu asistente de VScreenS.\n\n¿En qué puedo ayudarte hoy?',
                 timestamp: new Date()
             }]);
         }
@@ -75,7 +75,7 @@ const BenryChat = ({ onOpenContact }) => {
             console.error('Benry chat error:', err);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'Disculpa, estoy teniendo problemas de conexión. Puedes contactarnos directamente en **info.venridesscreen@gmail.com** 📧',
+                content: 'Disculpa, estoy teniendo problemas de conexión. Puedes contactarnos directamente en **info.vscreens@inverpave.com** 📧',
                 timestamp: new Date()
             }]);
         } finally {

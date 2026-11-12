@@ -1,0 +1,157 @@
+<odoo>
+    <data noupdate="1">
+        <record id="plan_free" model="vscreens.plan">
+            <field name="name">Free</field>
+            <field name="code">free</field>
+            <field name="subtitle">Starter</field>
+            <field name="sequence">10</field>
+            <field name="monthly_price">0</field>
+            <field name="annual_price">0</field>
+            <field name="max_screens">2</field>
+            <field name="max_users">1</field>
+            <field name="trial_days">7</field>
+            <field name="is_public" eval="True"/>
+            <field name="allow_third_party_ads" eval="True"/>
+            <field name="allow_custom_branding" eval="True"/>
+            <field name="allow_sidebar" eval="True"/>
+            <field name="allow_bottom_bar" eval="True"/>
+            <field name="allow_video_playlist" eval="True"/>
+            <field name="allow_priority_content" eval="True"/>
+            <field name="allow_bcv" eval="True"/>
+            <field name="allow_multi_user" eval="False"/>
+            <field name="allow_helpdesk" eval="True"/>
+            <field name="allow_mobile" eval="False"/>
+            <field name="allow_api" eval="False"/>
+        </record>
+        <record id="plan_basic" model="vscreens.plan">
+            <field name="name">Emprendedor</field>
+            <field name="code">basic</field>
+            <field name="subtitle">Básico</field>
+            <field name="sequence">20</field>
+            <field name="monthly_price">30</field>
+            <field name="annual_price">320</field>
+            <field name="max_screens">5</field>
+            <field name="max_users">2</field>
+            <field name="trial_days">0</field>
+            <field name="is_public" eval="True"/>
+            <field name="allow_third_party_ads" eval="False"/>
+            <field name="allow_custom_branding" eval="True"/>
+            <field name="allow_sidebar" eval="True"/>
+            <field name="allow_bottom_bar" eval="True"/>
+            <field name="allow_video_playlist" eval="True"/>
+            <field name="allow_priority_content" eval="True"/>
+            <field name="allow_bcv" eval="True"/>
+            <field name="allow_multi_user" eval="True"/>
+            <field name="allow_helpdesk" eval="True"/>
+            <field name="allow_mobile" eval="False"/>
+            <field name="allow_api" eval="False"/>
+        </record>
+        <record id="plan_plus" model="vscreens.plan">
+            <field name="name">Profesional</field>
+            <field name="code">plus</field>
+            <field name="subtitle">Plus</field>
+            <field name="sequence">30</field>
+            <field name="monthly_price">50</field>
+            <field name="annual_price">520</field>
+            <field name="max_screens">10</field>
+            <field name="max_users">5</field>
+            <field name="trial_days">0</field>
+            <field name="is_public" eval="True"/>
+            <field name="popular" eval="True"/>
+            <field name="allow_third_party_ads" eval="False"/>
+            <field name="allow_custom_branding" eval="True"/>
+            <field name="allow_sidebar" eval="True"/>
+            <field name="allow_bottom_bar" eval="True"/>
+            <field name="allow_video_playlist" eval="True"/>
+            <field name="allow_priority_content" eval="True"/>
+            <field name="allow_bcv" eval="True"/>
+            <field name="allow_multi_user" eval="True"/>
+            <field name="allow_helpdesk" eval="True"/>
+            <field name="allow_mobile" eval="True"/>
+            <field name="allow_api" eval="True"/>
+        </record>
+        <record id="plan_ultra" model="vscreens.plan">
+            <field name="name">Enterprise</field>
+            <field name="code">ultra</field>
+            <field name="subtitle">Ultra</field>
+            <field name="sequence">40</field>
+            <field name="monthly_price">80</field>
+            <field name="annual_price">850</field>
+            <field name="max_screens">20</field>
+            <field name="max_users">10</field>
+            <field name="trial_days">0</field>
+            <field name="is_public" eval="True"/>
+            <field name="allow_third_party_ads" eval="False"/>
+            <field name="allow_custom_branding" eval="True"/>
+            <field name="allow_sidebar" eval="True"/>
+            <field name="allow_bottom_bar" eval="True"/>
+            <field name="allow_video_playlist" eval="True"/>
+            <field name="allow_priority_content" eval="True"/>
+            <field name="allow_bcv" eval="True"/>
+            <field name="allow_multi_user" eval="True"/>
+            <field name="allow_helpdesk" eval="True"/>
+            <field name="allow_mobile" eval="True"/>
+            <field name="allow_api" eval="True"/>
+        </record>
+        <record id="plan_empresarial" model="vscreens.plan">
+            <field name="name">Pantallas Gigantes</field>
+            <field name="code">empresarial</field>
+            <field name="subtitle">Empresarial</field>
+            <field name="sequence">50</field>
+            <field name="monthly_price">0</field>
+            <field name="annual_price">0</field>
+            <field name="is_custom" eval="True"/>
+            <field name="max_screens">0</field>
+            <field name="max_users">0</field>
+            <field name="trial_days">0</field>
+            <field name="is_public" eval="True"/>
+            <field name="allow_third_party_ads" eval="False"/>
+            <field name="allow_custom_branding" eval="True"/>
+            <field name="allow_sidebar" eval="True"/>
+            <field name="allow_bottom_bar" eval="True"/>
+            <field name="allow_video_playlist" eval="True"/>
+            <field name="allow_priority_content" eval="True"/>
+            <field name="allow_bcv" eval="True"/>
+            <field name="allow_multi_user" eval="True"/>
+            <field name="allow_helpdesk" eval="True"/>
+            <field name="allow_mobile" eval="True"/>
+            <field name="allow_api" eval="True"/>
+        </record>
+
+        <!-- Características -->
+        <record id="feat_free_1" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Hasta 2 pantallas</field><field name="sequence">10</field></record>
+        <record id="feat_free_2" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Contenido publicitario básico</field><field name="sequence">20</field></record>
+        <record id="feat_free_3" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Programación de publicidad</field><field name="sequence">30</field></record>
+        <record id="feat_free_4" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Panel web completo</field><field name="sequence">40</field></record>
+        <record id="feat_free_5" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Publicidad de terceros</field><field name="sequence">50</field></record>
+        <record id="feat_free_6" model="vscreens.plan.feature"><field name="plan_id" ref="plan_free"/><field name="name">Soporte Helpdesk</field><field name="sequence">60</field></record>
+
+        <record id="feat_basic_1" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Hasta 5 pantallas</field><field name="sequence">10</field></record>
+        <record id="feat_basic_2" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Contenido publicitario</field><field name="sequence">20</field></record>
+        <record id="feat_basic_3" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Sin publicidad de terceros</field><field name="sequence">30</field></record>
+        <record id="feat_basic_4" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Programación avanzada</field><field name="sequence">40</field></record>
+        <record id="feat_basic_5" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Multi-ubicación</field><field name="sequence">50</field></record>
+        <record id="feat_basic_6" model="vscreens.plan.feature"><field name="plan_id" ref="plan_basic"/><field name="name">Soporte Helpdesk</field><field name="sequence">60</field></record>
+
+        <record id="feat_plus_1" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Hasta 10 pantallas</field><field name="sequence">10</field></record>
+        <record id="feat_plus_2" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Contenido publicitario</field><field name="sequence">20</field></record>
+        <record id="feat_plus_3" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Sin publicidad de terceros</field><field name="sequence">30</field></record>
+        <record id="feat_plus_4" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Panel web y app móvil completo</field><field name="sequence">40</field></record>
+        <record id="feat_plus_5" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Capacitación personalizada</field><field name="sequence">50</field></record>
+        <record id="feat_plus_6" model="vscreens.plan.feature"><field name="plan_id" ref="plan_plus"/><field name="name">Soporte dedicado</field><field name="sequence">60</field></record>
+
+        <record id="feat_ultra_1" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Hasta 20 pantallas</field><field name="sequence">10</field></record>
+        <record id="feat_ultra_2" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Contenido publicitario</field><field name="sequence">20</field></record>
+        <record id="feat_ultra_3" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Sin publicidad de terceros</field><field name="sequence">30</field></record>
+        <record id="feat_ultra_4" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Panel web y app móvil completo</field><field name="sequence">40</field></record>
+        <record id="feat_ultra_5" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Capacitación personalizada</field><field name="sequence">50</field></record>
+        <record id="feat_ultra_6" model="vscreens.plan.feature"><field name="plan_id" ref="plan_ultra"/><field name="name">Soporte dedicado</field><field name="sequence">60</field></record>
+
+        <record id="feat_emp_1" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Pantallas de exterior a gran formato</field><field name="sequence">10</field></record>
+        <record id="feat_emp_2" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Pantallas LED gigantes</field><field name="sequence">20</field></record>
+        <record id="feat_emp_3" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Instalación on-premise</field><field name="sequence">30</field></record>
+        <record id="feat_emp_4" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Multi-ubicación</field><field name="sequence">40</field></record>
+        <record id="feat_emp_5" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Capacitación personalizada</field><field name="sequence">50</field></record>
+        <record id="feat_emp_6" model="vscreens.plan.feature"><field name="plan_id" ref="plan_empresarial"/><field name="name">Soporte dedicado</field><field name="sequence">60</field></record>
+    </data>
+</odoo>

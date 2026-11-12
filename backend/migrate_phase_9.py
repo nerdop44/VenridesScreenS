@@ -4,7 +4,7 @@ from sqlalchemy import text
 import os
 
 # Database Config
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@localhost:5433/venrides_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost:5433/vscreens_db")
 
 async def migrate_phase_9():
     print(f"🔄 Starting Phase 9 Migration on {DATABASE_URL}...")

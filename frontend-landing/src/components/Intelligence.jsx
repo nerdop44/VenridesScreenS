@@ -12,6 +12,9 @@ const Intelligence = () => {
                         <div className="absolute inset-0 bg-black/40 z-10"></div>
                         <img
                             src="https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop"
+                            alt="Visualización de inteligencia contextual VScreenS"
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover grayscale opacity-50 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100"
                         />
                         {/* Target Overlay */}

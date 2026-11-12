@@ -4,7 +4,7 @@ from db_config import engine
 
 async def audit():
     # Use localhost if running outside docker network
-    local_url = "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@localhost/venrides_db"
+    local_url = "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost/vscreens_db"
     from sqlalchemy.ext.asyncio import create_async_engine
     local_engine = create_async_engine(local_url)
     async with local_engine.connect() as conn:

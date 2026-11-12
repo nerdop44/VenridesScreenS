@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, EmailTemplate
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://venrides_user:CHANGE_ME_DB_PASSWORD@localhost:5433/venrides_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost:5433/vscreens_db")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

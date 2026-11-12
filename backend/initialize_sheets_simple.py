@@ -33,7 +33,7 @@ def initialize_plans_sheet_simple():
         service = GoogleSheetsService()
         
         # Create spreadsheet without specifying folder
-        title = "VenridesScreenS - Contrataciones"
+        title = "VScreenS - Contrataciones"
         sheets = ["Free", "Basico", "Plus", "Ultra", "Empresarial"]
         
         spreadsheet = {
@@ -82,7 +82,7 @@ def initialize_contact_sheet_simple():
         service = GoogleSheetsService()
         
         # Create spreadsheet without specifying folder
-        title = "VenridesScreenS - Contactos"
+        title = "VScreenS - Contactos"
         sheets = ["Contactos"]
         
         spreadsheet = {
@@ -121,7 +121,7 @@ def initialize_contact_sheet_simple():
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("🚀 VenridesScreenS - Google Sheets Initialization (Simple)")
+    print("🚀 VScreenS - Google Sheets Initialization (Simple)")
     print("=" * 70)
     print("\nThis script creates sheets in your Google Drive.")
     print("You can move them to specific folders manually if needed.")

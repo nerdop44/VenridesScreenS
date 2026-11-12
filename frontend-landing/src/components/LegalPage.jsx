@@ -182,7 +182,7 @@ const legalContent = {
         </Section>
         <Section title="3. Cookies y almacenamiento que usamos">
           <List items={[
-            '`venrides_cookie_consent`: guarda la decisión del usuario sobre cookies (necesaria).',
+            '`vscreens_cookie_consent`: guarda la decisión del usuario sobre cookies (necesaria).',
             '`token`, `user`, `user_role`: mantienen la sesión del panel de clientes (necesarias).',
             'Analítica propia: registra visitas con IP seudonimizada y datos agregados (solo con consentimiento).',
             'YouTube/Google: cookies de terceros cuando se reproduce o incrusta contenido (gestionadas por dichos proveedores).',

@@ -3,7 +3,7 @@ import os
 
 # Database URL
 # Matches db_config.py fallback for localhost but using sync driver
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://venrides_user:CHANGE_ME_DB_PASSWORD@localhost:5433/venrides_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost:5433/vscreens_db")
 
 def migrate():
     engine = create_engine(DATABASE_URL)

@@ -50,9 +50,11 @@ const Hero = ({ onOpenContact }) => {
             <div className="relative z-10 mt-20 w-full max-w-6xl px-6">
                 <div className="glass rounded-2xl p-2 border border-white/20 neon-glow">
                     <img
-                        alt="Señalización Fija"
+                        alt="Señalización Fija VScreenS"
                         className="rounded-xl w-full h-auto"
                         src={fija1}
+                        loading="lazy"
+                        decoding="async"
                     />
                 </div>
             </div>

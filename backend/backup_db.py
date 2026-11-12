@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Configuration
-DB_PATH = "venrides.db"
+DB_PATH = "vscreens.db"
 BACKUP_DIR = "backups"
 MAX_BACKUPS = 10  # Keep last 10 backups
 
@@ -25,7 +25,7 @@ def create_backup():
     
     # Generate timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_name = f"venrides_backup_{timestamp}.db"
+    backup_name = f"vscreens_backup_{timestamp}.db"
     backup_path = os.path.join(BACKUP_DIR, backup_name)
     
     try:
@@ -55,7 +55,7 @@ def cleanup_old_backups():
     """Remove old backups, keeping only MAX_BACKUPS most recent"""
     try:
         backups = sorted(
-            [f for f in os.listdir(BACKUP_DIR) if f.startswith("venrides_backup_")],
+            [f for f in os.listdir(BACKUP_DIR) if f.startswith("vscreens_backup_")],
             reverse=True
         )
         
@@ -76,7 +76,7 @@ def list_backups():
         return
     
     backups = sorted(
-        [f for f in os.listdir(BACKUP_DIR) if f.startswith("venrides_backup_")],
+        [f for f in os.listdir(BACKUP_DIR) if f.startswith("vscreens_backup_")],
         reverse=True
     )
     

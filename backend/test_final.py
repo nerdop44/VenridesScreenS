@@ -1,10 +1,10 @@
 """Final verification — all offline tests"""
 import os, sys
-sys.path.insert(0, '/home/nerdop/VenridesScreenS/backend')
-os.chdir('/home/nerdop/VenridesScreenS/backend')
-os.environ['SMTP_USER'] = 'info.venridesscreen@gmail.com'
+sys.path.insert(0, '/home/nerdop/VScreenS/backend')
+os.chdir('/home/nerdop/VScreenS/backend')
+os.environ['SMTP_USER'] = 'info.vscreens@inverpave.com'
 os.environ['SMTP_PASSWORD'] = 'ozxrkpkksgihqnya'
-os.environ['NOTIFICATION_EMAIL'] = 'info.venridesscreen@gmail.com'
+os.environ['NOTIFICATION_EMAIL'] = 'info.vscreens@inverpave.com'
 os.environ['GOOGLE_SHEETS_CREDENTIALS_PATH'] = './credentials/google-service-account.json'
 
 print("=== FINAL VERIFICATION ===")
@@ -30,16 +30,16 @@ except Exception as e:
 
 # 2. File checks
 checks = [
-    ("APK exists", os.path.exists("/home/nerdop/VenridesScreenS/releases/VenridesScreenS_TV.apk")),
-    ("client.js fix frontend-tv", "configData = window.currentConfig" in open("/home/nerdop/VenridesScreenS/frontend-tv/client.js").read()),
-    ("client.js fix app-tv/dist", "configData = window.currentConfig" in open("/home/nerdop/VenridesScreenS/app-tv/dist/client.js").read()),
-    ("Nginx /api/ landing", "location /api/" in open("/home/nerdop/VenridesScreenS/nginx/conf.d/default.conf").read().split("listen 83")[1]),
-    (".env SMTP_USER", "SMTP_USER=" in open("/home/nerdop/VenridesScreenS/backend/.env").read()),
-    (".env BENRY_SHEET_ID", "BENRY_SHEET_ID=" in open("/home/nerdop/VenridesScreenS/backend/.env").read()),
-    ("No ollama", "ollama" not in open("/home/nerdop/VenridesScreenS/docker-compose.yml").read()),
-    ("/api/forms/contact", "/api/forms/contact" in open("/home/nerdop/VenridesScreenS/backend/main.py").read()),
-    ("/api/benry/chat", "/api/benry/chat" in open("/home/nerdop/VenridesScreenS/backend/main.py").read()),
-    ("/downloads/tv", "/downloads/tv" in open("/home/nerdop/VenridesScreenS/backend/main.py").read()),
+    ("APK exists", os.path.exists("/home/nerdop/VScreenS/releases/VScreenS_TV.apk")),
+    ("client.js fix frontend-tv", "configData = window.currentConfig" in open("/home/nerdop/VScreenS/frontend-tv/client.js").read()),
+    ("client.js fix app-tv/dist", "configData = window.currentConfig" in open("/home/nerdop/VScreenS/app-tv/dist/client.js").read()),
+    ("Nginx /api/ landing", "location /api/" in open("/home/nerdop/VScreenS/nginx/conf.d/default.conf").read().split("listen 83")[1]),
+    (".env SMTP_USER", "SMTP_USER=" in open("/home/nerdop/VScreenS/backend/.env").read()),
+    (".env BENRY_SHEET_ID", "BENRY_SHEET_ID=" in open("/home/nerdop/VScreenS/backend/.env").read()),
+    ("No ollama", "ollama" not in open("/home/nerdop/VScreenS/docker-compose.yml").read()),
+    ("/api/forms/contact", "/api/forms/contact" in open("/home/nerdop/VScreenS/backend/main.py").read()),
+    ("/api/benry/chat", "/api/benry/chat" in open("/home/nerdop/VScreenS/backend/main.py").read()),
+    ("/downloads/tv", "/downloads/tv" in open("/home/nerdop/VScreenS/backend/main.py").read()),
 ]
 
 for name, ok in checks:

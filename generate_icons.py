@@ -2,8 +2,8 @@
 import os
 from PIL import Image
 
-SERVER_PATH = '/home/nerdop/VenridesScreenS/app-tv'
-ICON_PATH = os.path.join(SERVER_PATH, 'venrides_logo.png')
+SERVER_PATH = '/home/nerdop/VScreenS/app-tv'
+ICON_PATH = os.path.join(SERVER_PATH, 'vscreens_logo.png')
 ANDROID_RES = os.path.join(SERVER_PATH, 'android/app/src/main/res')
 
 MIPMAPS = {

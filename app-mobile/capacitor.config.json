@@ -1,6 +1,6 @@
 {
-  "appId": "com.venrides.screens",
-  "appName": "VenridesScreenS",
+  "appId": "com.vscreens.app",
+  "appName": "VScreenS",
   "webDir": "dist",
   "server": {
     "cleartext": true,

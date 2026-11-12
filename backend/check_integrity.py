@@ -5,7 +5,7 @@ from sqlalchemy import text, inspect
 import os
 
 # Database Config
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@localhost:5433/venrides_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost:5433/vscreens_db")
 
 async def check_integrity():
     print(f"🔍 Checking Database Integrity on {DATABASE_URL}...")

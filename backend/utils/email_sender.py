@@ -16,7 +16,7 @@ logger = logging.getLogger("VenrideScreenS.Email")
 # SMTP Configuration
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "info.venridesscreen@gmail.com")
+SMTP_USER = os.getenv("SMTP_USER", "info.vscreens@inverpave.com")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")  # Gmail App Password
 
 def send_email(to: str, subject: str, body: str, html: bool = True) -> bool:
@@ -85,7 +85,7 @@ def send_password_recovery_email(to: str, temp_password: str) -> bool:
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
             <p style="font-size: 12px; color: #666;">
                 VenrideScreenS - Sistema de Gestión de Pantallas<br>
-                <a href="mailto:info.venridesscreen@gmail.com">info.venridesscreen@gmail.com</a>
+                <a href="mailto:info.vscreens@inverpave.com">info.vscreens@inverpave.com</a>
             </p>
         </div>
     </body>

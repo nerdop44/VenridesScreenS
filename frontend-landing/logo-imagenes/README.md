@@ -1,6 +1,6 @@
 # Organización de Assets del Logo
 
-Esta carpeta contiene el logo oficial de VenridesScreenS.
+Esta carpeta contiene el logo oficial de VScreenS.
 
 ## Uso
 

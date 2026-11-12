@@ -8,7 +8,7 @@ import sqlite3
 import os
 from datetime import datetime
 
-DB_PATH = "venrides.db"
+DB_PATH = "vscreens.db"
 LOG_FILE = "rollback.log"
 
 def log(message):

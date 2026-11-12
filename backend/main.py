@@ -71,7 +71,7 @@ except ImportError:
     pass
 
 # --- LOGGING CONFIGURATION ---
-LOG_FILE = "venridesscreens.log"
+LOG_FILE = "vscreens.log"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("VenrideScreenS")
 
@@ -236,10 +236,10 @@ app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 
 # --- CORS ---
 allowed_origins = [
-    "https://venrides.inverpave.com",
-    "https://venrides-app.inverpave.com",
-    "https://venrides-api.inverpave.com",
-    "https://venrides-tv.inverpave.com",
+    "https://vscreens.inverpave.com",
+    "https://vscreens-app.inverpave.com",
+    "https://vscreens-api.inverpave.com",
+    "https://vscreens-tv.inverpave.com",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
@@ -287,7 +287,7 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Venrides Screens API is running", "status": "active"}
+    return {"message": "VScreenS Screens API is running", "status": "active"}
 
 @app.post("/api/auth/verify-email")
 async def verify_email(code: str, db: AsyncSession = Depends(get_db)):
@@ -331,7 +331,7 @@ async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
                 res_comp = await db.execute(select(Company).limit(1))
                 company = res_comp.scalar_one_or_none()
                 if not company:
-                    company = Company(name="Venrides Master", plan="ultra", is_active=True)
+                    company = Company(name="VScreenS Master", plan="ultra", is_active=True)
                     db.add(company)
                     await db.commit()
                     await db.refresh(company)
@@ -385,7 +385,7 @@ async def on_startup():
                 if not company:
                     logger.info("--- Creating Default Company ---")
                     company = Company(
-                        name="Venrides Admin", 
+                        name="VScreenS Admin", 
                         plan="ultra", 
                         is_active=True,
                         valid_until=datetime.utcnow() + timedelta(days=3650)
@@ -1393,7 +1393,7 @@ async def create_payment(payment: PaymentCreate, db: AsyncSession = Depends(get_
         if company and company.is_active:
             from services.template_service import template_service
             # Get shortened URL for APK
-            base_url = os.getenv("PROD_API_URL", "https://venrides-api.inverpave.com")
+            base_url = os.getenv("PROD_API_URL", "https://vscreens-api.inverpave.com")
             from utils.url_shortener import shorten_url
             short_url = shorten_url(f"{base_url}/downloads/tv")
             
@@ -1589,13 +1589,13 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
                 config["ad_scripts"] = gad.ad_scripts
         else:
             # Fallback if no global ad
-            config["bottom_bar_content"] = {"static": "Venrides Pantallas Inteligentes"}
+            config["bottom_bar_content"] = {"static": "VScreenS Pantallas Inteligentes"}
 
         # Trial Expiration Alert (Supervisor)
         if company.valid_until:
              days = (company.valid_until.replace(tzinfo=None) - datetime.utcnow()).days
              if 0 <= days <= 15:
-                  alert_msg = f"⚠️ Tu prueba gratuita vence en {days} días. ¡Suscríbete en venrides.inverpave.com!"
+                  alert_msg = f"⚠️ Tu prueba gratuita vence en {days} días. ¡Suscríbete en vscreens.inverpave.com!"
                   if config.get("bottom_bar_content") and "messages" in config["bottom_bar_content"]:
                        config["bottom_bar_content"]["messages"].append(alert_msg)
                   else:
@@ -1691,7 +1691,7 @@ async def get_company_preview_config(company_id: int, db: AsyncSession = Depends
                 config["ad_scripts"] = gad.ad_scripts
         else:
             # Fallback if no global ad
-            config["bottom_bar_content"] = {"static": "Venrides Pantallas Inteligentes"}
+            config["bottom_bar_content"] = {"static": "VScreenS Pantallas Inteligentes"}
 
     return config
 
@@ -2832,7 +2832,7 @@ async def trigger_backup(db: AsyncSession = Depends(get_db), current_user: User 
     from datetime import datetime
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = f"/opt/VenridesScreenS/backups/backup_man_{timestamp}.sql"
+    backup_path = f"/opt/VScreenS/backups/backup_man_{timestamp}.sql"
     
     try:
         # Check if it's docker postgres
@@ -2923,13 +2923,13 @@ async def submit_contact_form(data: ContactFormData, request: Request):
     
     # 2. Send email notification
     try:
-        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")
         
         email_body = f"""
         <html>
         <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #0a0a0f;">
             <div style="max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 15px; border: 1px solid #333;">
-                <h2 style="color: #c8ff00; margin-bottom: 20px;">📨 Nuevo Contacto — VenridesScreenS</h2>
+                <h2 style="color: #c8ff00; margin-bottom: 20px;">📨 Nuevo Contacto — VScreenS</h2>
                 <table style="width: 100%; border-collapse: collapse; color: #e0e0e0;">
                     <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Nombre:</td><td style="padding: 8px;">{data.nombre}</td></tr>
                     <tr><td style="padding: 8px; font-weight: bold; color: #c8ff00;">Email:</td><td style="padding: 8px;">{data.email}</td></tr>
@@ -2941,7 +2941,7 @@ async def submit_contact_form(data: ContactFormData, request: Request):
                     {data.mensaje}
                 </div>
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
-                <p style="font-size: 11px; color: #666;">VenridesScreenS — Sistema de Gestión de Pantallas</p>
+                <p style="font-size: 11px; color: #666;">VScreenS — Sistema de Gestión de Pantallas</p>
             </div>
         </body>
         </html>
@@ -3005,7 +3005,7 @@ async def submit_plan_signup(data: PlanSignupFormData, request: Request):
 
     # 3. Send internal status notification
     try:
-        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
+        notification_email = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")
         
         plan_colors = {
             "free": "#888", "basico": "#3b82f6", "plus": "#8b5cf6",
@@ -3031,7 +3031,7 @@ async def submit_plan_signup(data: PlanSignupFormData, request: Request):
                 </table>
                 {"<div style='margin-top: 15px; padding: 15px; background: #0d0d1a; border-radius: 10px; color: #ccc;'><strong style=color:#c8ff00>Mensaje:</strong><br><br>" + data.mensaje + "</div>" if data.mensaje else ""}
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
-                <p style="font-size: 11px; color: #666;">VenridesScreenS — Sistema de Gestión de Pantallas</p>
+                <p style="font-size: 11px; color: #666;">VScreenS — Sistema de Gestión de Pantallas</p>
             </div>
         </body>
         </html>
@@ -3058,7 +3058,7 @@ async def get_short_apk_url():
     global _cached_short_apk_url
     if not _cached_short_apk_url:
         from utils.url_shortener import shorten_url
-        base_url = os.getenv("PROD_API_URL", "https://venrides-api.inverpave.com")
+        base_url = os.getenv("PROD_API_URL", "https://vscreens-api.inverpave.com")
         _cached_short_apk_url = shorten_url(f"{base_url}/downloads/tv")
     return {"url": _cached_short_apk_url}
 
@@ -3067,7 +3067,7 @@ async def download_tv_apk():
     """Serve the latest TV APK for download"""
     from fastapi.responses import FileResponse
     
-    apk_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "releases", "VenridesScreenS_TV.apk")
+    apk_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "releases", "VScreenS_TV.apk")
     
     if not os.path.exists(apk_path):
         raise HTTPException(404, "APK no disponible")
@@ -3075,8 +3075,8 @@ async def download_tv_apk():
     return FileResponse(
         path=apk_path,
         media_type="application/vnd.android.package-archive",
-        filename="VenridesScreenS_TV.apk",
-        headers={"Content-Disposition": "attachment; filename=VenridesScreenS_TV.apk"}
+        filename="VScreenS_TV.apk",
+        headers={"Content-Disposition": "attachment; filename=VScreenS_TV.apk"}
     )
 
 # --- Benry AI Chat ---
@@ -3124,8 +3124,8 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                 
                 # 1. Send Email Notification
                 from utils.email_sender import send_email
-                notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
-                admin_panel_url = os.getenv("VITE_ADMIN_URL", "https://venrides-app.inverpave.com")
+                notification_email = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")
+                admin_panel_url = os.getenv("VITE_ADMIN_URL", "https://vscreens-app.inverpave.com")
                 chat_url = f"{admin_panel_url}/#chat?session={session_id}"
                 
                 email_body = f"""
@@ -3143,7 +3143,7 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                         </div>
                         <p style="margin-top: 15px; color: #c8ff00; font-size: 12px;">Session ID: {session_id}</p>
                         <hr style="margin: 20px 0; border: none; border-top: 1px solid #333;">
-                        <p style="font-size: 11px; color: #666;">Benry AI — VenridesScreenS</p>
+                        <p style="font-size: 11px; color: #666;">Benry AI — VScreenS</p>
                     </div>
                 </body>
                 </html>
@@ -3186,8 +3186,8 @@ async def benry_chat(data: BenryChatMessage, request: Request):
         return {
             "response": "¡Hola! 👋 Soy Benry. En este momento tengo dificultades técnicas, "
                        "pero puedes contactarnos directamente:\n\n"
-                       "📧 info.venridesscreen@gmail.com\n"
-                       "🌐 venrides.inverpave.com",
+                       "📧 info.vscreens@inverpave.com\n"
+                       "🌐 vscreens.inverpave.com",
             "needs_handoff": False,
             "lead_type": None,
             "session_id": data.session_id or "error"

@@ -19,10 +19,10 @@ def get_database_url():
     import socket
     try:
         socket.gethostbyname('db')
-        return "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@db/venrides_db"
+        return "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@db/vscreens_db"
     except socket.gaierror:
         # Priority 3: Fallback to localhost (running on Host)
-        return "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@localhost:5433/venrides_db"
+        return "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@localhost:5433/vscreens_db"
 
 DATABASE_URL = get_database_url()
 

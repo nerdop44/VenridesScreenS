@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@db/venrides_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://vscreens_user:CHANGE_ME_DB_PASSWORD@db/vscreens_db")
 
 async def migrate():
     engine = create_async_engine(DATABASE_URL)
