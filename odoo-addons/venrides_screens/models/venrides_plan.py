@@ -47,9 +47,7 @@ class VenridesPlan(models.Model):
     allow_mobile = fields.Boolean(string="Incluye app móvil", default=False)
     allow_api = fields.Boolean(string="Incluye API", default=False)
 
-    _sql_constraints = [
-        ("code_uniq", "unique(code)", "El código del plan debe ser único."),
-    ]
+    _code_uniq = models.Constraint("UNIQUE(code)", "El código del plan debe ser único.")
 
     @api.model
     def api_list(self):

@@ -15,9 +15,7 @@ class VenridesRegistrationCode(models.Model):
     expires_at = fields.Datetime(string="Expira el", required=True)
     used = fields.Boolean(default=False)
 
-    _sql_constraints = [
-        ("code_uniq", "unique(code)", "El código debe ser único."),
-    ]
+    _code_uniq = models.Constraint("UNIQUE(code)", "El código debe ser único.")
 
     @api.model
     def _cleanup_expired(self):
@@ -96,6 +94,4 @@ class VenridesFreePlanUsage(models.Model):
     used_at = fields.Datetime(default=fields.Datetime.now)
     expires_at = fields.Datetime()
 
-    _sql_constraints = [
-        ("uuid_uniq", "unique(uuid)", "Este dispositivo ya utilizó la prueba gratuita."),
-    ]
+    _uuid_uniq = models.Constraint("UNIQUE(uuid)", "Este dispositivo ya utilizó la prueba gratuita.")

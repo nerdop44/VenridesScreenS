@@ -12,6 +12,4 @@ class VenridesApiToken(models.Model):
     active = fields.Boolean(default=True)
     last_used_at = fields.Datetime()
 
-    _sql_constraints = [
-        ("token_uniq", "unique(token)", "El token debe ser único."),
-    ]
+    _token_uniq = models.Constraint("UNIQUE(token)", "El token debe ser único.")

@@ -64,9 +64,7 @@ class VenridesEmailTemplate(models.Model):
     category = fields.Char(string="Categoría", default="general")
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ("name_uniq", "unique(name)", "La clave de la plantilla debe ser única."),
-    ]
+    _name_uniq = models.Constraint("UNIQUE(name)", "La clave de la plantilla debe ser única.")
 
     def render_for_company(self, company, extra=None):
         self.ensure_one()
@@ -105,7 +103,7 @@ class VenridesPromotion(models.Model):
     valid_to = fields.Datetime()
     is_active = fields.Boolean(default=True)
 
-    _sql_constraints = [("code_uniq", "unique(code)", "El código de promoción debe ser único.")]
+    _code_uniq = models.Constraint("UNIQUE(code)", "El código de promoción debe ser único.")
 
     def api_dict(self):
         self.ensure_one()
@@ -134,10 +132,8 @@ class VenridesAffiliate(models.Model):
     total_earned = fields.Float(default=0.0)
     is_active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ("email_uniq", "unique(email)", "El email del afiliado debe ser único."),
-        ("code_uniq", "unique(code)", "El código del afiliado debe ser único."),
-    ]
+    _email_uniq = models.Constraint("UNIQUE(email)", "El email del afiliado debe ser único.")
+    _code_uniq = models.Constraint("UNIQUE(code)", "El código del afiliado debe ser único.")
 
     def api_dict(self):
         self.ensure_one()

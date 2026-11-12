@@ -19,9 +19,7 @@ class VenridesDevice(models.Model):
 
     is_online = fields.Boolean(string="En línea", compute="_compute_is_online")
 
-    _sql_constraints = [
-        ("uuid_uniq", "unique(uuid)", "El UUID de la pantalla debe ser único."),
-    ]
+    _uuid_uniq = models.Constraint("UNIQUE(uuid)", "El UUID de la pantalla debe ser único.")
 
     @api.depends("last_ping")
     def _compute_is_online(self):
