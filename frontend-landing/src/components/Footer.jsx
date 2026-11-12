@@ -23,6 +23,8 @@ const Footer = () => {
                     <h4 className="font-mono text-xs tracking-widest uppercase text-slate-400 mb-6">Navegación</h4>
                     <ul className="space-y-3 font-light text-slate-500">
                         <li><a className="hover:text-primary transition-colors" href={site.appUrl} target="_blank" rel="noopener noreferrer">Portal de clientes</a></li>
+                        <li><a className="hover:text-primary transition-colors" href="/app">App móvil (APK)</a></li>
+                        <li><a className="hover:text-primary transition-colors" href="/tv-app">App TV (APK)</a></li>
                         <li><a className="hover:text-primary transition-colors" href={`mailto:${site.contactEmail}`}>Centro de ayuda</a></li>
                         <li><a className="hover:text-primary transition-colors" href={`${site.apiUrl}/docs`} target="_blank" rel="noopener noreferrer">Documentación API</a></li>
                     </ul>

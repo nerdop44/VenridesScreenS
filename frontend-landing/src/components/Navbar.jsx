@@ -11,7 +11,7 @@ const Navbar = () => {
                 <div className="hidden md:flex items-center gap-8 font-mono text-sm uppercase tracking-widest">
                     <a className="hover:text-primary transition-colors" href="#soluciones">Soluciones</a>
                     <a className="hover:text-primary transition-colors" href="#precios">Precios</a>
-                    <a className="hover:text-primary transition-colors" href="#casos">Casos de Éxito</a>
+                    <a className="hover:text-primary transition-colors" href="#descargas">Descargas</a>
                     <a href={`${site.appUrl}?logout=true`} target="_blank" rel="noopener noreferrer" className="bg-primary text-black px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform">PORTAL CLIENTES</a>
                 </div>
             </div>

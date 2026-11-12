@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Comparison from './components/Comparison';
 import Pricing from './components/Pricing';
+import Downloads from './components/Downloads';
 import Footer from './components/Footer';
 import BenryChat from './components/BenryChat';
 import ContactModal from './components/ContactModal';
@@ -95,6 +96,7 @@ function App() {
       <Hero onOpenContact={() => setIsContactOpen(true)} />
       <Comparison />
       <Pricing onOpenContact={() => setIsContactOpen(true)} />
+      <Downloads />
       <Footer />
       <BenryChat onOpenContact={() => setIsContactOpen(true)} />
       <CookieConsent />
