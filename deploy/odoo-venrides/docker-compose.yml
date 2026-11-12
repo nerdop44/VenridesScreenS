@@ -3,9 +3,11 @@ services:
     image: odoo:20.0
     container_name: venrides-screens-odoo
     restart: unless-stopped
-    entrypoint: ["/usr/local/bin/venrides-entrypoint.sh"]
+    entrypoint: ["/bin/sh", "/usr/local/bin/venrides-entrypoint.sh"]
     env_file:
       - /opt/venrides-screens/.env
+    ports:
+      - "127.0.0.1:8075:8069"
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/venrides-entrypoint.sh:ro
       - ../../odoo-addons:/mnt/extra-addons:ro
