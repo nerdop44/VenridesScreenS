@@ -31,7 +31,7 @@ class VScreenSPayment(models.Model):
             "name": company.name,
             "email": company.email or False,
             "phone": company.phone or False,
-            "company_type": "company",
+            "is_company": True,
             "customer_rank": 1,
             "street": company.address or False,
             "vat": company.rif or False,
