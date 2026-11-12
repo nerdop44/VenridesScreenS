@@ -173,7 +173,10 @@ class VScreenSAuthController(http.Controller):
                 return error(403, "No tiene permiso para crear usuarios")
             if role != "operador_empresa":
                 return error(403, "Solo puede crear operadores")
-            company_id = company_of(user).id
+            own_company = company_of(user)
+            if company_id and int(company_id) != own_company.id:
+                return error(403, "No puede crear usuarios en otra empresa")
+            company_id = own_company.id
         if request.env["res.users"].sudo().search_count([("login", "=", username)]):
             return error(400, "El correo electrónico ya está registrado")
         company = request.env["vscreens.company"].sudo().browse(int(company_id)).exists() if company_id else False

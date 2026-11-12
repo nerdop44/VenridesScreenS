@@ -202,6 +202,14 @@ class VScreenSCompany(models.Model):
                     }
         return config
 
+    def unlink(self):
+        for company in self:
+            users = self.env["res.users"].sudo().search([("vscreens_company_id", "=", company.id)])
+            users = users.filtered(lambda u: not u.has_group("vscreens.group_vscreens_master"))
+            if users:
+                users.unlink()
+        return super().unlink()
+
     def _plan_allows(self, feature):
         self.ensure_one()
         if not self.plan_id:
