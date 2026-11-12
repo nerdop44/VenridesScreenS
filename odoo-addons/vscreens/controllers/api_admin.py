@@ -176,7 +176,7 @@ class VScreenSAdminController(http.Controller):
         if not is_master(user) and ticket.user_id.id != user.id and ticket.company_id.id != user.vscreens_company_id.id:
             return error(403, "No tiene permiso para ver este ticket")
         data = ticket.api_dict()
-        data["messages"] = [message.api_dict() for message in ticket.message_ids]
+        data["messages"] = [message.api_dict() for message in ticket.vscreens_message_ids]
         return json_response(data)
 
     @http.route("/admin/helpdesk/tickets/<int:ticket_id>/reply", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)

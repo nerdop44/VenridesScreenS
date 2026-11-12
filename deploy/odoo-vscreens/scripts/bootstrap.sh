@@ -93,6 +93,29 @@ if server:
 else:
     env['ir.mail_server'].create(mail_vals)
 env['ir.config_parameter'].sudo().set_str('mail.default.from', os.environ.get('MAIL_USER', 'info.vscreens@inverpave.com'))
+support_user = os.environ.get('MAIL_SUPPORT_USER')
+support_pass = os.environ.get('MAIL_SUPPORT_PASSWORD')
+if support_user and support_pass:
+    fetch = env['fetchmail.server'].search([('name', '=', 'VScreenS Soporte IMAP')], limit=1)
+    fetch_vals = {
+        'name': 'VScreenS Soporte IMAP',
+        'server': os.environ.get('MAIL_HOST', 'smtp.inverpave.com'),
+        'port': 993,
+        'server_type': 'imap',
+        'is_ssl': True,
+        'user': support_user,
+        'password': support_pass,
+        'object_id': env['ir.model']._get_id('vscreens.ticket'),
+        'state': 'done',
+        'active': True,
+        'priority': 1,
+    }
+    if fetch:
+        fetch.write(fetch_vals)
+    else:
+        env['fetchmail.server'].create(fetch_vals)
+    print('IMAP de soporte configurado:', support_user)
+
 env['ir.config_parameter'].sudo().set_str('vscreens.notification_email', os.environ.get('MAIL_USER', 'info.vscreens@inverpave.com'))
 env.cr.commit()
 print('Maestro listo:', user.login)

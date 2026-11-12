@@ -27,7 +27,7 @@ class VScreenSTicket(models.Model):
         tracking=True,
     )
     description = fields.Text()
-    message_ids = fields.One2many("vscreens.ticket.message", "ticket_id", string="Mensajes")
+    vscreens_message_ids = fields.One2many("vscreens.ticket.message", "ticket_id", string="Mensajes")
 
     @api.model
     def message_new(self, msg_dict, custom_values=None):

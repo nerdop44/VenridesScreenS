@@ -63,6 +63,7 @@ class VScreenSPayment(models.Model):
                 "tax_ids": [(6, 0, [])],
             })],
         })
+        move.action_post()
         self.sudo().write({"account_move_id": move.id})
         return self.action_view_invoice()
 
