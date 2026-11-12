@@ -24,4 +24,4 @@ limit_time_cpu = 600
 log_level = ${ODOO_LOG_LEVEL:-info}
 EOF
 
-exec odoo --config="$CONF" "$@"
+exec odoo "$@" --config="$CONF"
