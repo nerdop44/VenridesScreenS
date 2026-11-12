@@ -84,7 +84,7 @@ class TemplateService:
                         <ul>
                             <li>Código: <strong>8744763</strong></li>
                             <li>URL Corta: <code>http://aftv.news/8744763</code></li>
-                            <li>URL Directa: <code>https://screens.venrides.com/tv-app</code></li>
+                            <li>URL Directa: <code>https://venrides.inverpave.com/tv-app</code></li>
                         </ul>
                         <li>Instala y abre la App.</li>
                         <li>Verás un código de 6 dígitos en la pantalla.</li>
@@ -122,7 +122,7 @@ class TemplateService:
                         <p><strong>Cuenta:</strong> 0102-0000-00-0000000000</p>
                         <p><strong>Pago Móvil:</strong> 0412-1234567 / J-123456789</p>
                     </div>
-                    <p><strong>Importante:</strong> Una vez realizado, envía el comprobante a pagos@venrides.com o súbelo en tu panel.</p>
+                    <p><strong>Importante:</strong> Una vez realizado, envía el comprobante a pagos@inverpave.com o súbelo en tu panel.</p>
                     <p>Tasa del día (BCV): Bs. {{bcv_rate}}</p>
                 </div>
             """
@@ -134,7 +134,7 @@ class TemplateService:
                     <h2>¡Hola, {{contacto}}!</h2>
                     <p>Te recordamos que el plan <strong>{{plan}}</strong> de {{nombre_empresa}} vence el <strong>{{fecha_vencimiento}}</strong>.</p>
                     <p>Para evitar interrupciones en la transmisión de tus pantallas, por favor realiza tu renovación a tiempo.</p>
-                    <p><a href="https://admintv.venrides.com/payments" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Renovar Ahora</a></p>
+                    <p><a href="https://venrides-app.inverpave.com/payments" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Renovar Ahora</a></p>
                 </div>
             """
         },

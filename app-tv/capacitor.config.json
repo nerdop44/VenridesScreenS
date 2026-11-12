@@ -3,7 +3,7 @@
   "appName": "VenridesScreenS",
   "webDir": "dist",
   "server": {
-    "url": "https://tv.venrides.com",
+    "url": "https://venrides-tv.inverpave.com",
     "cleartext": true
   }
 }

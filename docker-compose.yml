@@ -3,9 +3,9 @@ services:
     image: postgres:15-alpine
     container_name: venrides_db
     environment:
-      POSTGRES_USER: venrides_user
-      POSTGRES_PASSWORD: CHANGE_ME_DB_PASSWORD
-      POSTGRES_DB: venrides_db
+      POSTGRES_USER: ${DB_USER:-venrides_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-venrides_db}
     deploy:
       resources:
         limits:
@@ -34,8 +34,9 @@ services:
     ports:
       - "8005:8000" # Changed from 8000 to 8005 to avoid conflict with Portainer on VPS
     environment:
-      - DATABASE_URL=postgresql+asyncpg://venrides_user:CHANGE_ME_DB_PASSWORD@db/venrides_db
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-venrides_user}:${DB_PASSWORD:?DB_PASSWORD is required}@db/${DB_NAME:-venrides_db}
       - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - LOG_LEVEL=info
     deploy:
       resources:
@@ -52,8 +53,8 @@ services:
     build:
       context: ./frontend-admin
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://apitv.venrides.com}
-        - VITE_TV_URL=${VITE_TV_URL:-https://tv.venrides.com}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://venrides-api.inverpave.com}
+        - VITE_TV_URL=${VITE_TV_URL:-https://venrides-tv.inverpave.com}
     container_name: venrides_admin
     deploy:
       resources:

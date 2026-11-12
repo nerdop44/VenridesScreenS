@@ -1,10 +1,19 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import os
+import secrets
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-# SECRET_KEY should ideally be loaded from env, but kept for migration consistency
-SECRET_KEY = "***REMOVED***" 
+# La clave se lee del entorno. En desarrollo, si no existe, se genera una temporal.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    SECRET_KEY = secrets.token_urlsafe(48)
+    import logging
+    logging.getLogger("VenrideScreenS.Auth").warning(
+        "SECRET_KEY no configurada. Se generó una clave temporal; los tokens se invalidarán al reiniciar."
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
 

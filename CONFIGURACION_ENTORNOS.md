@@ -7,7 +7,7 @@ Este proyecto utiliza variables de entorno para gestionar las URLs de desarrollo
 Cada frontend tiene dos archivos de configuración:
 
 - **`.env.development`**: URLs para desarrollo local (localhost)
-- **`.env.production`**: URLs para producción en VPS (screens.venrides.com)
+- **`.env.production`**: URLs para producción en VPS (venrides.inverpave.com)
 
 ## 🔄 Cambio Automático de Entorno
 
@@ -47,7 +47,7 @@ VITE_ADMIN_PANEL_URL=http://localhost:8081
 ### Para Producción
 Edita `frontend-*/.env.production`:
 ```env
-VITE_ADMIN_PANEL_URL=https://admintv.venrides.com
+VITE_ADMIN_PANEL_URL=https://venrides-app.inverpave.com
 ```
 
 ## 💡 Uso en el Código

@@ -124,19 +124,19 @@ Ver documentación detallada en:
 ### Resumen de Despliegue
 
 1. **Configurar DNS** para los dominios:
-   - `admintv.venrides.com` → Admin Panel
-   - `apitv.venrides.com` → Backend API  
-   - `tv.venrides.com` → TV Client
-   - `screens.venrides.com` → Landing Page
+   - `venrides-app.inverpave.com` → Admin Panel
+   - `venrides-api.inverpave.com` → Backend API  
+   - `venrides-tv.inverpave.com` → TV Client
+   - `venrides.inverpave.com` → Landing Page
 
 2. **Configurar Nginx Proxy Manager**:
 
 | Dominio | Destination | SSL |
 |---------|-------------|-----|
-| admintv.venrides.com | `http://venrides_admin:80` | Let's Encrypt |
-| apitv.venrides.com | `http://venrides_api:8000` | Let's Encrypt |
-| tv.venrides.com | `http://venrides_tv:80` | Let's Encrypt |
-| screens.venrides.com | `http://venrides_landing:80` | Let's Encrypt |
+| venrides-app.inverpave.com | `http://venrides_admin:80` | Let's Encrypt |
+| venrides-api.inverpave.com | `http://venrides_api:8000` | Let's Encrypt |
+| venrides-tv.inverpave.com | `http://venrides_tv:80` | Let's Encrypt |
+| venrides.inverpave.com | `http://venrides_landing:80` | Let's Encrypt |
 
 3. **Deploy**:
 

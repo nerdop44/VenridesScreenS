@@ -243,7 +243,7 @@ def generate_response(intents, user_msg, conv_history):
         return (
             "¡Hasta luego! 👋 Fue un placer atenderte. Si necesitas algo más, aquí estaré.\n\n"
             "📧 info.venridesscreen@gmail.com\n"
-            "🌐 screens.venrides.com",
+            "🌐 venrides.inverpave.com",
             None, False
         )
     

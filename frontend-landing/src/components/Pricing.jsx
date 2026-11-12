@@ -1,102 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PlanSignupModal from './PlanSignupModal';
+import { FALLBACK_PLANS, fetchPlans } from '../services/PlanService';
 
 const Pricing = ({ onOpenContact }) => {
     const [isAnnual, setIsAnnual] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [plans, setPlans] = useState(FALLBACK_PLANS);
+
+    useEffect(() => {
+        let active = true;
+        fetchPlans().then((data) => {
+            if (active && Array.isArray(data) && data.length > 0) setPlans(data);
+        });
+        return () => { active = false; };
+    }, []);
 
     const handlePlanSelect = (planId) => {
         setSelectedPlan(planId);
         setIsModalOpen(true);
     };
-
-    const plans = [
-        {
-            id: 'free',
-            name: 'Free',
-            subtitle: 'Starter',
-            monthlyPrice: 0,
-            annualPrice: 0,
-            screens: '2 pantallas',
-            features: [
-                'Hasta 2 pantallas',
-                'Contenido publicitario básico',
-                'Programación de publicidad',
-                'Panel web completo',
-                'Publicidad de terceros',
-                'Soporte Helpdesk'
-            ]
-        },
-        {
-            id: 'basic',
-            name: 'Emprendedor',
-            subtitle: 'Básico',
-            monthlyPrice: 30,
-            annualPrice: 320,
-            screens: '5 pantallas',
-            features: [
-                'Hasta 5 pantallas',
-                'Contenido publicitario',
-                'Sin publicidad de terceros',
-                'Programación avanzada',
-                'Panel web completo',
-                'Multi-ubicación',
-                'Soporte Helpdesk'
-            ]
-        },
-        {
-            id: 'plus',
-            name: 'Profesional',
-            subtitle: 'Plus',
-            monthlyPrice: 50,
-            annualPrice: 520,
-            screens: '10 pantallas',
-            popular: true,
-            features: [
-                'Hasta 10 pantallas',
-                'Contenido publicitario',
-                'Sin publicidad de terceros',
-                'Panel web y app móvil completo',
-                'Multi-ubicación',
-                'Capacitación personalizada',
-                'Soporte dedicado'
-            ]
-        },
-        {
-            id: 'ultra',
-            name: 'Enterprise',
-            subtitle: 'Ultra',
-            monthlyPrice: 80,
-            annualPrice: 850,
-            screens: '20 pantallas',
-            features: [
-                'Hasta 20 pantallas',
-                'Contenido publicitario',
-                'Sin publicidad de terceros',
-                'Panel web y app móvil completo',
-                'Multi-ubicación',
-                'Capacitación personalizada',
-                'Soporte dedicado'
-            ]
-        },
-        {
-            id: 'empresarial',
-            name: 'Pantallas Gigantes',
-            subtitle: 'Empresarial',
-            monthlyPrice: null,
-            annualPrice: null,
-            screens: 'Ilimitadas',
-            features: [
-                'Pantallas de exterior a gran formato',
-                'Pantallas LED gigantes',
-                'Instalación on-premise',
-                'Multi-ubicación',
-                'Capacitación personalizada',
-                'Soporte dedicado'
-            ]
-        }
-    ];
 
     return (
         <section className="py-32 bg-slate-900/50" id="precios">

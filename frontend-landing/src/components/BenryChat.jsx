@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://apitv.venrides.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://venrides-api.inverpave.com';
 
 const BenryChat = ({ onOpenContact }) => {
     const [isOpen, setIsOpen] = useState(false);

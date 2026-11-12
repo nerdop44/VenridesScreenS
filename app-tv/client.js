@@ -1,4 +1,4 @@
-const API_URL = "https://apitv.venrides.com";
+const API_URL = "https://venrides-api.inverpave.com";
 const CLIENT_ID_STORAGE_KEY = "device_uuid";
 console.log("Venrides TV Client v1.8 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
 

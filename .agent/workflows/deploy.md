@@ -1,24 +1,44 @@
 ---
-description: despliegue automático de VenridesScreenS al VPS
+description: despliegue de VenridesScreenS en el VPS de producción
 ---
 
-Este workflow automatiza la sincronización de cambios desde el entorno local al servidor de producción.
+# Despliegue de VenridesScreenS
 
-// turbo-all
-1. Subir cambios locales al repositorio:
+> Este repositorio es público. **Nunca** escribas contraseñas, tokens, llaves privadas ni IPs internas en este archivo.
+
+## Requisitos
+
+- Llave SSH configurada para el usuario de despliegue (sin contraseña).
+- Acceso al directorio `/opt/venrides-screens` del VPS.
+- Variables de entorno en `/opt/venrides-screens/.env` (permisos `600`, fuera de Git).
+- Docker y Docker Compose instalados.
+
+## Flujo
+
+1. Subir cambios al repositorio:
    ```bash
-   git add . && git commit -m "update: automatic deployment" && git push origin main
+   git add .
+   git commit -m "update: deploy"
+   git push origin main
    ```
 
-2. Ejecutar despliegue remoto vía SSH:
-   > [!NOTE]
-   > El script asume que `sshpass` está instalado y que la IP del VPS es `37.60.242.112`.
-
+2. Desplegar en el VPS:
    ```bash
-   SSHPASS='***REMOVED***' sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password root@37.60.242.112 "cd /opt/VenridesScreenS && git pull origin main && docker compose build backend frontend-admin frontend-landing && docker compose up -d"
+   ssh venrides-prod "cd /opt/venrides-screens && ./scripts/deploy.sh"
    ```
 
-3. Verificar estado de los contenedores en el VPS:
+3. Verificar servicios:
    ```bash
-   SSHPASS='***REMOVED***' sshpass -e ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password root@37.60.242.112 "docker compose ps"
+   ssh venrides-prod "cd /opt/venrides-screens && docker compose ps"
    ```
+
+4. Verificar salud:
+   ```bash
+   curl -fsS https://venrides-api.inverpave.com/diag/status
+   ```
+
+## Reglas
+
+- No usar `sshpass`, contraseñas en texto plano ni `StrictHostKeyChecking=no`.
+- No subir `.env`, dumps, backups, APKs ni credenciales al repositorio.
+- Los secretos se gestionan en `/opt/venrides-screens/.env` y en el gestor de secretos del equipo.

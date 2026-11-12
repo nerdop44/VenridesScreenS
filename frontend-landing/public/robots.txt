@@ -4,7 +4,7 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://screens.venrides.com/sitemap.xml
+Sitemap: https://venrides.inverpave.com/sitemap.xml
 
 # Block common bad bots
 User-agent: AhrefsBot

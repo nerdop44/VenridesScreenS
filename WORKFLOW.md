@@ -32,6 +32,6 @@ docker compose up -d --build
 
 ## 4. Apps Móviles y TV
 He actualizado las aplicaciones para que, por defecto, intenten conectarse a:
-- `https://apitv.venrides.com`
+- `https://venrides-api.inverpave.com`
 
 Si necesitas probar contra un servidor de desarrollo diferente en la app móvil, recuerda que tienes la opción de cambiar la URL en el panel de configuración de la app.

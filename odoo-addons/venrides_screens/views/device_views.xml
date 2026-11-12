@@ -1,0 +1,69 @@
+<odoo>
+    <record id="view_venrides_device_list" model="ir.ui.view">
+        <field name="name">venrides.device.list</field>
+        <field name="model">venrides.device</field>
+        <field name="arch" type="xml">
+            <list string="Pantallas">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="uuid"/>
+                <field name="is_online" widget="badge" decoration-success="is_online"/>
+                <field name="last_ping"/>
+                <field name="last_ip"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_venrides_device_form" model="ir.ui.view">
+        <field name="name">venrides.device.form</field>
+        <field name="model">venrides.device</field>
+        <field name="arch" type="xml">
+            <form string="Pantalla">
+                <header>
+                    <button name="action_ping" type="object" string="Identificar pantalla" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Nombre de la pantalla"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="uuid"/>
+                            <field name="is_active"/>
+                            <field name="is_online"/>
+                        </group>
+                        <group>
+                            <field name="last_ping"/>
+                            <field name="last_ip"/>
+                            <field name="ping_requested_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_venrides_device_search" model="ir.ui.view">
+        <field name="name">venrides.device.search</field>
+        <field name="model">venrides.device</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="uuid"/>
+                <field name="company_id"/>
+                <filter name="active" string="Activas" domain="[('is_active','=',True)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_company" string="Empresa" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_active" string="Estado" context="{'group_by': 'is_active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_venrides_device" model="ir.actions.act_window">
+        <field name="name">Pantallas</field>
+        <field name="res_model">venrides.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_venrides_device_search"/>
+    </record>
+</odoo>

@@ -236,10 +236,10 @@ app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 
 # --- CORS ---
 allowed_origins = [
-    "https://screens.venrides.com",
-    "https://admintv.venrides.com",
-    "https://apitv.venrides.com",
-    "https://tv.venrides.com",
+    "https://venrides.inverpave.com",
+    "https://venrides-app.inverpave.com",
+    "https://venrides-api.inverpave.com",
+    "https://venrides-tv.inverpave.com",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
@@ -312,12 +312,18 @@ async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
         from utils.auth import get_password_hash
         
         if repair:
-            
+            if os.getenv("ALLOW_DIAG_REPAIR", "false").lower() != "true":
+                raise HTTPException(403, "Reparación deshabilitada")
+            master_password = os.getenv("MASTER_ADMIN_PASSWORD")
+            if not master_password:
+                raise HTTPException(500, "MASTER_ADMIN_PASSWORD no configurada")
+
             # 1. Force table sync
             await init_db()
             
             # 2. Check/Create Master Admin
-            result = await db.execute(select(User).where(User.username == "nerdop@gmail.com"))
+            master_email = os.getenv("MASTER_ADMIN_EMAIL", "nerdop@gmail.com")
+            result = await db.execute(select(User).where(User.username == master_email))
             admin = result.scalar_one_or_none()
             
             if not admin:
@@ -330,9 +336,9 @@ async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
                     await db.commit()
                     await db.refresh(company)
                 
-                hashed = get_password_hash("***REMOVED***") # Default password for nerdop@gmail.com
+                hashed = get_password_hash(master_password)
                 admin = User(
-                    username="nerdop@gmail.com",
+                    username=master_email,
                     hashed_password=hashed,
                     is_admin=True,
                     role="admin_master",
@@ -340,7 +346,7 @@ async def diag_status(repair: bool = False, db: AsyncSession = Depends(get_db)):
                 )
                 db.add(admin)
                 await db.commit()
-                return {"status": "repaired", "message": "Master admin (nerdop@gmail.com) created and tables synced"}
+                return {"status": "repaired", "message": f"Master admin ({master_email}) created and tables synced"}
 
         # Normal status check
         companies_count = (await db.execute(select(func.count(Company.id)))).scalar()
@@ -388,15 +394,17 @@ async def on_startup():
                     await db.commit()
                     await db.refresh(company)
                 
-                # 2. Ensure admin_master exists
-                result = await db.execute(select(User).where(User.username == "nerdop@gmail.com"))
+                # 2. Ensure admin_master exists (solo si se configuró una contraseña)
+                master_email = os.getenv("MASTER_ADMIN_EMAIL", "nerdop@gmail.com")
+                master_password = os.getenv("MASTER_ADMIN_PASSWORD")
+                result = await db.execute(select(User).where(User.username == master_email))
                 admin = result.scalar_one_or_none()
                 
-                if not admin:
-                    logger.info("--- Seeding Master Admin (nerdop@gmail.com) ---")
-                    hashed = get_password_hash("***REMOVED***")
+                if not admin and master_password:
+                    logger.info(f"--- Seeding Master Admin ({master_email}) ---")
+                    hashed = get_password_hash(master_password)
                     admin = User(
-                        username="nerdop@gmail.com",
+                        username=master_email,
                         hashed_password=hashed,
                         is_admin=True,
                         role="admin_master",
@@ -404,6 +412,11 @@ async def on_startup():
                     )
                     db.add(admin)
                     await db.commit()
+                elif not admin:
+                    logger.warning(
+                        "No existe el administrador maestro y MASTER_ADMIN_PASSWORD no está configurada; "
+                        "no se creó ningún usuario por defecto."
+                    )
                 else:
                     # Ensure existing admin has the correct role
                     if admin.role != "admin_master":
@@ -1380,7 +1393,7 @@ async def create_payment(payment: PaymentCreate, db: AsyncSession = Depends(get_
         if company and company.is_active:
             from services.template_service import template_service
             # Get shortened URL for APK
-            base_url = os.getenv("PROD_API_URL", "https://apitv.venrides.com")
+            base_url = os.getenv("PROD_API_URL", "https://venrides-api.inverpave.com")
             from utils.url_shortener import shorten_url
             short_url = shorten_url(f"{base_url}/downloads/tv")
             
@@ -1582,7 +1595,7 @@ async def get_device_config(uuid: str, db: AsyncSession = Depends(get_db)):
         if company.valid_until:
              days = (company.valid_until.replace(tzinfo=None) - datetime.utcnow()).days
              if 0 <= days <= 15:
-                  alert_msg = f"⚠️ Tu prueba gratuita vence en {days} días. ¡Suscríbete en venrides.com!"
+                  alert_msg = f"⚠️ Tu prueba gratuita vence en {days} días. ¡Suscríbete en venrides.inverpave.com!"
                   if config.get("bottom_bar_content") and "messages" in config["bottom_bar_content"]:
                        config["bottom_bar_content"]["messages"].append(alert_msg)
                   else:
@@ -3045,7 +3058,7 @@ async def get_short_apk_url():
     global _cached_short_apk_url
     if not _cached_short_apk_url:
         from utils.url_shortener import shorten_url
-        base_url = os.getenv("PROD_API_URL", "https://apitv.venrides.com")
+        base_url = os.getenv("PROD_API_URL", "https://venrides-api.inverpave.com")
         _cached_short_apk_url = shorten_url(f"{base_url}/downloads/tv")
     return {"url": _cached_short_apk_url}
 
@@ -3112,7 +3125,7 @@ async def benry_chat(data: BenryChatMessage, request: Request):
                 # 1. Send Email Notification
                 from utils.email_sender import send_email
                 notification_email = os.getenv("NOTIFICATION_EMAIL", "info.venridesscreen@gmail.com")
-                admin_panel_url = os.getenv("VITE_ADMIN_URL", "https://admin.venridesscreen.com")
+                admin_panel_url = os.getenv("VITE_ADMIN_URL", "https://venrides-app.inverpave.com")
                 chat_url = f"{admin_panel_url}/#chat?session={session_id}"
                 
                 email_body = f"""
@@ -3174,7 +3187,7 @@ async def benry_chat(data: BenryChatMessage, request: Request):
             "response": "¡Hola! 👋 Soy Benry. En este momento tengo dificultades técnicas, "
                        "pero puedes contactarnos directamente:\n\n"
                        "📧 info.venridesscreen@gmail.com\n"
-                       "🌐 screens.venrides.com",
+                       "🌐 venrides.inverpave.com",
             "needs_handoff": False,
             "lead_type": None,
             "session_id": data.session_id or "error"
