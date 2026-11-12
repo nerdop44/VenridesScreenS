@@ -38,7 +38,6 @@ Incluye:
         "views/ticket_views.xml",
         "views/crm_views.xml",
         "views/analytics_views.xml",
-        "views/settings_views.xml",
         "views/dashboard.xml",
         "views/menus.xml",
     ],

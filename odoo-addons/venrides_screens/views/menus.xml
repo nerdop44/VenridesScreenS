@@ -49,7 +49,4 @@
     <menuitem id="menu_venrides_analytics" name="Analítica web" parent="menu_venrides_intelligence"
               action="action_venrides_analytics_visit" sequence="10"/>
 
-    <menuitem id="menu_venrides_config" name="Configuración" parent="menu_venrides_root" sequence="90"/>
-    <menuitem id="menu_venrides_settings" name="Ajustes" parent="menu_venrides_config"
-              action="action_venrides_settings" sequence="10"/>
 </odoo>
