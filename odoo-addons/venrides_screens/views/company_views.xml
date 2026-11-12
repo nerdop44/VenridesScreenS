@@ -150,8 +150,7 @@
                 <field name="plan_id"/>
                 <filter name="active" string="Activas" domain="[('is_active','=',True)]"/>
                 <filter name="inactive" string="Suspendidas" domain="[('is_active','=',False)]"/>
-                <filter name="expired" string="Vencidas" domain="[('valid_until','&lt;', context_today().strftime('%Y-%m-%d %H:%M:%S'))]"/>
-                <group expand="0" string="Agrupar por">
+                <group>
                     <filter name="group_plan" string="Plan" context="{'group_by': 'plan_id'}"/>
                     <filter name="group_active" string="Estado" context="{'group_by': 'is_active'}"/>
                 </group>

@@ -53,7 +53,7 @@
                 <field name="uuid"/>
                 <field name="company_id"/>
                 <filter name="active" string="Activas" domain="[('is_active','=',True)]"/>
-                <group expand="0" string="Agrupar por">
+                <group>
                     <filter name="group_company" string="Empresa" context="{'group_by': 'company_id'}"/>
                     <filter name="group_active" string="Estado" context="{'group_by': 'is_active'}"/>
                 </group>

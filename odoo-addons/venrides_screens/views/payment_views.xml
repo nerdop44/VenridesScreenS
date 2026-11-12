@@ -46,7 +46,7 @@
                 <field name="company_id"/>
                 <field name="payment_date"/>
                 <filter name="confirmed" string="Confirmados" domain="[('state','=','confirmed')]"/>
-                <group expand="0" string="Agrupar por">
+                <group>
                     <filter name="group_company" string="Empresa" context="{'group_by': 'company_id'}"/>
                     <filter name="group_month" string="Mes" context="{'group_by': 'payment_date:month'}"/>
                 </group>
