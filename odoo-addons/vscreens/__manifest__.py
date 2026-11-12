@@ -22,6 +22,7 @@ Incluye:
         "web",
         "calendar",
         "crm",
+        "fetchmail",
         "account",
         "l10n_ve",
     ],
