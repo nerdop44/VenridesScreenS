@@ -32,15 +32,15 @@ class ResConfigSettings(models.TransientModel):
     vscreens_notification_email = fields.Char(
         string="Email de notificaciones",
         config_parameter="vscreens.notification_email",
-        default="soporte@inverpave.com",
+        default="info.vscreens@inverpave.com",
     )
     vscreens_support_email = fields.Char(
         string="Email de soporte",
         config_parameter="vscreens.support_email",
-        default="soporte@inverpave.com",
+        default="info.vscreens@inverpave.com",
     )
     vscreens_billing_email = fields.Char(
         string="Email de facturación",
         config_parameter="vscreens.billing_email",
-        default="pagos@inverpave.com",
+        default="pagos.vscreens@inverpave.com",
     )

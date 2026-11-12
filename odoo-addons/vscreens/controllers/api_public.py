@@ -25,7 +25,7 @@ def _send_notification(subject, body, email_to):
             "body_html": body,
             "email_to": email_to,
             "email_from": request.env["ir.config_parameter"].sudo().get_str(
-                "vscreens.notification_email", "soporte@inverpave.com"
+                "vscreens.notification_email", "info.vscreens@inverpave.com"
             ),
         }).send()
     except Exception:
@@ -92,7 +92,7 @@ class VScreenSPublicController(http.Controller):
         _send_notification(
             f"Nuevo contacto: {name}",
             f"<p><strong>Nombre:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Teléfono:</strong> {data.get('telefono','')}</p><p><strong>Mensaje:</strong> {data.get('mensaje','')}</p>",
-            request.env["ir.config_parameter"].sudo().get_str("vscreens.notification_email", "soporte@inverpave.com"),
+            request.env["ir.config_parameter"].sudo().get_str("vscreens.notification_email", "info.vscreens@inverpave.com"),
         )
         return json_response({"message": "¡Gracias! Tu mensaje ha sido recibido. Te contactaremos pronto.", "status": "success"})
 
@@ -121,7 +121,7 @@ class VScreenSPublicController(http.Controller):
         _send_notification(
             f"Nueva solicitud de plan {plan} — {name}",
             f"<p><strong>Plan:</strong> {plan}</p><p><strong>Nombre:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Empresa:</strong> {data.get('empresa','')}</p><p><strong>Teléfono:</strong> {data.get('telefono','')}</p>",
-            request.env["ir.config_parameter"].sudo().get_str("vscreens.notification_email", "soporte@inverpave.com"),
+            request.env["ir.config_parameter"].sudo().get_str("vscreens.notification_email", "info.vscreens@inverpave.com"),
         )
         return json_response({"message": "¡Gracias! Hemos recibido tu solicitud. Te contactaremos pronto.", "status": "success"})
 

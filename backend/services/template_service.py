@@ -122,7 +122,7 @@ class TemplateService:
                         <p><strong>Cuenta:</strong> 0102-0000-00-0000000000</p>
                         <p><strong>Pago Móvil:</strong> 0412-1234567 / J-123456789</p>
                     </div>
-                    <p><strong>Importante:</strong> Una vez realizado, envía el comprobante a pagos@inverpave.com o súbelo en tu panel.</p>
+                    <p><strong>Importante:</strong> Una vez realizado, envía el comprobante a pagos.vscreens@inverpave.com o súbelo en tu panel.</p>
                     <p>Tasa del día (BCV): Bs. {{bcv_rate}}</p>
                 </div>
             """

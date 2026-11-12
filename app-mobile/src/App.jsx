@@ -3,7 +3,8 @@ import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layou
 import ChatPanel from './components/ChatPanel';
 import MobileApp from './MobileApp';
 
-const API_BASE = localStorage.getItem('server_url') || "http://192.168.1.182:8000";
+const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "https://vscreens-api.inverpave.com";
+const API_BASE = localStorage.getItem('server_url') || DEFAULT_API_BASE;
 
 // --- HELPERS ---
 const safeParse = (str, fallback = {}) => {
@@ -123,12 +124,12 @@ const ServerConfigModal = ({ isOpen, onClose, currentUrl, onSave }) => {
                 <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)' }}>Configuración de Servidor</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '1rem' }}>
                     Ingrese la URL completa del backend (API). <br />
-                    Ej: <code>http://192.168.1.200:8000</code>
+                    Ej: <code>https://vscreens-api.inverpave.com</code>
                 </p>
                 <input
                     value={url}
                     onChange={e => setUrl(e.target.value)}
-                    placeholder="http://192.168.1.182:8000"
+                    placeholder="https://vscreens-api.inverpave.com"
                     style={{ marginBottom: '1rem' }}
                 />
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1582,7 +1583,12 @@ function App() {
                             { id: 'users', icon: Users, label: 'Usuarios' },
                             { id: 'helpdesk', icon: LifeBuoy, label: 'Soporte', badge: supportUnreadCount }
                         ].filter(tab => {
-                            if (tab.id === 'users' && (localCompany?.plan === 'free' || userRole === 'user_basic')) return false;
+                            const pf = localCompany?.plan_features || {};
+                            if (tab.id === 'users' && (userRole === 'user_basic' || pf.allow_multi_user === false || (pf.max_users && Number(pf.max_users) <= 1))) return false;
+                            if (tab.id === 'sidebar_tab' && pf.allow_sidebar === false) return false;
+                            if (tab.id === 'bottombar_tab' && pf.allow_bottom_bar === false) return false;
+                            if (tab.id === 'videos' && pf.allow_video_playlist === false && pf.allow_priority_content === false) return false;
+                            if (tab.id === 'helpdesk' && pf.allow_helpdesk === false) return false;
                             return true;
                         }).map(tab => (
                             <button
@@ -1749,7 +1755,7 @@ function App() {
                             <BottomBarEditor
                                 company={localCompany}
                                 onChange={handleLocalChange}
-                                disabled={localCompany?.plan?.toLowerCase() === 'free'}
+                                disabled={localCompany?.plan_features?.allow_bottom_bar === false}
                             />
                         )}
 

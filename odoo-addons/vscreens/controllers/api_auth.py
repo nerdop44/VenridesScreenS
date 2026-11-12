@@ -89,7 +89,7 @@ class VScreenSAuthController(http.Controller):
                     "body_html": body,
                     "email_to": user.login,
                     "email_from": request.env["ir.config_parameter"].sudo().get_str(
-                        "vscreens.notification_email", "soporte@inverpave.com"
+                        "vscreens.notification_email", "info.vscreens@inverpave.com"
                     ),
                 })
                 mail.send()
