@@ -12,7 +12,7 @@ from services.template_service import template_service
 from utils.email_sender import send_email
 from db_config import AsyncSessionLocal as SessionLocal, engine
 
-logger = logging.getLogger("VenrideScreenS.Scheduler")
+logger = logging.getLogger("VScreenS.Scheduler")
 
 class SchedulerService:
     def __init__(self):

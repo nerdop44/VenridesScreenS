@@ -12,7 +12,7 @@ from collections import defaultdict
 from typing import Optional
 from user_agents import parse as ua_parse
 
-logger = logging.getLogger("VenrideScreenS.Analytics")
+logger = logging.getLogger("VScreenS.Analytics")
 
 # In-memory storage (persisted to file optionally)
 _visits = []

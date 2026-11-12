@@ -109,7 +109,7 @@ def rollback():
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("VenrideScreenS Database Rollback Tool")
+    print("VScreenS Database Rollback Tool")
     print("=" * 60 + "\n")
     
     success = rollback()

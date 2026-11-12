@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     SECRET_KEY = secrets.token_urlsafe(48)
     import logging
-    logging.getLogger("VenrideScreenS.Auth").warning(
+    logging.getLogger("VScreenS.Auth").warning(
         "SECRET_KEY no configurada. Se generó una clave temporal; los tokens se invalidarán al reiniciar."
     )
 

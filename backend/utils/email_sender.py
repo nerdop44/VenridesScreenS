@@ -11,7 +11,7 @@ import logging
 
 load_dotenv()
 
-logger = logging.getLogger("VenrideScreenS.Email")
+logger = logging.getLogger("VScreenS.Email")
 
 # SMTP Configuration
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -67,7 +67,7 @@ def send_email(to: str, subject: str, body: str, html: bool = True) -> bool:
 
 def send_password_recovery_email(to: str, temp_password: str) -> bool:
     """Send password recovery email with temporary password"""
-    subject = "Recuperación de Contraseña - VenrideScreenS"
+    subject = "Recuperación de Contraseña - VScreenS"
     
     body = f"""
     <html>
@@ -75,7 +75,7 @@ def send_password_recovery_email(to: str, temp_password: str) -> bool:
         <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h2 style="color: #6366f1; margin-bottom: 20px;">Recuperación de Contraseña</h2>
             <p>Hola,</p>
-            <p>Has solicitado recuperar tu contraseña para VenrideScreenS.</p>
+            <p>Has solicitado recuperar tu contraseña para VScreenS.</p>
             <p>Tu contraseña temporal es:</p>
             <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; font-size: 18px; font-weight: bold; text-align: center; margin: 20px 0;">
                 {temp_password}
@@ -84,7 +84,7 @@ def send_password_recovery_email(to: str, temp_password: str) -> bool:
             <p>Si no solicitaste este cambio, por favor ignora este correo.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
             <p style="font-size: 12px; color: #666;">
-                VenrideScreenS - Sistema de Gestión de Pantallas<br>
+                VScreenS - Sistema de Gestión de Pantallas<br>
                 <a href="mailto:info.vscreens@inverpave.com">info.vscreens@inverpave.com</a>
             </p>
         </div>

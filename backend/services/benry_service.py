@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-logger = logging.getLogger("VenrideScreenS.Benry")
+logger = logging.getLogger("VScreenS.Benry")
 
 # Notification email for human handoff
 NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "info.vscreens@inverpave.com")

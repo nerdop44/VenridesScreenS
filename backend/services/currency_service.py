@@ -11,7 +11,7 @@ import os
 # Disable warnings for unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-logger = logging.getLogger("VenrideScreenS.Currency")
+logger = logging.getLogger("VScreenS.Currency")
 
 class CurrencyService:
     def __init__(self):

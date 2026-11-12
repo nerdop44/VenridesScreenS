@@ -1,7 +1,7 @@
 import requests
 import logging
 
-logger = logging.getLogger("VenrideScreenS.URLShortener")
+logger = logging.getLogger("VScreenS.URLShortener")
 
 def shorten_url(url: str) -> str:
     """Shorten a URL using TinyURL API (no key required for basic use)"""

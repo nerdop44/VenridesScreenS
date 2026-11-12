@@ -73,7 +73,7 @@ except ImportError:
 # --- LOGGING CONFIGURATION ---
 LOG_FILE = "vscreens.log"
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("VenrideScreenS")
+logger = logging.getLogger("VScreenS")
 
 # File Handler
 file_handler = RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5)
@@ -218,7 +218,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 # --- Simple Rate Limiting for Auth ---
 login_attempts = {} # {ip: [timestamps]}
 
-app = FastAPI(title="VenrideScreenS API")
+app = FastAPI(title="VScreenS API")
 
 # --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

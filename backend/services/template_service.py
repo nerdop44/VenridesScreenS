@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from models import EmailTemplate
 
-logger = logging.getLogger("VenrideScreenS.TemplateService")
+logger = logging.getLogger("VScreenS.TemplateService")
 
 class TemplateService:
     """Service to manage and render dynamic HTML email templates"""

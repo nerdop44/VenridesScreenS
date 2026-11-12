@@ -1550,7 +1550,7 @@ function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img src="/vscreens_logo.png" alt="VScreenS" className="app-logo" style={{ height: '125px' }} />
                     <div>
-                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VenrideScreenS</h1>
+                        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
                     </div>
                 </div>
@@ -1787,7 +1787,7 @@ function App() {
                         <h2 style={{ fontSize: '1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary-color)' }}>
                             <Monitor size={18} /> Previsualización Real Time
                         </h2>
-                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VenrideScreenS</div>
+                        <div style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.2)' }}>VScreenS</div>
                     </div>
 
                     <div style={{
@@ -2585,7 +2585,7 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
             <div className="glass-card">
                 <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <Tooltip text="Mensaje que aparece en el texto corrido inferior." /></div>
                 <label>Mensaje Estático</label>
-                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VenrideScreenS" />
+                <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VScreenS" />
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>WhatsApp</label><input value={data.whatsapp || ''} onChange={e => update('whatsapp', e.target.value)} /></div>
                     <div><label>Instagram</label><input value={data.instagram || ''} onChange={e => update('instagram', e.target.value)} /></div>

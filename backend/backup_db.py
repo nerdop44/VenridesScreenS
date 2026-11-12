@@ -93,7 +93,7 @@ def list_backups():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("VenrideScreenS Database Backup Tool")
+    print("VScreenS Database Backup Tool")
     print("=" * 60)
     
     success = create_backup()
