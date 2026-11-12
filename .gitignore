@@ -51,6 +51,8 @@ logos/
 android-sdk/
 *.apk
 *.aab
+!frontend-landing/public/VScreenS.apk
+!frontend-landing/public/VScreenS_TV.apk
 *.zip
 *.tar.gz
 
