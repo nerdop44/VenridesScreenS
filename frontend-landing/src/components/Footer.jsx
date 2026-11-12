@@ -1,5 +1,6 @@
 import OfficialLogo from './OfficialLogo';
 import { site, legalLinks } from '../config/site';
+import { resetConsent } from './CookieConsent';
 
 const Footer = () => {
     return (
@@ -34,6 +35,15 @@ const Footer = () => {
                                 <a className="hover:text-primary transition-colors" href={link.href}>{link.label}</a>
                             </li>
                         ))}
+                        <li>
+                            <button
+                                type="button"
+                                onClick={resetConsent}
+                                className="hover:text-primary transition-colors text-left"
+                            >
+                                Preferencias de cookies
+                            </button>
+                        </li>
                     </ul>
                 </div>
             </div>

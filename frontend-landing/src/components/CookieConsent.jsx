@@ -28,6 +28,11 @@ export function saveConsent(analytics) {
   return value;
 }
 
+export function resetConsent() {
+  localStorage.removeItem(STORAGE_KEY);
+  window.dispatchEvent(new Event('venrides-consent-change'));
+}
+
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
