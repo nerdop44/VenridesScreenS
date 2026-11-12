@@ -50,6 +50,9 @@ def get_bcv_rate(env):
 
     try:
         import requests
+        import urllib3
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         response = requests.get(
             "https://www.bcv.org.ve/",
@@ -61,6 +64,7 @@ def get_bcv_rate(env):
                 )
             },
             timeout=15,
+            verify=False,
         )
         response.raise_for_status()
         rate = _parse_rate(response.text)

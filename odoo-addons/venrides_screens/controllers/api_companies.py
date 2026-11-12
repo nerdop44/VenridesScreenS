@@ -240,9 +240,12 @@ class VenridesCompanyController(http.Controller):
 
     @http.route("/companies/<int:company_id>/logo", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def upload_logo(self, company_id, **kwargs):
+        user = bearer_user()
         company = company_or_404(company_id)
-        if not company:
+        if not user or not company:
             return error(404, "Empresa no encontrada")
+        if not can_access_company(user, company):
+            return error(403, "No autorizado")
         upload = request.httprequest.files.get("file")
         if not upload:
             return error(400, "Archivo requerido")
@@ -262,9 +265,12 @@ class VenridesCompanyController(http.Controller):
 
     @http.route("/companies/<int:company_id>/sidebar-bg", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def upload_sidebar_bg(self, company_id, **kwargs):
+        user = bearer_user()
         company = company_or_404(company_id)
-        if not company:
+        if not user or not company:
             return error(404, "Empresa no encontrada")
+        if not can_access_company(user, company):
+            return error(403, "No autorizado")
         upload = request.httprequest.files.get("file")
         if not upload:
             return error(400, "Archivo requerido")
