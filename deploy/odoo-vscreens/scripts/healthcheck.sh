@@ -16,4 +16,13 @@ chk "respaldo reciente (<36h)" "find /opt/vscreens/backups -name '*.dump' -mtime
 
 echo "----------------------------------------"
 echo "OK: $ok   FAIL: $fail"
+if [ "$fail" -eq 0 ]; then
+    docker exec vscreens-uptime wget -qO- \
+        "http://127.0.0.1:3001/api/push/vscreensHC2026token02?status=up&msg=OK" \
+        >/dev/null 2>&1 || true
+else
+    docker exec vscreens-uptime wget -qO- \
+        "http://127.0.0.1:3001/api/push/vscreensHC2026token02?status=down&msg=${fail}%20fallos" \
+        >/dev/null 2>&1 || true
+fi
 [ "$fail" -eq 0 ]

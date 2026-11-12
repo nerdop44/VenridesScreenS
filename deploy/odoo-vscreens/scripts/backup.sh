@@ -30,4 +30,8 @@ find "$DEST" -type f -name '*.dump' -mtime +$DAYS -delete
 find "$DEST" -type f -name 'filestore-*.tar.gz' -mtime +$DAYS -delete
 
 echo "[$(date -Is)] Respaldo OK: $STAMP"
+# Notificar a Uptime Kuma (monitor push "Respaldo diario VScreenS").
+docker exec vscreens-uptime wget -qO- \
+    "http://127.0.0.1:3001/api/push/vscreensBK2026token01?status=up&msg=Respaldo%20OK" \
+    >/dev/null 2>&1 || true
 ls -lh "$DEST" | tail -4
