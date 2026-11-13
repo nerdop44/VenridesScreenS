@@ -1325,9 +1325,6 @@ async def validate_code(code: str, device_uuid: str, request: Request, db: Async
         device = Device(uuid=device_uuid, company_id=company_id, name="Nueva Pantalla", last_ip=client_ip)
         db.add(device)
         device.name = f"TV-{device_uuid[:8]}"
-    else:
-        device = Device(uuid=device_uuid, company_id=company_id, name=f"TV-{device_uuid[:8]}")
-        db.add(device)
     
     # Consume Registration Code
     await db.delete(reg_code)

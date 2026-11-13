@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: vscreens_legacy_db
+    environment:
+      POSTGRES_USER: vscreens_user
+      POSTGRES_PASSWORD: vscreens_pass_2026
+      POSTGRES_DB: vscreens_db
+    volumes:
+      - vscreens_legacy_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - vscreens_legacy_network
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: vscreens_legacy_cache
+    networks:
+      - vscreens_legacy_network
+    restart: always
+
+  backend:
+    build:
+      context: /opt/vscreens/src
+      dockerfile: backend/Dockerfile
+    container_name: vscreens_legacy_api
+    volumes:
+      - /opt/vscreens/src/backend:/app
+    ports:
+      - "8006:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://vscreens_user:vscreens_pass_2026@db/vscreens_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=vscreens_secret_key_for_comparison_only_do_not_use_in_production
+      - LOG_LEVEL=info
+    depends_on:
+      - db
+      - redis
+    networks:
+      - vscreens_legacy_network
+    restart: always
+
+networks:
+  vscreens_legacy_network:
+    driver: bridge
+
+volumes:
+  vscreens_legacy_pgdata:
