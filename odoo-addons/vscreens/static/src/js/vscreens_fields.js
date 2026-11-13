@@ -1,4 +1,4 @@
-import { Component, useProps, useState } from "@odoo/owl";
+import { Component, useProps, reactive } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
@@ -8,7 +8,7 @@ class VscreensSidebarField extends Component {
 
     setup() {
         const value = this.props.record.data[this.props.name];
-        this.state = useState({
+        this.state = reactive({
             items: Array.isArray(value) ? value : [],
         });
     }
@@ -40,7 +40,7 @@ class VscreensBottomBarField extends Component {
     setup() {
         const value = this.props.record.data[this.props.name];
         const data = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-        this.state = useState({
+        this.state = reactive({
             data: {
                 static: data.static || "",
                 whatsapp: data.whatsapp || "",
@@ -79,7 +79,7 @@ class VscreensVideosField extends Component {
 
     setup() {
         const value = this.props.record.data[this.props.name];
-        this.state = useState({
+        this.state = reactive({
             items: Array.isArray(value) ? value : [],
         });
     }
@@ -111,7 +111,7 @@ class VscreensDesignField extends Component {
     setup() {
         const value = this.props.record.data[this.props.name];
         const data = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-        this.state = useState({
+        this.state = reactive({
             data: {
                 primary_color: data.primary_color || "#1a202c",
                 secondary_color: data.secondary_color || "#2d3748",
