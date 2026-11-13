@@ -5,12 +5,12 @@
         <field name="name">vscreens.calendar.activity.tree</field>
         <field name="model">vscreens.calendar.activity</field>
         <field name="arch" type="xml">
-            <tree string="Calendario / Feriados">
+            <list string="Calendario / Feriados">
                 <field name="title"/>
                 <field name="activity_date"/>
                 <field name="is_holiday"/>
                 <field name="send_auto_greeting"/>
-            </tree>
+            </list>
         </field>
     </record>
 

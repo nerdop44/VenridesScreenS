@@ -5,12 +5,12 @@
         <field name="name">vscreens.free.plan.usage.tree</field>
         <field name="model">vscreens.free.plan.usage</field>
         <field name="arch" type="xml">
-            <tree string="Uso de Prueba Gratuita">
+            <list string="Uso de Prueba Gratuita">
                 <field name="uuid"/>
                 <field name="company_id"/>
                 <field name="used_at"/>
                 <field name="expires_at"/>
-            </tree>
+            </list>
         </field>
     </record>
 

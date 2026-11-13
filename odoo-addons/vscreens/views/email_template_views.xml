@@ -5,14 +5,14 @@
         <field name="name">vscreens.email.template.tree</field>
         <field name="model">vscreens.email.template</field>
         <field name="arch" type="xml">
-            <tree string="Plantillas de Email">
+            <list string="Plantillas de Email">
                 <field name="name"/>
                 <field name="category"/>
                 <field name="subject"/>
                 <field name="is_system"/>
                 <field name="active"/>
                 <field name="created_at"/>
-            </tree>
+            </list>
         </field>
     </record>
 

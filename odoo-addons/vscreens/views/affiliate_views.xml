@@ -5,7 +5,7 @@
         <field name="name">vscreens.affiliate.tree</field>
         <field name="model">vscreens.affiliate</field>
         <field name="arch" type="xml">
-            <tree string="Afiliados">
+            <list string="Afiliados">
                 <field name="name"/>
                 <field name="email"/>
                 <field name="code"/>
@@ -13,7 +13,7 @@
                 <field name="total_referred"/>
                 <field name="total_earned"/>
                 <field name="is_active"/>
-            </tree>
+            </list>
         </field>
     </record>
 
