@@ -48,7 +48,7 @@
     <record id="action_vscreens_affiliate" model="ir.actions.act_window">
         <field name="name">Afiliados</field>
         <field name="res_model">vscreens.affiliate</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="target">current</field>
     </record>
 
