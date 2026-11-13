@@ -124,10 +124,10 @@
                             </group>
                         </page>
                         <page string="Contenido">
-                            <field name="video_playlist" widget="vscreens_videos"/>
-                            <field name="sidebar_content" widget="vscreens_sidebar"/>
-                            <field name="bottom_bar_content" widget="vscreens_bottombar"/>
-                            <field name="design_settings" widget="vscreens_design"/>
+                            <field name="video_playlist" widget="json"/>
+                            <field name="sidebar_content" widget="json"/>
+                            <field name="bottom_bar_content" widget="json"/>
+                            <field name="design_settings" widget="json"/>
                         </page>
                         <page string="Notificaciones">
                             <field name="auto_notification_settings"/>
