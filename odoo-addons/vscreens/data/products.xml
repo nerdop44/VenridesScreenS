@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_service_subscription" model="product.product">
+        <field name="name">Suscripción VScreenS</field>
+        <field name="type">service</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="uom_id" ref="uom.product_uom_unit"/>
+        <field name="list_price" eval="0.0"/>
+        <field name="invoice_policy">order</field>
+    </record>
+</odoo>

@@ -29,6 +29,7 @@ Incluye:
         "security/groups.xml",
         "security/ir.access.csv",
         "data/plans.xml",
+        "data/products.xml",
         "data/global_ad.xml",
         "data/cron.xml",
         "views/plan_views.xml",

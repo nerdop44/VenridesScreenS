@@ -27,6 +27,13 @@ class VScreenSPayment(models.Model):
         company = self.company_id
         if company.partner_id:
             return company.partner_id
+        # LocVe guarda el RIF como prefijo + dígitos (V / E / J / G / P).
+        raw_vat = "".join(ch for ch in (company.rif or "") if ch.isdigit())
+        prefix = ""
+        for ch in (company.rif or "").upper():
+            if ch in "VEJGP":
+                prefix = ch
+                break
         partner = self.env["res.partner"].sudo().create({
             "name": company.name,
             "email": company.email or False,
@@ -34,7 +41,9 @@ class VScreenSPayment(models.Model):
             "is_company": True,
             "customer_rank": 1,
             "street": company.address or False,
-            "vat": company.rif or False,
+            "vat": raw_vat or False,
+            "prefix_vat": prefix or False,
+            "country_id": self.env.ref("base.ve").id,
         })
         company.sudo().write({"partner_id": partner.id})
         return partner
@@ -49,6 +58,15 @@ class VScreenSPayment(models.Model):
         )
         if not journal:
             raise UserError("No hay diario de ventas configurado. Configure la contabilidad de la empresa.")
+
+        product = self.env.ref("vscreens.product_service_subscription", raise_if_not_found=False)
+        if not product:
+            product = self.env["product.product"].sudo().search([("type", "=", "service")], limit=1)
+        taxes = self.env["account.tax"]
+        if product:
+            taxes = product.taxes_id.filtered(lambda t: t.company_id == self.env.company)
+        if not taxes:
+            taxes = self.env.company.account_sale_tax_id
         move = self.env["account.move"].sudo().create({
             "move_type": "out_invoice",
             "partner_id": partner.id,
@@ -58,9 +76,10 @@ class VScreenSPayment(models.Model):
             "invoice_origin": self.description or "VScreenS",
             "invoice_line_ids": [(0, 0, {
                 "name": self.description or "Suscripción VScreenS",
+                "product_id": product.id if product else False,
                 "quantity": 1.0,
                 "price_unit": self.amount,
-                "tax_ids": [(6, 0, [])],
+                "tax_ids": [(6, 0, taxes.ids)],
             })],
         })
         move.action_post()
