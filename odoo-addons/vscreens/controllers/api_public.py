@@ -230,3 +230,21 @@ class VScreenSPublicController(http.Controller):
     @http.route("/api/downloads/tv/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def short_url(self, **kwargs):
         return json_response({"url": f"{public_url()}/downloads/tv"})
+
+    @http.route("/downloads/mobile", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def download_mobile(self, **kwargs):
+        path = request.env["ir.config_parameter"].sudo().get_str(
+            "vscreens.apk_mobile_path", "/opt/vscreens/releases/VScreenS.apk"
+        )
+        if not path or not os.path.exists(path):
+            return error(404, "APK móvil no disponible")
+        with open(path, "rb") as handle:
+            content = handle.read()
+        return request.make_response(content, headers=[
+            ("Content-Type", "application/vnd.android.package-archive"),
+            ("Content-Disposition", 'attachment; filename="VScreenS.apk"'),
+        ])
+
+    @http.route("/api/downloads/mobile/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def short_url_mobile(self, **kwargs):
+        return json_response({"url": f"{public_url()}/downloads/mobile"})
