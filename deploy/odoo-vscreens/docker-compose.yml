@@ -24,7 +24,10 @@ services:
         max-file: "3"
 
   vscreens-odoo:
-    image: odoo:20.0
+    build:
+      context: .
+      dockerfile: odoo/Dockerfile
+    image: vscreens-odoo:20.0
     container_name: vscreens-odoo
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/usr/local/bin/vscreens-entrypoint.sh"]
