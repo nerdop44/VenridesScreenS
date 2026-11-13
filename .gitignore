@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+# Librerías compiladas de la localización LocVe (SoportePlay) incluidas en odoo-addons
+!odoo-addons/**/*.so
 .Python
 env/
 build/
