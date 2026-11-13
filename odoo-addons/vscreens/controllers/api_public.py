@@ -248,3 +248,18 @@ class VScreenSPublicController(http.Controller):
     @http.route("/api/downloads/mobile/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def short_url_mobile(self, **kwargs):
         return json_response({"url": f"{public_url()}/downloads/mobile"})
+
+    @http.route("/website/logo/<string:filename>", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def website_logo(self, filename, **kwargs):
+        allowed = ("logo_icon.png", "logo_title.png", "logo_subtitle.png")
+        if filename not in allowed:
+            return error(404, "No encontrado")
+        path = f"/opt/vscreens/releases/{filename}"
+        if not os.path.exists(path):
+            return error(404, "No encontrado")
+        with open(path, "rb") as handle:
+            content = handle.read()
+        return request.make_response(content, headers=[
+            ("Content-Type", "image/png"),
+            ("Cache-Control", "public, max-age=3600"),
+        ])
