@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem name="Plantillas" id="menu_venrides_contract_templates"
+              parent="venrides_payroll.menu_payroll_contracts"
+              action="action_venrides_contract_template" sequence="10"/>
+    <menuitem name="Cláusulas" id="menu_venrides_contract_clauses"
+              parent="venrides_payroll.menu_payroll_contracts"
+              action="action_venrides_contract_clause" sequence="20"/>
+    <menuitem name="Anexos" id="menu_venrides_contract_annexes"
+              parent="venrides_payroll.menu_payroll_contracts"
+              action="action_venrides_contract_annex" sequence="30"/>
+    <menuitem name="Tablas salariales" id="menu_venrides_salary_tables"
+              parent="venrides_payroll.menu_payroll_contracts"
+              action="action_venrides_salary_table" sequence="40"/>
+    <menuitem name="Firmas" id="menu_venrides_contract_signatures"
+              parent="venrides_payroll.menu_payroll_contracts"
+              action="action_venrides_contract_signature" sequence="50"/>
+</odoo>

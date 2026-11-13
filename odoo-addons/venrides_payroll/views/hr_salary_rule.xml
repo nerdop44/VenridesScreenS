@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_salary_rule_view_list_terceros" model="ir.ui.view">
+            <field name="name">hr.salary.rule.list.terceros</field>
+            <field name="model">hr.salary.rule</field>
+            <field name="arch" type="xml">
+                <list string="Reglas de Nómina">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="struct_id"/>
+                    <field name="category_id"/>
+                    <field name="condition_select"/>
+                    <field name="amount_select"/>
+                    <field name="appears_on_payslip"/>
+                </list>
+            </field>
+        </record>
+
+    <record id="hr_salary_rule_view_form_terceros" model="ir.ui.view">
+            <field name="name">hr.salary.rule.form.terceros</field>
+            <field name="model">hr.salary.rule</field>
+            <field name="arch" type="xml">
+                <form string="Regla de Nómina">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="struct_id"/>
+                            <field name="category_id"/>
+                            <field name="condition_select"/>
+                            <field name="condition_python"/>
+                            <field name="amount_select"/>
+                            <field name="amount_python_compute"/>
+                            <field name="appears_on_payslip"/>
+                            <field name="sequence"/>
+                            <field name="origin_partner"/>
+                            <field name="partner_id" invisible="1"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

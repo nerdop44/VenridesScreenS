@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="cycle_tuesday" model="venrides.pay.cycle">
+            <field name="name">Semanal — Martes</field>
+            <field name="code">CIC-MAR</field>
+            <field name="schedule_pay">weekly</field>
+            <field name="pay_day">1</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <record id="cycle_thursday" model="venrides.pay.cycle">
+            <field name="name">Semanal — Jueves</field>
+            <field name="code">CIC-JUE</field>
+            <field name="schedule_pay">weekly</field>
+            <field name="pay_day">3</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <record id="cycle_saturday" model="venrides.pay.cycle">
+            <field name="name">Semanal — Sábado</field>
+            <field name="code">CIC-SAB</field>
+            <field name="schedule_pay">weekly</field>
+            <field name="pay_day">5</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <record id="cycle_biweekly" model="venrides.pay.cycle">
+            <field name="name">Quincenal</field>
+            <field name="code">CIC-QUI</field>
+            <field name="schedule_pay">semi-monthly</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <record id="cycle_monthly" model="venrides.pay.cycle">
+            <field name="name">Mensual</field>
+            <field name="code">CIC-MEN</field>
+            <field name="schedule_pay">monthly</field>
+            <field name="sequence">50</field>
+        </record>
+
+    </data>
+</odoo>

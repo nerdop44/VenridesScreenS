@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_selection_phase_list" model="ir.ui.view">
+        <field name="name">venrides.selection.phase.list</field>
+        <field name="model">venrides.selection.phase</field>
+        <field name="arch" type="xml">
+            <list string="Fases de selección">
+                <field name="applicant_id"/>
+                <field name="phase_type"/>
+                <field name="date"/>
+                <field name="evaluator_id"/>
+                <field name="result" widget="badge"
+                       decoration-success="result == 'passed'"
+                       decoration-danger="result == 'failed'"/>
+                <field name="score"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_selection_phase_form" model="ir.ui.view">
+        <field name="name">venrides.selection.phase.form</field>
+        <field name="model">venrides.selection.phase</field>
+        <field name="arch" type="xml">
+            <form string="Fase de selección">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="applicant_id"/>
+                            <field name="phase_type"/>
+                            <field name="date"/>
+                            <field name="evaluator_id"/>
+                        </group>
+                        <group>
+                            <field name="result"/>
+                            <field name="score"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Observaciones, temas de capacitación, resultados de pruebas físicas..."/>
+                    <separator string="Evidencias"/>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_selection_phase" model="ir.actions.act_window">
+        <field name="name">Fases de selección</field>
+        <field name="res_model">venrides.selection.phase</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

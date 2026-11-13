@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_concept_list" model="ir.ui.view">
+        <field name="name">venrides.pay.concept.list</field>
+        <field name="model">venrides.pay.concept</field>
+        <field name="arch" type="xml">
+            <list string="Conceptos de pago">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="concept_type"/>
+                <field name="rule_code"/>
+                <field name="default_amount_usd"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_concept_form" model="ir.ui.view">
+        <field name="name">venrides.pay.concept.form</field>
+        <field name="model">venrides.pay.concept</field>
+        <field name="arch" type="xml">
+            <form string="Concepto de pago">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="concept_type"/>
+                        </group>
+                        <group>
+                            <field name="rule_code"/>
+                            <field name="default_amount_usd"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_pay_concept" model="ir.actions.act_window">
+        <field name="name">Conceptos de pago</field>
+        <field name="res_model">venrides.pay.concept</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

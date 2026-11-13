@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_receipt" model="ir.actions.report">
+        <field name="name">Recibo de pago por concepto</field>
+        <field name="model">venrides.payroll.payment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">venrides_payroll_payments.report_receipt</field>
+        <field name="print_report_name">'Recibo - %s - %s' % (object.employee_id.name, object.name)</field>
+        <field name="binding_model_id" ref="model_venrides_payroll_payment"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 class="text-center">RECIBO DE PAGO POR CONCEPTO</h2>
+                        <p class="text-center text-muted" t-out="o.name"/>
+
+                        <table class="table table-sm mt-4">
+                            <tr><th>Empleado</th><td t-out="o.employee_id.name or ''"/></tr>
+                            <tr><th>Cédula</th><td t-out="o.employee_id.identification_id or ''"/></tr>
+                            <tr><th>Concepto</th><td t-out="o.concept_id.name or ''"/></tr>
+                            <tr><th>Fecha de pago</th><td t-out="o.payment_date"/></tr>
+                            <tr>
+                                <th>Monto</th>
+                                <td t-out="'%.2f USD' % o.amount_usd"/>
+                            </tr>
+                            <tr>
+                                <th>Tasa oficial</th>
+                                <td t-out="'%.4f Bs/USD' % o.rate_bs_usd"/>
+                            </tr>
+                            <tr>
+                                <th>Monto en Bs</th>
+                                <td t-out="'%.2f Bs' % o.amount_bs"/>
+                            </tr>
+                            <tr t-if="o.bank_reference">
+                                <th>Referencia bancaria</th><td t-out="o.bank_reference"/>
+                            </tr>
+                        </table>
+
+                        <p class="mt-4">
+                            El trabajador declara haber recibido el monto indicado por el
+                            concepto señalado, con el soporte de abono adjunto, y firma en
+                            señal de conformidad.
+                        </p>
+                        <p class="small text-muted">
+                            El soporte de abono se envía junto con este recibo al correo del
+                            empleado y está disponible en el portal de firma.
+                        </p>
+
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <div style="border-top:1px solid #333;padding-top:6px;">
+                                    <strong t-out="o.company_id.name or ''"/><br/>LA EMPRESA
+                                </div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <t t-if="o.sign_request_id and o.sign_request_id.signature_image_data">
+                                    <img t-att-src="o.sign_request_id.signature_image_data"
+                                         style="max-height:90px;max-width:220px;"/>
+                                </t>
+                                <div style="border-top:1px solid #333;padding-top:6px;">
+                                    <strong t-out="o.employee_id.name or ''"/><br/>EL TRABAJADOR
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-8">
+                                <p class="small text-muted" t-if="o.sign_request_id">
+                                    Estado de firma:
+                                    <span t-out="o.sign_request_id.state_label"/><br/>
+                                    Hash del contenido:
+                                    <span t-out="o.sign_request_id.content_hash or ''"/><br/>
+                                    Hash del PDF firmado:
+                                    <span t-out="o.sign_request_id.signed_pdf_hash or ''"/><br/>
+                                    Validación:
+                                    <span t-out="o.sign_request_id.signature_check or 'Pendiente'"/>
+                                    (<span t-out="'%.1f' % (o.sign_request_id.signature_similarity or 0.0)"/> % de
+                                    similitud con el contrato)
+                                </p>
+                                <p class="small text-muted" t-else="">
+                                    Documento pendiente de firma. El recibo firmado y su
+                                    soporte quedarán archivados en el expediente del empleado.
+                                </p>
+                            </div>
+                            <div class="col-4 text-end">
+                                <img t-if="o.sign_request_id and o.sign_request_id.qr_url"
+                                     t-att-src="o.sign_request_id.qr_url"
+                                     style="width:100px;height:100px;"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_applicant_form_venrides" model="ir.ui.view">
+        <field name="name">hr.applicant.form.venrides</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_send_test_email" type="object"
+                        string="Enviar test por correo" class="btn-primary"
+                        invisible="not email_from"/>
+                <button name="action_open_whatsapp" type="object"
+                        string="WhatsApp" invisible="not partner_phone"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Postulación" name="venrides_application">
+                    <group>
+                        <group string="Datos personales">
+                            <field name="vacancy_id"/>
+                            <field name="national_id"/>
+                            <field name="birthdate"/>
+                            <field name="marital_status"/>
+                            <field name="dependents"/>
+                            <field name="education_level"/>
+                        </group>
+                        <group string="Contacto y origen">
+                            <field name="home_address"/>
+                            <field name="source_channel"/>
+                            <field name="consent_privacy"/>
+                            <field name="consent_date"/>
+                            <field name="availability"/>
+                        </group>
+                    </group>
+                    <group string="Foto del expediente">
+                        <field name="photo" widget="image"/>
+                        <field name="photo_date"/>
+                    </group>
+                    <separator string="Formación académica"/>
+                    <field name="education_ids">
+                        <list editable="bottom">
+                            <field name="institution"/>
+                            <field name="degree"/>
+                            <field name="level"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="current"/>
+                        </list>
+                    </field>
+                    <separator string="Experiencia laboral"/>
+                    <field name="experience_ids">
+                        <list editable="bottom">
+                            <field name="company"/>
+                            <field name="position"/>
+                            <field name="location"/>
+                            <field name="phone"/>
+                            <field name="contact_name"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="current"/>
+                            <field name="functions" optional="hide"/>
+                            <field name="reason_leave" optional="hide"/>
+                        </list>
+                    </field>
+                    <separator string="Referencias"/>
+                    <field name="reference_ids">
+                        <list editable="bottom">
+                            <field name="ref_type"/>
+                            <field name="name"/>
+                            <field name="relationship"/>
+                            <field name="company"/>
+                            <field name="position"/>
+                            <field name="phone"/>
+                            <field name="years_known" optional="hide"/>
+                            <field name="work_period" optional="hide"/>
+                            <field name="verified"/>
+                            <field name="verification_date"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Test y fases" name="venrides_test">
+                    <group>
+                        <group string="Test de selección">
+                            <field name="test_state"/>
+                            <field name="test_score"/>
+                            <field name="test_max_score"/>
+                            <field name="test_percentage"/>
+                            <field name="test_url" widget="url" readonly="1"/>
+                            <field name="whatsapp_url" widget="url" readonly="1"/>
+                        </group>
+                        <group string="Acciones">
+                            <button name="action_create_test_invitation" type="object"
+                                    string="Crear invitación al test" class="btn-link"/>
+                            <button name="action_send_test_email" type="object"
+                                    string="Enviar test por correo" class="btn-link"/>
+                        </group>
+                    </group>
+                    <separator string="Invitaciones"/>
+                    <field name="test_invitation_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="template_id"/>
+                            <field name="channel"/>
+                            <field name="state"/>
+                            <field name="sent_date"/>
+                            <field name="expiry_date"/>
+                            <field name="attempt_count"/>
+                        </list>
+                    </field>
+                    <separator string="Intentos"/>
+                    <field name="test_attempt_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="date_end"/>
+                            <field name="score"/>
+                            <field name="max_score"/>
+                            <field name="percentage"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                    <separator string="Fases de selección"/>
+                    <field name="phase_ids">
+                        <list editable="bottom">
+                            <field name="phase_type"/>
+                            <field name="date"/>
+                            <field name="evaluator_id"/>
+                            <field name="result"/>
+                            <field name="score"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Expediente" name="venrides_documents">
+                    <field name="document_ids">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="doc_type"/>
+                            <field name="date"/>
+                            <field name="expiry_date"/>
+                            <field name="attachment_id"/>
+                            <field name="verified"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_applicant_list_venrides" model="ir.ui.view">
+        <field name="name">hr.applicant.list.venrides</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.crm_case_tree_view_job"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="vacancy_id" optional="show"/>
+                <field name="test_state" optional="show"/>
+                <field name="test_percentage" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

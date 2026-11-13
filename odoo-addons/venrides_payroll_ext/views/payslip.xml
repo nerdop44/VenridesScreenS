@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_payslip_pay_form" model="ir.ui.view">
+        <field name="name">hr.payslip.form.pay</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="venrides_payroll.hr_payslip_form_inherit_views_lunes"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_load_performance_bonus" type="object"
+                        string="Cargar bono de desempeño"
+                        invisible="state not in ('draft', 'verify')"/>
+                <button name="action_apply_employee_account" type="object"
+                        string="Aplicar cuenta de consumo"
+                        invisible="state not in ('draft', 'verify')"/>
+                <button name="action_open_concept_receipt" type="object"
+                        string="Recibo por concepto" invisible="not line_ids"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_id']" position="after">
+                <field name="pay_cycle_id"/>
+                <field name="pay_day"/>
+                <field name="performance_evaluation_id"/>
+            </xpath>
+            <xpath expr="//field[@name='date_to']" position="after">
+                <field name="performance_bonus_usd"/>
+                <field name="employee_deduction_usd"/>
+                <field name="voucher_usd"/>
+                <field name="receipt_mode"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

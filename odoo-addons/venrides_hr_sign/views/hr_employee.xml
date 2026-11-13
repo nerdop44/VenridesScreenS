@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_sign" model="ir.ui.view">
+        <field name="name">hr.employee.form.sign</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Firmas y documentos" name="venrides_sign">
+                    <group>
+                        <button name="action_create_medical_support" type="object"
+                                string="Enviar reposo / justificativo" class="btn-link"/>
+                        <button name="action_view_sign_requests" type="object"
+                                string="Ver documentos" class="btn-link"/>
+                    </group>
+                    <field name="sign_request_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="document_type"/>
+                            <field name="reference"/>
+                            <field name="state"/>
+                            <field name="signed_date"/>
+                            <field name="signature_check"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

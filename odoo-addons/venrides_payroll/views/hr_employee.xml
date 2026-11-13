@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="act_hr_employee_loan_list" model="ir.actions.act_window">
+        <field name="res_model">hr.employee.loan</field>
+        <field name="name">Préstamos</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_employee_id': [active_id], 'default_employee_id': active_id}</field>
+    </record>
+
+    <record id="hr_employee_form_inherit_ve" model="ir.ui.view">
+            <field name="name">hr.employee.form.ve</field>
+            <field name="model">hr.employee</field>
+            <field name="arch" type="xml">
+                <form string="Employee">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="identification_id"/>
+                                <field name="nationality"/>
+                                <field name="rif"/>
+                                <field name="islr"/>
+                                <field name="salary_attachment_ids" invisible="1"/>
+                            </group>
+                            <group>
+                                <field name="primer_nombre"/>
+                                <field name="primer_apellido"/>
+                                <field name="segundo_nombre"/>
+                                <field name="segundo_apellido"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="MINTRA">
+                                <group>
+                                    <group>
+                                        <field name="tipo_trabajador"/>
+                                        <field name="ocupacion"/>
+                                        <field name="subproceso"/>
+                                        <field name="jornada"/>
+                                        <field name="fecha_ingreso"/>
+                                        <field name="sindicalizado" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="lab_domingo" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="prom_hora_lab"/>
+                                        <field name="prom_hora_extras"/>
+                                        <field name="prom_hora_noc"/>
+                                        <field name="carga_familiar"/>
+                                        <field name="fam_discap" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="hijo_benf_guard"/>
+                                        <field name="monto_bene_guar"/>
+                                        <field name="mujer_embarazada" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="tipo_sangre"/>
+                                        <field name="alergico_descripcion"/>
+                                        <field name="patologia"/>
+                                        <field name="tipo_discapacidad"/>
+                                    </group>
+                                    <group>
+                                        <field name="enfermedad" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="indigena" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapauditiva" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapvisual" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapintelectual" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapmental" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapmusculo" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="discapotra" widget="radio" options="{'horizontal': true}"/>
+                                        <field name="accidente" widget="radio" options="{'horizontal': true}"/>
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="Dotaciones">
+                                <group>
+                                    <group>
+                                        <field name="zapatos"/>
+                                        <field name="camisas"/>
+                                        <field name="pantalon"/>
+                                        <field name="chemise"/>
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="Familiares">
+                                <group>
+                                    <field name="family_ids" nolabel="1" colspan="2">
+                                        <list editable="bottom">
+                                            <field name="name"/>
+                                            <field name="relationship"/>
+                                            <field name="documento"/>
+                                            <field name="birthdate"/>
+                                            <field name="edad"/>
+                                            <field name="employee_id" invisible="1"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+    </record>
+
+    </data>
+</odoo>

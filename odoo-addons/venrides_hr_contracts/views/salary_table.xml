@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_salary_table_list" model="ir.ui.view">
+        <field name="name">venrides.salary.table.list</field>
+        <field name="model">venrides.salary.table</field>
+        <field name="arch" type="xml">
+            <list string="Tablas salariales">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="currency_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_salary_table_form" model="ir.ui.view">
+        <field name="name">venrides.salary.table.form</field>
+        <field name="model">venrides.salary.table</field>
+        <field name="arch" type="xml">
+            <form string="Tabla salarial">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <separator string="Líneas por puesto"/>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="job_id"/>
+                            <field name="base_usd"/>
+                            <field name="bono_guerra_usd"/>
+                            <field name="bono_transporte_usd"/>
+                            <field name="bono_desempeno_max_usd"/>
+                            <field name="cestaticket_usd"/>
+                            <field name="total_usd" readonly="1" sum="Total"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_salary_table" model="ir.actions.act_window">
+        <field name="name">Tablas salariales</field>
+        <field name="res_model">venrides.salary.table</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

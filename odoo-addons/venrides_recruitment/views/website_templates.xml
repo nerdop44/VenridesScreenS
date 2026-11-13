@@ -1,0 +1,1146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== Lista de vacantes ===================== -->
+    <template id="vacancy_list" name="Empleo — Vacantes">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="text-center mb-5">
+                        <h1 class="display-5">Trabaja con nosotros</h1>
+                        <p class="lead text-muted">
+                            Vive la experiencia VenridesCafé. Estas son nuestras vacantes abiertas.
+                        </p>
+                    </div>
+
+                    <div class="row" t-if="vacancies">
+                        <t t-foreach="vacancies" t-as="vacancy">
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body d-flex flex-column">
+                                        <h3 class="h5 card-title" t-out="vacancy.name"/>
+                                        <p class="text-muted mb-2">
+                                            <i class="fa fa-briefcase me-1"/>
+                                            <span t-out="vacancy.job_id.name"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="fa fa-clock-o me-1"/>
+                                            <span t-out="vacancy.schedule_description"/>
+                                        </p>
+                                        <p class="small text-muted" t-out="vacancy.salary_summary"/>
+                                        <div class="mt-auto pt-3">
+                                            <a class="btn btn-primary w-100"
+                                               t-attf-href="/empleo/#{vacancy.id}">
+                                                Postularme
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div t-if="not vacancies" class="alert alert-info text-center">
+                        Por ahora no hay vacantes publicadas. Escríbenos a
+                        <a href="mailto:info.venridescafe@gmail.com">info.venridescafe@gmail.com</a>.
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ===================== Formulario de postulación ===================== -->
+    <template id="application_form" name="Empleo — Formulario">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-4 py-lg-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/empleo">Empleo</a></li>
+                                    <li class="breadcrumb-item active" t-out="vacancy.name"/>
+                                </ol>
+                            </nav>
+
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <h1 class="h3 mb-1" t-out="vacancy.name"/>
+                                    <p class="text-muted mb-4">
+                                        Completa tu síntesis curricular. Los campos marcados con
+                                        <span class="text-danger">*</span> son obligatorios.
+                                    </p>
+
+                                    <div t-if="error" class="alert alert-danger" t-out="error"/>
+
+                                    <form t-attf-action="/empleo/#{vacancy.id}/postular"
+                                          method="post" enctype="multipart/form-data" class="row g-3">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <div class="d-none">
+                                            <label>No completar</label>
+                                            <input type="text" name="website_url" value=""/>
+                                        </div>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-2">Datos personales</h2>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nombre y apellido <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="text" name="partner_name"
+                                                   required="required" t-att-value="values.get('partner_name', '')"/>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cédula de identidad</label>
+                                            <input class="form-control" type="text" name="national_id"
+                                                   placeholder="V-00000000" t-att-value="values.get('national_id', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="tel" name="partner_phone"
+                                                   required="required" placeholder="0414-0000000"
+                                                   t-att-value="values.get('partner_phone', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Correo electrónico</label>
+                                            <input class="form-control" type="email" name="email_from"
+                                                   t-att-value="values.get('email_from', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Fecha de nacimiento</label>
+                                            <input class="form-control" type="date" name="birthdate"
+                                                   t-att-value="values.get('birthdate', '')"/>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label">Dirección de habitación</label>
+                                            <input class="form-control" type="text" name="home_address"
+                                                   t-att-value="values.get('home_address', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Estado civil</label>
+                                            <select class="form-select" name="marital_status">
+                                                <option value="">Seleccione</option>
+                                                <option value="single">Soltero(a)</option>
+                                                <option value="married">Casado(a)</option>
+                                                <option value="concubine">Concubino(a)</option>
+                                                <option value="divorced">Divorciado(a)</option>
+                                                <option value="widowed">Viudo(a)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Cargas familiares</label>
+                                            <input class="form-control" type="number" min="0" name="dependents"
+                                                   t-att-value="values.get('dependents', 0)"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Nivel educativo</label>
+                                            <select class="form-select" name="education_level">
+                                                <option value="">Seleccione</option>
+                                                <option value="primary">Primaria</option>
+                                                <option value="secondary">Bachiller</option>
+                                                <option value="technical">Técnico medio</option>
+                                                <option value="university">Universitario</option>
+                                                <option value="postgraduate">Postgrado</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Disponibilidad para iniciar</label>
+                                            <input class="form-control" type="date" name="availability"
+                                                   t-att-value="values.get('availability', '')"/>
+                                        </div>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Formación académica</h2>
+                                        <t t-foreach="[1, 2, 3]" t-as="index">
+                                            <div class="col-12">
+                                                <div class="border rounded p-3 mb-1 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-md-5">
+                                                            <label class="form-label small">Institución</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="edu_institution_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Título / curso</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="edu_degree_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small">Nivel</label>
+                                                            <select class="form-select form-select-sm"
+                                                                    t-attf-name="edu_level_#{index}">
+                                                                <option value="secondary">Bachiller</option>
+                                                                <option value="technical">Técnico medio</option>
+                                                                <option value="university">Universitario</option>
+                                                                <option value="postgraduate">Postgrado</option>
+                                                                <option value="course">Curso / taller</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Desde</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="edu_start_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Hasta</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="edu_end_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4 d-flex align-items-end">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       t-attf-name="edu_current_#{index}" value="1"/>
+                                                                <label class="form-check-label small">En curso</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Experiencia laboral</h2>
+                                        <t t-foreach="[1, 2, 3]" t-as="index">
+                                            <div class="col-12">
+                                                <div class="border rounded p-3 mb-1 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Empresa</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_company_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Cargo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_position_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Ubicación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_location_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Teléfono de la empresa</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="exp_phone_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Persona de contacto</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_contact_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Motivo de salida</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_reason_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Desde</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="exp_start_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Hasta</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="exp_end_#{index}"/>
+                                                        </div>
+                                                        <div class="col-md-4 d-flex align-items-end">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       t-attf-name="exp_current_#{index}" value="1"/>
+                                                                <label class="form-check-label small">Trabajo actual</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Funciones</label>
+                                                            <textarea class="form-control form-control-sm" rows="2"
+                                                                      t-attf-name="exp_functions_#{index}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Referencias personales</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Nombre y apellido</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_name_#{index}"/>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Parentesco / relación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_relationship_#{index}"/>
+                                                        </div>
+                                                        <div class="col-7">
+                                                            <label class="form-label small">Teléfono</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="pref_phone_#{index}"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Tiempo de conocerse</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_years_#{index}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Referencias laborales</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Nombre y apellido</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_name_#{index}"/>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label small">Empresa / ubicación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_company_#{index}"/>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label small">Cargo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_position_#{index}"/>
+                                                        </div>
+                                                        <div class="col-7">
+                                                            <label class="form-label small">Teléfono</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="lref_phone_#{index}"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Relación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_relationship_#{index}"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Tiempo de trabajo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_period_#{index}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Currículum y consentimiento</h2>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Currículum en PDF (opcional, máx. 5 MB)</label>
+                                            <input class="form-control" type="file" name="cv" accept="application/pdf"/>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="consent_privacy" value="1" id="consent_privacy"
+                                                       required="required"/>
+                                                <label class="form-check-label" for="consent_privacy">
+                                                    Autorizo a VenridesCafé al tratamiento de mis datos
+                                                    personales con la finalidad de evaluar mi postulación,
+                                                    conforme al aviso de privacidad.
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 text-end mt-3">
+                                            <a href="/empleo" class="btn btn-light">Cancelar</a>
+                                            <button type="submit" class="btn btn-primary px-4">
+                                                Enviar postulación
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ===================== Estado de la postulación ===================== -->
+    <template id="application_status" name="Empleo — Estado de la postulación">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5 text-center">
+                                    <div class="display-4 text-success mb-3">
+                                        <i class="fa fa-check-circle"/>
+                                    </div>
+                                    <h1 class="h3">¡Postulación recibida!</h1>
+                                    <p class="text-muted">
+                                        Gracias, <strong t-out="applicant.partner_name"/>.
+                                        Recibimos tu postulación para
+                                        <strong t-out="applicant.vacancy_id.name or applicant.job_id.name"/>.
+                                    </p>
+
+                                    <div t-if="invitation and invitation.state != 'done'" class="alert alert-info mt-4">
+                                        <p class="mb-2">Siguiente paso: completa el test en línea.</p>
+                                        <a class="btn btn-primary"
+                                           t-attf-href="/test/#{invitation.token}">
+                                            Iniciar el test
+                                        </a>
+                                        <p class="small text-muted mt-2 mb-0">
+                                            También lo enviamos a tu correo si lo indicaste.
+                                        </p>
+                                    </div>
+
+                                    <div t-if="invitation and invitation.state == 'done'" class="alert alert-success mt-4">
+                                        Ya completaste el test. Nuestro equipo revisará tus resultados
+                                        y te contactará.
+                                    </div>
+
+                                    <div t-if="not invitation" class="alert alert-info mt-4">
+                                        Nuestro equipo revisará tu información y te contactará
+                                        para el siguiente paso.
+                                    </div>
+
+                                    <p class="small text-muted mt-4 mb-0">
+                                        Guarda este enlace para consultar tu proceso.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ===================== Test ===================== -->
+    <template id="test_form" name="Empleo — Test">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-4 py-lg-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <h1 class="h4" t-out="template.name"/>
+                                    <p class="text-muted">
+                                        <span t-out="invitation.applicant_id.partner_name"/> ·
+                                        <span t-out="template.duration_minutes"/> minutos ·
+                                        <span t-out="template.question_count"/> preguntas
+                                    </p>
+                                    <div class="alert alert-light border" t-out="template.instructions"/>
+
+                                    <div t-if="error" class="alert alert-danger" t-out="error"/>
+
+                                    <form t-attf-action="/test/#{invitation.token}/enviar"
+                                          method="post">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                        <div class="border rounded p-3 mb-4">
+                                            <h5 class="mb-1">Foto para el expediente</h5>
+                                            <p class="small text-muted mb-2">
+                                                Tómate una foto de frente. Se guardará en tu expediente
+                                                y no se comparte con terceros.
+                                            </p>
+                                            <video id="camera_video" autoplay="autoplay" playsinline="playsinline"
+                                                   class="d-none" style="width:100%;max-width:320px;border-radius:8px;"></video>
+                                            <canvas id="photo_canvas" class="d-none"></canvas>
+                                            <input type="hidden" name="photo_data" id="photo_data"/>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <button type="button" id="start_camera"
+                                                        class="btn btn-sm btn-outline-primary">Activar cámara</button>
+                                                <button type="button" id="take_photo"
+                                                        class="btn btn-sm btn-primary d-none">Tomar foto</button>
+                                                <label class="btn btn-sm btn-outline-secondary mb-0">
+                                                    Subir foto
+                                                    <input type="file" id="photo_file" accept="image/*"
+                                                           capture="user" class="d-none"/>
+                                                </label>
+                                            </div>
+                                            <div id="photo_status" class="small text-success mt-2"></div>
+                                            <img id="photo_preview" class="mt-2 d-none"
+                                                 style="max-width:180px;border-radius:8px;" alt="Foto"/>
+                                        </div>
+
+                                        <t t-foreach="template.question_ids" t-as="question">
+                                            <div class="border rounded p-3 mb-3">
+                                                <p class="fw-bold mb-2">
+                                                    <span t-out="question_index + 1"/>.
+                                                    <span t-out="question.name"/>
+                                                </p>
+                                                <p t-if="question.help_text" class="small text-muted"
+                                                   t-out="question.help_text"/>
+                                                <div class="form-check" t-foreach="question.option_ids" t-as="option">
+                                                    <input class="form-check-input"
+                                                           t-att-type="'checkbox' if question.question_type == 'multiple' else 'radio'"
+                                                           t-attf-name="q_#{question.id}"
+                                                           t-att-value="option.id"
+                                                           t-att-id="'opt_%s_%s' % (question.id, option.id)"/>
+                                                    <label class="form-check-label"
+                                                           t-att-for="'opt_%s_%s' % (question.id, option.id)"
+                                                           t-out="option.name"/>
+                                                </div>
+                                            </div>
+                                        </t>
+
+
+                                            <script>
+                                                (function () {
+                                                    var video = document.getElementById('camera_video');
+                                                    var canvas = document.getElementById('photo_canvas');
+                                                    var hidden = document.getElementById('photo_data');
+                                                    var preview = document.getElementById('photo_preview');
+                                                    var status = document.getElementById('photo_status');
+                                                    var startBtn = document.getElementById('start_camera');
+                                                    var takeBtn = document.getElementById('take_photo');
+                                                    var fileInput = document.getElementById('photo_file');
+                                                    if (!canvas || !hidden) { return; }
+                                                    var stream = null;
+
+                                                    function stopCamera() {
+                                                        if (stream) {
+                                                            stream.getTracks().forEach(function (track) { track.stop(); });
+                                                            stream = null;
+                                                        }
+                                                        video.classList.add('d-none');
+                                                        takeBtn.classList.add('d-none');
+                                                    }
+
+                                                    startBtn.addEventListener('click', function () {
+                                                        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                                                            status.textContent = 'Tu navegador no permite la cámara; usa Subir foto.';
+                                                            return;
+                                                        }
+                                                        navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})
+                                                            .then(function (mediaStream) {
+                                                                stream = mediaStream;
+                                                                video.srcObject = mediaStream;
+                                                                video.classList.remove('d-none');
+                                                                takeBtn.classList.remove('d-none');
+                                                                status.textContent = '';
+                                                            })
+                                                            .catch(function () {
+                                                                status.textContent = 'No se pudo abrir la cámara; usa Subir foto.';
+                                                            });
+                                                    });
+
+                                                    function draw(source, width, height) {
+                                                        var max = 640;
+                                                        var scale = Math.min(1, max / Math.max(width, height));
+                                                        canvas.width = Math.round(width * scale);
+                                                        canvas.height = Math.round(height * scale);
+                                                        var ctx = canvas.getContext('2d');
+                                                        ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+                                                        hidden.value = canvas.toDataURL('image/jpeg', 0.7);
+                                                        preview.src = hidden.value;
+                                                        preview.classList.remove('d-none');
+                                                        status.textContent = 'Foto lista para el expediente.';
+                                                    }
+
+                                                    takeBtn.addEventListener('click', function () {
+                                                        if (!stream) { return; }
+                                                        draw(video, video.videoWidth, video.videoHeight);
+                                                        stopCamera();
+                                                    });
+
+                                                    fileInput.addEventListener('change', function () {
+                                                        var file = fileInput.files[0];
+                                                        if (!file) { return; }
+                                                        var image = new Image();
+                                                        image.onload = function () {
+                                                            draw(image, image.width, image.height);
+                                                            URL.revokeObjectURL(image.src);
+                                                        };
+                                                        image.src = URL.createObjectURL(file);
+                                                    });
+                                                })();
+                                            </script>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary px-4">
+                                                Enviar test
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="test_done" name="Empleo — Test finalizado">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5 text-center">
+                                    <div class="display-4 text-success mb-3">
+                                        <i class="fa fa-check-circle"/>
+                                    </div>
+                                    <h1 class="h3">Test finalizado</h1>
+                                    <p class="text-muted">
+                                        Gracias por completar el test. Nuestro equipo revisará
+                                        tus resultados y te contactará para el siguiente paso.
+                                    </p>
+                                    <p class="small text-muted">
+                                        El test es una referencia de conocimientos y destrezas;
+                                        no es eliminatorio por sí solo.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="test_expired" name="Empleo — Test vencido">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5 text-center">
+                                    <div class="display-4 text-warning mb-3">
+                                        <i class="fa fa-clock-o"/>
+                                    </div>
+                                    <h1 class="h3">El enlace venció</h1>
+                                    <p class="text-muted">
+                                        Este test ya no está disponible. Escríbenos a
+                                        <a href="mailto:info.venridescafe@gmail.com">info.venridescafe@gmail.com</a>
+                                        para solicitar un nuevo enlace.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ===================== Proceso completo: datos + 3 tests ===================== -->
+    <template id="process_form" name="Postulación — Datos y tests">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-4 py-lg-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <h1 class="h3">Postulación VenridesCafé</h1>
+                                    <p class="text-muted">
+                                        Completa tus datos, tu síntesis curricular y los 3 tests:
+                                        ATC, Ayudante general y Cocina.
+                                    </p>
+                                    <div t-if="error" class="alert alert-danger" t-out="error"/>
+                                    <form t-attf-action="/proceso/#{link.token}/enviar" method="post"
+                                          enctype="multipart/form-data" class="row g-3">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <div class="d-none">
+                                            <input type="text" name="website_url" value=""/>
+                                        </div>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-2">Puesto</h2>
+                                        <t t-if="link.vacancy_id">
+                                            <input type="hidden" name="vacancy_id" t-att-value="link.vacancy_id.id"/>
+                                            <div class="col-12">
+                                                <p class="mb-0"><strong t-out="link.vacancy_id.name"/></p>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Puesto al que postulas <span class="text-danger">*</span></label>
+                                                <select class="form-select" name="vacancy_id" required="required">
+                                                    <option value="">Seleccione</option>
+                                                    <t t-foreach="vacancies" t-as="vacancy_option">
+                                                        <option t-att-value="vacancy_option.id" t-out="vacancy_option.name"/>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Datos personales</h2>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nombre y apellido <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="text" name="partner_name" required="required"
+                                                   t-att-value="values.get('partner_name', '')"/>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cédula de identidad</label>
+                                            <input class="form-control" type="text" name="national_id"
+                                                   t-att-value="values.get('national_id', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                                            <input class="form-control" type="tel" name="partner_phone" required="required"
+                                                   t-att-value="values.get('partner_phone', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Correo electrónico</label>
+                                            <input class="form-control" type="email" name="email_from"
+                                                   t-att-value="values.get('email_from', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Fecha de nacimiento</label>
+                                            <input class="form-control" type="date" name="birthdate"
+                                                   t-att-value="values.get('birthdate', '')"/>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label">Dirección de habitación</label>
+                                            <input class="form-control" type="text" name="home_address"
+                                                   t-att-value="values.get('home_address', '')"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Estado civil</label>
+                                            <select class="form-select" name="marital_status">
+                                                <option value="">Seleccione</option>
+                                                <option value="single" t-att-selected="values.get('marital_status') == 'single'">Soltero(a)</option>
+                                                <option value="married" t-att-selected="values.get('marital_status') == 'married'">Casado(a)</option>
+                                                <option value="concubine" t-att-selected="values.get('marital_status') == 'concubine'">Concubino(a)</option>
+                                                <option value="divorced" t-att-selected="values.get('marital_status') == 'divorced'">Divorciado(a)</option>
+                                                <option value="widowed" t-att-selected="values.get('marital_status') == 'widowed'">Viudo(a)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Cargas familiares</label>
+                                            <input class="form-control" type="number" min="0" name="dependents"
+                                                   t-att-value="values.get('dependents', 0)"/>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Nivel educativo</label>
+                                            <select class="form-select" name="education_level">
+                                                <option value="">Seleccione</option>
+                                                <option value="primary" t-att-selected="values.get('education_level') == 'primary'">Primaria</option>
+                                                <option value="secondary" t-att-selected="values.get('education_level') == 'secondary'">Bachiller</option>
+                                                <option value="technical" t-att-selected="values.get('education_level') == 'technical'">Técnico medio</option>
+                                                <option value="university" t-att-selected="values.get('education_level') == 'university'">Universitario</option>
+                                                <option value="postgraduate" t-att-selected="values.get('education_level') == 'postgraduate'">Postgrado</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Disponibilidad para iniciar</label>
+                                            <input class="form-control" type="date" name="availability"
+                                                   t-att-value="values.get('availability', '')"/>
+                                        </div>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Formación académica</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-12">
+                                                <div class="border rounded p-3 mb-1 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-md-5">
+                                                            <label class="form-label small">Institución</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="edu_institution_#{index}"
+                                                                   t-att-value="values.get('edu_institution_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Título / curso</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="edu_degree_#{index}"
+                                                                   t-att-value="values.get('edu_degree_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small">Nivel</label>
+                                                            <select class="form-select form-select-sm" t-attf-name="edu_level_#{index}">
+                                                                <option value="secondary">Bachiller</option>
+                                                                <option value="technical">Técnico medio</option>
+                                                                <option value="university">Universitario</option>
+                                                                <option value="postgraduate">Postgrado</option>
+                                                                <option value="course">Curso / taller</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Desde</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="edu_start_#{index}"
+                                                                   t-att-value="values.get('edu_start_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Hasta</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="edu_end_#{index}"
+                                                                   t-att-value="values.get('edu_end_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4 d-flex align-items-end">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       t-attf-name="edu_current_#{index}" value="1"
+                                                                       t-att-checked="values.get('edu_current_%s' % index)"/>
+                                                                <label class="form-check-label small">En curso</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Experiencia laboral</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-12">
+                                                <div class="border rounded p-3 mb-1 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Empresa</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_company_#{index}"
+                                                                   t-att-value="values.get('exp_company_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Cargo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_position_#{index}"
+                                                                   t-att-value="values.get('exp_position_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Ubicación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_location_#{index}"
+                                                                   t-att-value="values.get('exp_location_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Teléfono de la empresa</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="exp_phone_#{index}"
+                                                                   t-att-value="values.get('exp_phone_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Persona de contacto</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_contact_#{index}"
+                                                                   t-att-value="values.get('exp_contact_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Motivo de salida</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="exp_reason_#{index}"
+                                                                   t-att-value="values.get('exp_reason_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Desde</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="exp_start_#{index}"
+                                                                   t-att-value="values.get('exp_start_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label class="form-label small">Hasta</label>
+                                                            <input class="form-control form-control-sm" type="date"
+                                                                   t-attf-name="exp_end_#{index}"
+                                                                   t-att-value="values.get('exp_end_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-md-4 d-flex align-items-end">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                       t-attf-name="exp_current_#{index}" value="1"
+                                                                       t-att-checked="values.get('exp_current_%s' % index)"/>
+                                                                <label class="form-check-label small">Trabajo actual</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Funciones</label>
+                                                            <textarea class="form-control form-control-sm" rows="2"
+                                                                      t-attf-name="exp_functions_#{index}"
+                                                                      t-out="values.get('exp_functions_%s' % index, '')"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Referencias personales</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Nombre y apellido</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_name_#{index}"
+                                                                   t-att-value="values.get('pref_name_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Parentesco / relación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_relationship_#{index}"
+                                                                   t-att-value="values.get('pref_relationship_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-7">
+                                                            <label class="form-label small">Teléfono</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="pref_phone_#{index}"
+                                                                   t-att-value="values.get('pref_phone_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Tiempo de conocerse</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="pref_years_#{index}"
+                                                                   t-att-value="values.get('pref_years_%s' % index, '')"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Referencias laborales</h2>
+                                        <t t-foreach="[1, 2]" t-as="index">
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3 bg-light-subtle">
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <label class="form-label small">Nombre y apellido</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_name_#{index}"
+                                                                   t-att-value="values.get('lref_name_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label small">Empresa / ubicación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_company_#{index}"
+                                                                   t-att-value="values.get('lref_company_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label small">Cargo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_position_#{index}"
+                                                                   t-att-value="values.get('lref_position_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-7">
+                                                            <label class="form-label small">Teléfono</label>
+                                                            <input class="form-control form-control-sm" type="tel"
+                                                                   t-attf-name="lref_phone_#{index}"
+                                                                   t-att-value="values.get('lref_phone_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Relación</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_relationship_#{index}"
+                                                                   t-att-value="values.get('lref_relationship_%s' % index, '')"/>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <label class="form-label small">Tiempo de trabajo</label>
+                                                            <input class="form-control form-control-sm" type="text"
+                                                                   t-attf-name="lref_period_#{index}"
+                                                                   t-att-value="values.get('lref_period_%s' % index, '')"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Currículum y consentimiento</h2>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Currículum en PDF (opcional, máx. 5 MB)</label>
+                                            <input class="form-control" type="file" name="cv" accept="application/pdf"/>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="consent_privacy"
+                                                       value="1" id="consent_privacy" required="required"/>
+                                                <label class="form-check-label" for="consent_privacy">
+                                                    Autorizo a VenridesCafé al tratamiento de mis datos personales
+                                                    con la finalidad de evaluar mi postulación.
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                                        <div class="border rounded p-3 mb-4">
+                                            <h5 class="mb-1">Foto para el expediente</h5>
+                                            <p class="small text-muted mb-2">
+                                                Tómate una foto de frente. Se guardará en tu expediente
+                                                y no se comparte con terceros.
+                                            </p>
+                                            <video id="camera_video" autoplay="autoplay" playsinline="playsinline"
+                                                   class="d-none" style="width:100%;max-width:320px;border-radius:8px;"></video>
+                                            <canvas id="photo_canvas" class="d-none"></canvas>
+                                            <input type="hidden" name="photo_data" id="photo_data"/>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <button type="button" id="start_camera"
+                                                        class="btn btn-sm btn-outline-primary">Activar cámara</button>
+                                                <button type="button" id="take_photo"
+                                                        class="btn btn-sm btn-primary d-none">Tomar foto</button>
+                                                <label class="btn btn-sm btn-outline-secondary mb-0">
+                                                    Subir foto
+                                                    <input type="file" id="photo_file" accept="image/*"
+                                                           capture="user" class="d-none"/>
+                                                </label>
+                                            </div>
+                                            <div id="photo_status" class="small text-success mt-2"></div>
+                                            <img id="photo_preview" class="mt-2 d-none"
+                                                 style="max-width:180px;border-radius:8px;" alt="Foto"/>
+                                        </div>
+
+                                        <script>
+                                            (function () {
+                                                var video = document.getElementById('camera_video');
+                                                var canvas = document.getElementById('photo_canvas');
+                                                var hidden = document.getElementById('photo_data');
+                                                var preview = document.getElementById('photo_preview');
+                                                var status = document.getElementById('photo_status');
+                                                var startBtn = document.getElementById('start_camera');
+                                                var takeBtn = document.getElementById('take_photo');
+                                                var fileInput = document.getElementById('photo_file');
+                                                if (!canvas || !hidden) { return; }
+                                                var stream = null;
+                                                function stopCamera() {
+                                                    if (stream) {
+                                                        stream.getTracks().forEach(function (track) { track.stop(); });
+                                                        stream = null;
+                                                    }
+                                                    video.classList.add('d-none');
+                                                    takeBtn.classList.add('d-none');
+                                                }
+                                                startBtn.addEventListener('click', function () {
+                                                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                                                        status.textContent = 'Tu navegador no permite la cámara; usa Subir foto.';
+                                                        return;
+                                                    }
+                                                    navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})
+                                                        .then(function (mediaStream) {
+                                                            stream = mediaStream;
+                                                            video.srcObject = mediaStream;
+                                                            video.classList.remove('d-none');
+                                                            takeBtn.classList.remove('d-none');
+                                                            status.textContent = '';
+                                                        })
+                                                        .catch(function () {
+                                                            status.textContent = 'No se pudo abrir la cámara; usa Subir foto.';
+                                                        });
+                                                });
+                                                function draw(source, width, height) {
+                                                    var max = 640;
+                                                    var scale = Math.min(1, max / Math.max(width, height));
+                                                    canvas.width = Math.round(width * scale);
+                                                    canvas.height = Math.round(height * scale);
+                                                    var ctx = canvas.getContext('2d');
+                                                    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+                                                    hidden.value = canvas.toDataURL('image/jpeg', 0.7);
+                                                    preview.src = hidden.value;
+                                                    preview.classList.remove('d-none');
+                                                    status.textContent = 'Foto lista para el expediente.';
+                                                }
+                                                takeBtn.addEventListener('click', function () {
+                                                    if (!stream) { return; }
+                                                    draw(video, video.videoWidth, video.videoHeight);
+                                                    stopCamera();
+                                                });
+                                                fileInput.addEventListener('change', function () {
+                                                    var file = fileInput.files[0];
+                                                    if (!file) { return; }
+                                                    var image = new Image();
+                                                    image.onload = function () {
+                                                        draw(image, image.width, image.height);
+                                                        URL.revokeObjectURL(image.src);
+                                                    };
+                                                    image.src = URL.createObjectURL(file);
+                                                });
+                                            })();
+                                        </script>
+
+
+                                        <h2 class="h5 border-bottom pb-2 mt-3">Tests de conocimientos y destrezas</h2>
+                                        <p class="text-muted">
+                                            Debes responder los 3 tests. No son eliminatorios por sí solos:
+                                            son una referencia de tu conocimiento y destreza inicial.
+                                        </p>
+                                        <t t-foreach="templates" t-as="template">
+                                            <div class="col-12">
+                                                <h3 class="h5 mt-4" t-out="template.name"/>
+                                                <div class="alert alert-light border" t-out="template.instructions"/>
+                                                <t t-foreach="template.question_ids" t-as="question">
+                                                    <div class="border rounded p-3 mb-3">
+                                                        <p class="fw-bold mb-2">
+                                                            <span t-out="question_index + 1"/>.
+                                                            <span t-out="question.name"/>
+                                                        </p>
+                                                        <p t-if="question.help_text" class="small text-muted"
+                                                           t-out="question.help_text"/>
+                                                        <div class="form-check" t-foreach="question.option_ids" t-as="option">
+                                                            <input class="form-check-input"
+                                                                   t-att-type="'checkbox' if question.question_type == 'multiple' else 'radio'"
+                                                                   t-attf-name="q_#{question.id}"
+                                                                   t-att-value="option.id"
+                                                                   t-att-checked="option.id in answers.get(question.id, [])"
+                                                                   t-att-id="'opt_%s_%s' % (question.id, option.id)"/>
+                                                            <label class="form-check-label"
+                                                                   t-att-for="'opt_%s_%s' % (question.id, option.id)"
+                                                                   t-out="option.name"/>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+
+                                        <div class="col-12 text-end mt-4">
+                                            <button type="submit" class="btn btn-primary px-4">
+                                                Enviar postulación y tests
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="process_done" name="Postulación — Enviada">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5 text-center">
+                                    <div class="display-4 text-success mb-3"><i class="fa fa-check-circle"/></div>
+                                    <h1 class="h3">Postulación enviada</h1>
+                                    <p class="text-muted">
+                                        Gracias, <strong t-out="applicant.partner_name or link.recipient_name or ''"/>.
+                                        Recibimos tus datos y los 3 tests.
+                                    </p>
+                                    <p class="small text-muted">
+                                        RRHH revisará tu información y te contactará para el siguiente paso.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="process_expired" name="Postulación — Enlace vencido">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-jobs">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5 text-center">
+                                    <div class="display-4 text-warning mb-3"><i class="fa fa-clock-o"/></div>
+                                    <h1 class="h3">El enlace venció</h1>
+                                    <p class="text-muted">
+                                        Este enlace ya no está disponible. Escríbenos a
+                                        <a href="mailto:info.venridescafe@gmail.com">info.venridescafe@gmail.com</a>
+                                        para solicitar uno nuevo.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

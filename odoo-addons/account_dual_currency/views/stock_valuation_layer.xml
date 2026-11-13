@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        Odoo 20 elimino el modelo 'stock.valuation.layer' y sus vistas
+        'stock_account.stock_valuation_layer_tree' / '..._form'. Las capas de
+        valoracion son ahora los propios movimientos valorizados ('stock.move'),
+        y el historial de ajustes vive en 'product.value'.
+
+        Estas vistas anaden las columnas en divisa de referencia al listado de
+        movimientos de almacen y al historial de ajustes de valoracion.
+    -->
+
+    <record id="stock_move_dual_currency_tree" model="ir.ui.view">
+        <field name="name">stock.move.tree.dual_currency</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_uom_qty']" position="after">
+                <field name="value" sum="Total" readonly="1"
+                       invisible="not parent.is_valued" optional="show"/>
+                <field name="value_usd" sum="Total $" readonly="1"
+                       invisible="not parent.is_valued" optional="hide"/>
+                <field name="unit_cost_usd" readonly="1"
+                       invisible="not parent.is_valued" optional="hide"/>
+                <field name="tasa" readonly="1" optional="hide"/>
+                <field name="currency_id_dif" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

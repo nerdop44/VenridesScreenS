@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ===================== Vistas de lista ===================== -->
+        <record id="view_hr_contract_list_venrides" model="ir.ui.view">
+            <field name="name">hr.contract.list.venrides</field>
+            <field name="model">hr.contract</field>
+            <field name="arch" type="xml">
+                <list string="Contratos">
+                    <field name="employee_id"/>
+                    <field name="contract_type_id"/>
+                    <field name="structure_type_id"/>
+                    <field name="date_start"/>
+                    <field name="date_end"/>
+                    <field name="wage"/>
+                    <field name="currency_id" column_invisible="True"/>
+                    <field name="state"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_hr_payroll_structure_list_venrides" model="ir.ui.view">
+            <field name="name">hr.payroll.structure.list.venrides</field>
+            <field name="model">hr.payroll.structure</field>
+            <field name="arch" type="xml">
+                <list string="Estructuras Salariales">
+                    <field name="name"/>
+                    <field name="type_id"/>
+                    <field name="country_id"/>
+                    <field name="use_worked_day_lines"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_hr_payroll_structure_type_list_venrides" model="ir.ui.view">
+            <field name="name">hr.payroll.structure.type.list.venrides</field>
+            <field name="model">hr.payroll.structure.type</field>
+            <field name="arch" type="xml">
+                <list string="Tipos de Estructura">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="default_schedule_pay"/>
+                    <field name="default_struct_id"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_hr_payslip_run_list_venrides" model="ir.ui.view">
+            <field name="name">hr.payslip.run.list.venrides</field>
+            <field name="model">hr.payslip.run</field>
+            <field name="arch" type="xml">
+                <list string="Lotes de Nómina">
+                    <field name="name"/>
+                    <field name="date_start"/>
+                    <field name="date_end"/>
+                    <field name="state"/>
+                    <field name="company_id" groups="base.group_multi_company"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_hr_contract_type_list_venrides" model="ir.ui.view">
+            <field name="name">hr.contract.type.list.venrides</field>
+            <field name="model">hr.contract.type</field>
+            <field name="arch" type="xml">
+                <list string="Tipos de Contrato">
+                    <field name="name"/>
+                    <field name="code"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_hr_payslip_input_type_list_venrides" model="ir.ui.view">
+            <field name="name">hr.payslip.input.type.list.venrides</field>
+            <field name="model">hr.payslip.input.type</field>
+            <field name="arch" type="xml">
+                <list string="Tipos de Entrada">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="monstar_automatico"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ===================== Acciones ===================== -->
+        <record id="action_hr_payslip_venrides" model="ir.actions.act_window">
+            <field name="name">Recibos de Nómina</field>
+            <field name="res_model">hr.payslip</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Cree su primer recibo de nómina</p>
+                <p>Calcule los recibos de nómina de sus empleados según la legislación venezolana.</p>
+            </field>
+        </record>
+
+        <record id="action_hr_payslip_run_venrides" model="ir.actions.act_window">
+            <field name="name">Lotes de Nómina</field>
+            <field name="res_model">hr.payslip.run</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Cree un lote de nómina</p>
+                <p>Agrupe los recibos de nómina de un mismo período.</p>
+            </field>
+        </record>
+
+        <record id="action_hr_contract_venrides" model="ir.actions.act_window">
+            <field name="name">Contratos</field>
+            <field name="res_model">hr.contract</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">Cree el contrato de un empleado</p>
+            </field>
+        </record>
+
+        <record id="action_hr_payroll_structure_venrides" model="ir.actions.act_window">
+            <field name="name">Estructuras Salariales</field>
+            <field name="res_model">hr.payroll.structure</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_hr_payroll_structure_type_venrides" model="ir.actions.act_window">
+            <field name="name">Tipos de Estructura</field>
+            <field name="res_model">hr.payroll.structure.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_hr_salary_rule_venrides" model="ir.actions.act_window">
+            <field name="name">Reglas Salariales</field>
+            <field name="res_model">hr.salary.rule</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_hr_contract_type_venrides" model="ir.actions.act_window">
+            <field name="name">Tipos de Contrato</field>
+            <field name="res_model">hr.contract.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <record id="action_hr_payslip_input_type_venrides" model="ir.actions.act_window">
+            <field name="name">Tipos de Entrada</field>
+            <field name="res_model">hr.payslip.input.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <!-- ===================== Menús ===================== -->
+        <menuitem id="menu_payroll_operations" name="Nómina"
+                  parent="menu_venezuela_payroll" sequence="10"/>
+        <menuitem id="menu_payroll_payslip" name="Recibos de Nómina"
+                  parent="menu_payroll_operations" sequence="10"
+                  action="action_hr_payslip_venrides"/>
+        <menuitem id="menu_payroll_payslip_run" name="Lotes de Nómina"
+                  parent="menu_payroll_operations" sequence="20"
+                  action="action_hr_payslip_run_venrides"/>
+
+        <menuitem id="menu_payroll_contracts" name="Contratos"
+                  parent="menu_venezuela_payroll" sequence="20"
+                  action="action_hr_contract_venrides"/>
+
+        <menuitem id="menu_payroll_config" name="Configuración"
+                  parent="menu_venezuela_payroll" sequence="90"/>
+
+        <menuitem id="menu_payroll_structure" name="Estructuras Salariales"
+                  parent="menu_payroll_config" sequence="10"
+                  action="action_hr_payroll_structure_venrides"/>
+        <menuitem id="menu_payroll_structure_type" name="Tipos de Estructura"
+                  parent="menu_payroll_config" sequence="15"
+                  action="action_hr_payroll_structure_type_venrides"/>
+        <menuitem id="menu_payroll_salary_rule" name="Reglas Salariales"
+                  parent="menu_payroll_config" sequence="20"
+                  action="action_hr_salary_rule_venrides"/>
+        <menuitem id="menu_payroll_contract_type" name="Tipos de Contrato"
+                  parent="menu_payroll_config" sequence="30"
+                  action="action_hr_contract_type_venrides"/>
+        <menuitem id="menu_payroll_input_type" name="Tipos de Entrada"
+                  parent="menu_payroll_config" sequence="40"
+                  action="action_hr_payslip_input_type_venrides"/>
+
+    </data>
+</odoo>

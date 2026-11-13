@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem name="Firmas y documentos" id="menu_venrides_sign_requests"
+              parent="hr.menu_hr_root"
+              action="action_venrides_sign_request" sequence="95"/>
+</odoo>

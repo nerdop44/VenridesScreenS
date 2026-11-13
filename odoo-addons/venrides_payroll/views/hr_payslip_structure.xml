@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_salary_strycture_button" model="ir.ui.view">
+            <field name="name">hr.payroll.structure.form.ve</field>
+            <field name="model">hr.payroll.structure</field>
+            <field name="arch" type="xml">
+                <form string="Estructura de Nómina">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="type_id"/>
+                            <field name="country_id"/>
+                            <field name="use_worked_day_lines"/>
+                            <field name="ytd_computation"/>
+                            <field name="procesar_prestaciones"/>
+                            <field name="rule_ids">
+                                <list editable="top">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                </list>
+                            </field>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="wizard_copy" type="object" string="Copiar Reglas" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

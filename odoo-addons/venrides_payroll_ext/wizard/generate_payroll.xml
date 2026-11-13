@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_generate_payroll_form" model="ir.ui.view">
+        <field name="name">venrides.generate.payroll.form</field>
+        <field name="model">venrides.generate.payroll</field>
+        <field name="arch" type="xml">
+            <form string="Generar nómina">
+                <group>
+                    <group>
+                        <field name="cycle_id"/>
+                        <field name="pay_date"/>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="structure_id"/>
+                        <field name="tasa_cambio"/>
+                        <field name="create_run"/>
+                        <field name="run_name" invisible="not create_run"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="include_performance"/>
+                    <field name="include_account"/>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="Generar" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_generate_payroll" model="ir.actions.act_window">
+        <field name="name">Generar nómina</field>
+        <field name="res_model">venrides.generate.payroll</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_concept_receipt_form" model="ir.ui.view">
+        <field name="name">venrides.payslip.concept.receipt.form</field>
+        <field name="model">venrides.payslip.concept.receipt</field>
+        <field name="arch" type="xml">
+            <form string="Recibo por concepto">
+                <group>
+                    <field name="payslip_id"/>
+                </group>
+                <separator string="Conceptos a incluir"/>
+                <field name="line_ids">
+                    <list>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="category_id"/>
+                        <field name="total"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_print" type="object"
+                            string="Imprimir recibo" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

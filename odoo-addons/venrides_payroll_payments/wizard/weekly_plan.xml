@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_weekly_plan_form" model="ir.ui.view">
+        <field name="name">venrides.weekly.plan.form</field>
+        <field name="model">venrides.weekly.plan</field>
+        <field name="arch" type="xml">
+            <form string="Generar plan semanal">
+                <group>
+                    <group>
+                        <field name="contract_id"/>
+                        <field name="employee_id"/>
+                        <field name="start_date"/>
+                        <field name="cycle_id"/>
+                    </group>
+                </group>
+                <separator string="Distribución por semana"/>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="week"/>
+                        <field name="concept_id"/>
+                        <field name="amount_usd" sum="Total"/>
+                    </list>
+                </field>
+                <div class="alert alert-info">
+                    Se crearán planes de pago semanales (7 días cada uno) para el ciclo
+                    seleccionado. Luego puedes ajustar montos, fechas o conceptos en
+                    “Planes de pago”.
+                </div>
+                <footer>
+                    <button name="action_create" type="object"
+                            string="Crear planes" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_weekly_plan" model="ir.actions.act_window">
+        <field name="name">Generar plan semanal</field>
+        <field name="res_model">venrides.weekly.plan</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

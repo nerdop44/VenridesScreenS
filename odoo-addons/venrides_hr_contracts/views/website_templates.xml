@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="contract_sign" name="Contrato — Firma">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-contract">
+                <div class="container py-4 py-lg-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+
+                                    <div class="text-center mb-4">
+                                        <h1 class="h3">Contrato de trabajo</h1>
+                                        <p class="text-muted mb-0">
+                                            <span t-out="contract.contract_number or ''"/> ·
+                                            <span t-out="employee.name or ''"/>
+                                        </p>
+                                    </div>
+
+                                    <div t-if="error" class="alert alert-danger" t-out="error"/>
+
+                                    <t t-if="signed">
+                                        <div class="alert alert-success">
+                                            <h4 class="alert-heading">Contrato firmado</h4>
+                                            <p class="mb-1">
+                                                Gracias, <strong t-out="employee.name or ''"/>.
+                                                Tu firma quedó registrada el
+                                                <span t-out="contract.signed_date or ''"/>.
+                                            </p>
+                                            <p class="small mb-0">
+                                                Hash SHA-256:
+                                                <span t-out="contract.document_hash or ''"/>
+                                            </p>
+                                        </div>
+                                        <div class="text-center">
+                                            <a class="btn btn-primary"
+                                               t-attf-href="/contrato/descargar/#{contract.signature_token}">
+                                                Descargar contrato firmado
+                                            </a>
+                                        </div>
+                                    </t>
+
+                                    <t t-else="">
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <table class="table table-sm">
+                                                    <tr><th>Empleado</th><td t-out="employee.name or ''"/></tr>
+                                                    <tr><th>Cédula</th><td t-out="employee.identification_id or ''"/></tr>
+                                                    <tr><th>Puesto</th><td t-out="contract.job_id.name or ''"/></tr>
+                                                    <tr><th>Jornada</th><td t-out="contract.schedule_description or ''"/></tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <table class="table table-sm">
+                                                    <tr><th>Inicio</th><td t-out="contract.date_start or ''"/></tr>
+                                                    <tr><th>Fin</th><td t-out="contract.date_end or 'Indefinido'"/></tr>
+                                                    <tr><th>Etapa</th><td t-out="contract.contract_stage_label"/></tr>
+                                                    <tr><th>Paquete mensual</th><td t-out="'%.2f USD' % contract.total_package_usd"/></tr>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div class="border rounded p-3 mb-4" style="max-height:420px;overflow:auto;">
+                                            <div t-out="contract.rendered_body"/>
+                                            <t t-foreach="contract.template_id.clause_ids" t-as="clause">
+                                                <t t-if="clause.clause_type == 'general' or (clause.clause_type == 'specific' and contract.job_id in clause.job_ids)">
+                                                    <div class="mt-3" t-out="contract.template_id._render_text(clause.body, contract)"/>
+                                                </t>
+                                            </t>
+                                            <t t-foreach="contract.annex_ids" t-as="annex">
+                                                <div class="mt-3" t-out="contract.template_id._render_text(annex.body, contract)"/>
+                                            </t>
+                                            <t t-if="contract.salary_table_line_id">
+                                                <h5 class="mt-4">Tabla salarial aplicable (USD/mes)</h5>
+                                                <table class="table table-sm table-bordered">
+                                                    <tbody>
+                                                        <tr><td>Salario base</td><td class="text-end" t-out="'%.2f' % contract.salary_table_line_id.base_usd"/></tr>
+                                                        <tr><td>Bono de guerra</td><td class="text-end" t-out="'%.2f' % contract.salary_table_line_id.bono_guerra_usd"/></tr>
+                                                        <tr><td>Bono transporte/asistencia</td><td class="text-end" t-out="'%.2f' % contract.salary_table_line_id.bono_transporte_usd"/></tr>
+                                                        <tr><td>Bono desempeño (máximo)</td><td class="text-end" t-out="'%.2f' % contract.salary_table_line_id.bono_desempeno_max_usd"/></tr>
+                                                        <tr><td>Cestatickets</td><td class="text-end" t-out="'%.2f' % contract.salary_table_line_id.cestaticket_usd"/></tr>
+                                                    </tbody>
+                                                </table>
+                                            </t>
+                                        </div>
+
+                                        <t t-if="not otp_sent">
+                                            <div class="alert alert-light border">
+                                                Para firmar, enviaremos un código de 6 dígitos al
+                                                correo <strong t-out="contract.signer_email or employee.work_email or employee.private_email or ''"/>.
+                                            </div>
+                                            <form t-attf-action="/contrato/firmar/#{contract.signature_token}/otp"
+                                                  method="post" class="text-center">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-primary px-4">
+                                                    Enviar código de verificación
+                                                </button>
+                                            </form>
+                                        </t>
+
+                                        <t t-else="">
+                                            <div class="alert alert-info" t-out="message"/>
+                                            <form t-attf-action="/contrato/firmar/#{contract.signature_token}/confirmar"
+                                                  method="post" id="sign_form">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <input type="hidden" name="signature_data" id="signature_data"/>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Código recibido por correo</label>
+                                                    <input class="form-control form-control-lg"
+                                                           type="text" name="otp_code" inputmode="numeric"
+                                                           maxlength="6" pattern="[0-9]{6}" required="required"
+                                                           autocomplete="one-time-code"
+                                                           style="max-width:220px;letter-spacing:6px;"/>
+                                                </div>
+
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold">Firma con tu dedo o el mouse</label>
+                                                    <canvas id="signature_canvas"
+                                                            style="width:100%;height:200px;border:1px dashed #999;border-radius:8px;touch-action:none;background:#fff;"></canvas>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <button type="button" id="clear_signature"
+                                                            class="btn btn-sm btn-light">Borrar firma</button>
+                                                    <span class="small text-muted">
+                                                        Al firmar aceptas las condiciones del contrato y sus anexos.
+                                                    </span>
+                                                </div>
+
+                                                <div class="text-center">
+                                                    <button type="submit" class="btn btn-primary px-4">
+                                                        Firmar contrato
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            <script>
+                                                (function () {
+                                                    var canvas = document.getElementById('signature_canvas');
+                                                    var form = document.getElementById('sign_form');
+                                                    var hidden = document.getElementById('signature_data');
+                                                    if (!canvas || !form) { return; }
+                                                    var ctx = canvas.getContext('2d');
+                                                    var drawing = false;
+                                                    var hasInk = false;
+                                                    var last = null;
+
+                                                    function setup() {
+                                                        var ratio = window.devicePixelRatio || 1;
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        canvas.width = rect.width * ratio;
+                                                        canvas.height = rect.height * ratio;
+                                                        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                                                        ctx.lineWidth = 2;
+                                                        ctx.lineCap = 'round';
+                                                        ctx.lineJoin = 'round';
+                                                        ctx.strokeStyle = '#111111';
+                                                        ctx.fillStyle = '#ffffff';
+                                                        ctx.fillRect(0, 0, rect.width, rect.height);
+                                                    }
+
+                                                    function pos(event) {
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        return {
+                                                            x: event.clientX - rect.left,
+                                                            y: event.clientY - rect.top
+                                                        };
+                                                    }
+
+                                                    canvas.addEventListener('pointerdown', function (event) {
+                                                        event.preventDefault();
+                                                        drawing = true;
+                                                        last = pos(event);
+                                                        ctx.beginPath();
+                                                        ctx.moveTo(last.x, last.y);
+                                                        canvas.setPointerCapture(event.pointerId);
+                                                    });
+                                                    canvas.addEventListener('pointermove', function (event) {
+                                                        if (!drawing) { return; }
+                                                        event.preventDefault();
+                                                        var point = pos(event);
+                                                        ctx.beginPath();
+                                                        ctx.moveTo(last.x, last.y);
+                                                        ctx.lineTo(point.x, point.y);
+                                                        ctx.stroke();
+                                                        last = point;
+                                                        hasInk = true;
+                                                    });
+                                                    function stop(event) {
+                                                        drawing = false;
+                                                        last = null;
+                                                    }
+                                                    canvas.addEventListener('pointerup', stop);
+                                                    canvas.addEventListener('pointerleave', stop);
+                                                    canvas.addEventListener('pointercancel', stop);
+
+                                                    document.getElementById('clear_signature').addEventListener('click', function () {
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        ctx.fillStyle = '#ffffff';
+                                                        ctx.fillRect(0, 0, rect.width, rect.height);
+                                                        hasInk = false;
+                                                    });
+
+                                                    form.addEventListener('submit', function (event) {
+                                                        if (!hasInk) {
+                                                            event.preventDefault();
+                                                            alert('Debes firmar en el recuadro antes de confirmar.');
+                                                            return;
+                                                        }
+                                                        hidden.value = canvas.toDataURL('image/png');
+                                                    });
+
+                                                    setup();
+                                                })();
+                                            </script>
+                                        </t>
+                                    </t>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

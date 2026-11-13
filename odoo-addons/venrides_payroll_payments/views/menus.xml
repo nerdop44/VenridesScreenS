@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem name="Generar pagos por concepto" id="menu_venrides_generate_payments"
+              parent="venrides_payroll.menu_payroll_operations"
+              action="action_venrides_generate_payments" sequence="25"/>
+
+    <menuitem name="Pagos por concepto" id="menu_venrides_payroll_payments"
+              parent="venrides_payroll.menu_payroll_operations"
+              action="action_venrides_payroll_payment" sequence="30"/>
+
+    <menuitem name="Generar plan semanal" id="menu_venrides_weekly_plan"
+              parent="menu_venrides_payroll_payments"
+              action="action_venrides_weekly_plan" sequence="10"/>
+
+    <menuitem name="Firmas y documentos" id="menu_venrides_sign_link"
+              parent="venrides_payroll.menu_venezuela_payroll"
+              action="venrides_hr_sign.action_venrides_sign_request" sequence="75"/>
+
+    <menuitem name="Conceptos de pago" id="menu_venrides_pay_concepts"
+              parent="venrides_payroll.menu_payroll_config"
+              action="action_venrides_pay_concept" sequence="60"/>
+
+    <menuitem name="Planes de pago" id="menu_venrides_pay_concept_plans"
+              parent="venrides_payroll.menu_payroll_config"
+              action="action_venrides_pay_concept_plan" sequence="61"/>
+</odoo>

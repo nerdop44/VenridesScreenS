@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_payment" model="ir.sequence">
+        <field name="name">Recibo de pago por concepto</field>
+        <field name="code">venrides.payroll.payment</field>
+        <field name="prefix">REC-</field>
+        <field name="padding">6</field>
+    </record>
+</odoo>

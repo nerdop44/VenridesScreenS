@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_perf_period_list" model="ir.ui.view">
+        <field name="name">venrides.performance.period.list</field>
+        <field name="model">venrides.performance.period</field>
+        <field name="arch" type="xml">
+            <list string="Periodos de desempeño">
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="global_weight"/>
+                <field name="job_weight"/>
+                <field name="individual_weight"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'open'"
+                       decoration-muted="state == 'closed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_perf_period_form" model="ir.ui.view">
+        <field name="name">venrides.performance.period.form</field>
+        <field name="model">venrides.performance.period</field>
+        <field name="arch" type="xml">
+            <form string="Periodo de desempeño">
+                <header>
+                    <button name="action_open" type="object" string="Abrir"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_close" type="object" string="Cerrar"
+                            invisible="state != 'open'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group string="Pesos de las metas">
+                            <field name="global_weight"/>
+                            <field name="job_weight"/>
+                            <field name="individual_weight"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Metas" name="goals">
+                            <field name="goal_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="scope"/>
+                                    <field name="job_id"/>
+                                    <field name="employee_id"/>
+                                    <field name="weight"/>
+                                    <field name="target"/>
+                                    <field name="achieved"/>
+                                    <field name="score" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Evaluaciones" name="evaluations">
+                            <field name="evaluation_ids" readonly="1">
+                                <list>
+                                    <field name="employee_id"/>
+                                    <field name="job_id"/>
+                                    <field name="result_pct"/>
+                                    <field name="bonus_usd"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_perf_evaluation_form" model="ir.ui.view">
+        <field name="name">venrides.performance.evaluation.form</field>
+        <field name="model">venrides.performance.evaluation</field>
+        <field name="arch" type="xml">
+            <form string="Evaluación de desempeño">
+                <header>
+                    <button name="action_load_goals" type="object"
+                            string="Cargar metas" class="btn-primary"
+                            invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" type="object"
+                            string="Confirmar" invisible="state == 'confirmed'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="period_id"/>
+                            <field name="employee_id"/>
+                            <field name="contract_id"/>
+                            <field name="job_id"/>
+                        </group>
+                        <group>
+                            <field name="bonus_max_usd"/>
+                            <field name="result_pct"/>
+                            <field name="bonus_usd"/>
+                        </group>
+                    </group>
+                    <separator string="Detalle de metas"/>
+                    <field name="line_ids" readonly="1">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="scope"/>
+                            <field name="weight"/>
+                            <field name="target"/>
+                            <field name="achieved"/>
+                            <field name="score"/>
+                            <field name="weighted_score"/>
+                        </list>
+                    </field>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_perf_evaluation_list" model="ir.ui.view">
+        <field name="name">venrides.performance.evaluation.list</field>
+        <field name="model">venrides.performance.evaluation</field>
+        <field name="arch" type="xml">
+            <list string="Evaluaciones">
+                <field name="period_id"/>
+                <field name="employee_id"/>
+                <field name="job_id"/>
+                <field name="result_pct"/>
+                <field name="bonus_usd"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_venrides_performance_period" model="ir.actions.act_window">
+        <field name="name">Desempeño</field>
+        <field name="res_model">venrides.performance.period</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_venrides_performance_evaluation" model="ir.actions.act_window">
+        <field name="name">Evaluaciones</field>
+        <field name="res_model">venrides.performance.evaluation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

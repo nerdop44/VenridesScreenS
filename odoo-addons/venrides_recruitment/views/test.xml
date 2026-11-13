@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_test_template_list" model="ir.ui.view">
+        <field name="name">venrides.test.template.list</field>
+        <field name="model">venrides.test.template</field>
+        <field name="arch" type="xml">
+            <list string="Tests">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="area"/>
+                <field name="version"/>
+                <field name="question_count"/>
+                <field name="max_score"/>
+                <field name="duration_minutes"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_test_template_form" model="ir.ui.view">
+        <field name="name">venrides.test.template.form</field>
+        <field name="model">venrides.test.template</field>
+        <field name="arch" type="xml">
+            <form string="Test">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del test"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="area"/>
+                            <field name="version"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="duration_minutes"/>
+                            <field name="pass_score"/>
+                            <field name="question_count"/>
+                            <field name="max_score"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Instrucciones" name="instructions">
+                            <field name="instructions"/>
+                        </page>
+                        <page string="Preguntas" name="questions">
+                            <field name="question_ids" context="{'default_template_id': id}">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="question_type"/>
+                                    <field name="weight"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_test_question_form" model="ir.ui.view">
+        <field name="name">venrides.test.question.form</field>
+        <field name="model">venrides.test.question</field>
+        <field name="arch" type="xml">
+            <form string="Pregunta">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="template_id"/>
+                            <field name="question_type"/>
+                            <field name="weight"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                            <field name="help_text"/>
+                        </group>
+                    </group>
+                    <field name="name" placeholder="Escribe la pregunta..."/>
+                    <separator string="Opciones de respuesta"/>
+                    <field name="option_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="is_correct"/>
+                            <field name="active"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_test_invitation_list" model="ir.ui.view">
+        <field name="name">venrides.test.invitation.list</field>
+        <field name="model">venrides.test.invitation</field>
+        <field name="arch" type="xml">
+            <list string="Invitaciones">
+                <field name="name"/>
+                <field name="template_id"/>
+                <field name="channel"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state in ('sent', 'opened')"
+                       decoration-danger="state in ('expired', 'cancelled')"/>
+                <field name="sent_date"/>
+                <field name="expiry_date"/>
+                <field name="attempt_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_test_invitation_form" model="ir.ui.view">
+        <field name="name">venrides.test.invitation.form</field>
+        <field name="model">venrides.test.invitation</field>
+        <field name="arch" type="xml">
+            <form string="Invitación al test">
+                <header>
+                    <button name="action_send_email" type="object"
+                            string="Enviar por correo" class="btn-primary"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_open_link" type="object"
+                            string="Abrir enlace" invisible="state == 'cancelled'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="applicant_id"/>
+                            <field name="template_id"/>
+                            <field name="channel"/>
+                            <field name="expiry_date"/>
+                        </group>
+                        <group>
+                            <field name="sent_date"/>
+                            <field name="opened_date"/>
+                            <field name="submitted_date"/>
+                            <field name="url" widget="url"/>
+                        </group>
+                    </group>
+                    <separator string="Intentos"/>
+                    <field name="attempt_ids" readonly="1">
+                        <list>
+                            <field name="date_end"/>
+                            <field name="score"/>
+                            <field name="max_score"/>
+                            <field name="percentage"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_test_attempt_list" model="ir.ui.view">
+        <field name="name">venrides.test.attempt.list</field>
+        <field name="model">venrides.test.attempt</field>
+        <field name="arch" type="xml">
+            <list string="Intentos">
+                <field name="applicant_id"/>
+                <field name="template_id"/>
+                <field name="date_end"/>
+                <field name="score"/>
+                <field name="max_score"/>
+                <field name="percentage"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_test_attempt_form" model="ir.ui.view">
+        <field name="name">venrides.test.attempt.form</field>
+        <field name="model">venrides.test.attempt</field>
+        <field name="arch" type="xml">
+            <form string="Intento de test" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="applicant_id"/>
+                            <field name="template_id"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration_minutes"/>
+                        </group>
+                        <group>
+                            <field name="score"/>
+                            <field name="max_score"/>
+                            <field name="percentage"/>
+                            <field name="state"/>
+                            <field name="ip_address"/>
+                            <field name="user_agent"/>
+                        </group>
+                    </group>
+                    <separator string="Respuestas"/>
+                    <field name="line_ids" readonly="1">
+                        <list>
+                            <field name="question_id"/>
+                            <field name="is_correct"/>
+                            <field name="score"/>
+                            <field name="max_score"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_test_template" model="ir.actions.act_window">
+        <field name="name">Tests de selección</field>
+        <field name="res_model">venrides.test.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_venrides_test_invitation" model="ir.actions.act_window">
+        <field name="name">Invitaciones al test</field>
+        <field name="res_model">venrides.test.invitation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_venrides_test_attempt" model="ir.actions.act_window">
+        <field name="name">Resultados de tests</field>
+        <field name="res_model">venrides.test.attempt</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

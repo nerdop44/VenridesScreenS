@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_generate_payments_form" model="ir.ui.view">
+        <field name="name">venrides.generate.payments.form</field>
+        <field name="model">venrides.generate.payments</field>
+        <field name="arch" type="xml">
+            <form string="Generar pagos por concepto">
+                <group>
+                    <group>
+                        <field name="cycle_id"/>
+                        <field name="pay_date"/>
+                    </group>
+                    <group>
+                        <field name="rate_bs_usd"/>
+                        <field name="create_receipts"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="Generar pagos" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_generate_payments" model="ir.actions.act_window">
+        <field name="name">Generar pagos por concepto</field>
+        <field name="res_model">venrides.generate.payments</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

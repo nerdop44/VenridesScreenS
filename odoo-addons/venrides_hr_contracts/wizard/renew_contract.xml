@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_contract_renewal_form" model="ir.ui.view">
+        <field name="name">venrides.contract.renewal.form</field>
+        <field name="model">venrides.contract.renewal</field>
+        <field name="arch" type="xml">
+            <form string="Renovar contrato">
+                <group>
+                    <group>
+                        <field name="contract_id"/>
+                        <field name="employee_id"/>
+                        <field name="current_stage"/>
+                        <field name="next_stage"/>
+                    </group>
+                    <group>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="template_id"/>
+                        <field name="salary_table_id"/>
+                        <field name="copy_annexes"/>
+                    </group>
+                </group>
+                <field name="notes" placeholder="Notas de la renovación..."/>
+                <footer>
+                    <button name="action_create" type="object" string="Crear contrato"
+                            class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

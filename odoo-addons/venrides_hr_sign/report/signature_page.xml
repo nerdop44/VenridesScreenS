@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_signature_page" model="ir.actions.report">
+        <field name="name">Constancia de firma</field>
+        <field name="model">venrides.sign.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">venrides_hr_sign.report_signature_page</field>
+        <field name="print_report_name">'Constancia - %s' % (object.reference or object.id)</field>
+    </record>
+
+    <template id="report_signature_page">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Constancia de recepción y firma</h2>
+                        <p class="text-muted" t-out="o.name"/>
+
+                        <table class="table table-sm mt-3">
+                            <tr><th>Empleado</th><td t-out="o.employee_id.name or ''"/></tr>
+                            <tr><th>Cédula</th><td t-out="o.employee_id.identification_id or ''"/></tr>
+                            <tr><th>Documento</th><td t-out="o.reference or ''"/></tr>
+                            <tr><th>Concepto</th><td t-out="o.concept_name or ''"/></tr>
+                            <tr t-if="o.amount_usd">
+                                <th>Monto</th>
+                                <td t-out="'%.2f USD / %.2f Bs (tasa %.4f)' % (o.amount_usd, o.amount_bs, o.rate_bs_usd)"/>
+                            </tr>
+                            <tr t-if="o.payment_date"><th>Fecha</th><td t-out="o.payment_date"/></tr>
+                        </table>
+
+                        <p class="mt-4">
+                            El trabajador declara haber recibido y revisado el documento
+                            indicado, y firma en señal de conformidad.
+                        </p>
+
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <div style="border-top:1px solid #333;padding-top:6px;">
+                                    <strong t-out="o.company_id.name or ''"/><br/>LA EMPRESA
+                                </div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <t t-if="o.signature_image_data">
+                                    <img t-att-src="o.signature_image_data"
+                                         style="max-height:90px;max-width:220px;"/>
+                                </t>
+                                <div style="border-top:1px solid #333;padding-top:6px;">
+                                    <strong t-out="o.employee_id.name or ''"/><br/>EL TRABAJADOR
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-8">
+                                <p class="small text-muted">
+                                    Hash del contenido: <span t-out="o.content_hash or ''"/><br/>
+                                    Hash del PDF firmado: <span t-out="o.signed_pdf_hash or ''"/><br/>
+                                    Validación: <span t-out="o.signature_check or ''"/>
+                                    (<span t-out="'%.1f' % (o.signature_similarity or 0.0)"/> % de similitud con el contrato)
+                                </p>
+                            </div>
+                            <div class="col-4 text-end">
+                                <img t-att-src="o.qr_url" style="width:100px;height:100px;"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

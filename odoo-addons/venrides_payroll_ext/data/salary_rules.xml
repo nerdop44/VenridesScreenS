@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ===================== SEMANAL ===================== -->
+        <record id="rule_BONOGUE_semanal" model="hr.salary.rule">
+            <field name="name">Bono de guerra</field>
+            <field name="code">BONOGUE</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_guerra_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="10"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <record id="rule_BONOTRA_semanal" model="hr.salary.rule">
+            <field name="name">Bono de transporte y asistencia</field>
+            <field name="code">BONOTRA</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_transporte_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="11"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <record id="rule_CESTAT_semanal" model="hr.salary.rule">
+            <field name="name">Cestatickets</field>
+            <field name="code">CESTAT</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.cestaticket_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="12"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <record id="rule_BONODES_semanal" model="hr.salary.rule">
+            <field name="name">Bono de desempeño</field>
+            <field name="code">BONODES</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.performance_bonus_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.performance_bonus_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="13"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <record id="rule_DESCEMP_semanal" model="hr.salary.rule">
+            <field name="name">Descuento de consumo del empleado</field>
+            <field name="code">DESCEMP</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.employee_deduction_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.employee_deduction_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="250"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <record id="rule_VALE_semanal" model="hr.salary.rule">
+            <field name="name">Vales de comida</field>
+            <field name="code">VALE</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.voucher_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.voucher_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="251"/>
+            <field name="struct_id" ref="venrides_payroll.structure_semanal"/>
+        </record>
+
+        <!-- ===================== QUINCENAL ===================== -->
+        <record id="rule_BONOGUE_quincenal" model="hr.salary.rule">
+            <field name="name">Bono de guerra</field>
+            <field name="code">BONOGUE</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_guerra_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="10"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <record id="rule_BONOTRA_quincenal" model="hr.salary.rule">
+            <field name="name">Bono de transporte y asistencia</field>
+            <field name="code">BONOTRA</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_transporte_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="11"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <record id="rule_CESTAT_quincenal" model="hr.salary.rule">
+            <field name="name">Cestatickets</field>
+            <field name="code">CESTAT</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.cestaticket_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="12"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <record id="rule_BONODES_quincenal" model="hr.salary.rule">
+            <field name="name">Bono de desempeño</field>
+            <field name="code">BONODES</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.performance_bonus_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.performance_bonus_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="13"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <record id="rule_DESCEMP_quincenal" model="hr.salary.rule">
+            <field name="name">Descuento de consumo del empleado</field>
+            <field name="code">DESCEMP</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.employee_deduction_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.employee_deduction_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="250"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <record id="rule_VALE_quincenal" model="hr.salary.rule">
+            <field name="name">Vales de comida</field>
+            <field name="code">VALE</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.voucher_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.voucher_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="251"/>
+            <field name="struct_id" ref="venrides_payroll.structure_quincenal"/>
+        </record>
+
+        <!-- ===================== MENSUAL ===================== -->
+        <record id="rule_BONOGUE_mensual" model="hr.salary.rule">
+            <field name="name">Bono de guerra</field>
+            <field name="code">BONOGUE</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_guerra_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="10"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <record id="rule_BONOTRA_mensual" model="hr.salary.rule">
+            <field name="name">Bono de transporte y asistencia</field>
+            <field name="code">BONOTRA</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.bono_transporte_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="11"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <record id="rule_CESTAT_mensual" model="hr.salary.rule">
+            <field name="name">Cestatickets</field>
+            <field name="code">CESTAT</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+monto = contract.cestaticket_usd * payslip.tasa_cambio
+WORK100 = worked_days.WORK100.number_of_days if worked_days.WORK100 else 0
+AUSEP = worked_days.AUSEP.number_of_days if worked_days.AUSEP else 0
+result = (monto / 30) * (WORK100 + AUSEP)
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="12"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <record id="rule_BONODES_mensual" model="hr.salary.rule">
+            <field name="name">Bono de desempeño</field>
+            <field name="code">BONODES</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.performance_bonus_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.performance_bonus_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_asignacion_bonos"/>
+            <field name="sequence" eval="13"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <record id="rule_DESCEMP_mensual" model="hr.salary.rule">
+            <field name="name">Descuento de consumo del empleado</field>
+            <field name="code">DESCEMP</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.employee_deduction_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.employee_deduction_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="250"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <record id="rule_VALE_mensual" model="hr.salary.rule">
+            <field name="name">Vales de comida</field>
+            <field name="code">VALE</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip.voucher_usd > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip.voucher_usd * payslip.tasa_cambio
+            </field>
+            <field name="category_id" ref="venrides_payroll.category_ded"/>
+            <field name="sequence" eval="251"/>
+            <field name="struct_id" ref="venrides_payroll.structure_mensual"/>
+        </record>
+
+        <!-- ============ BASE DE DEDUCCIONES CONFIGURABLE ============ -->
+        <record id="venrides_payroll.rule_FAOV_semanal" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.company_id.por_empleado_lph / 100)
+            </field>
+        </record>
+        <record id="venrides_payroll.rule_FAOV_quincenal" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.company_id.por_empleado_lph / 100)
+            </field>
+        </record>
+        <record id="venrides_payroll.rule_FAOV_mensual" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.company_id.por_empleado_lph / 100)
+            </field>
+        </record>
+        <record id="venrides_payroll.rule_ISRL_semanal" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.islr / 100)
+            </field>
+        </record>
+        <record id="venrides_payroll.rule_ISRL_quincenal" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.islr / 100)
+            </field>
+        </record>
+        <record id="venrides_payroll.rule_ISRL_mensual" model="hr.salary.rule">
+            <field name="amount_python_compute">
+base = categories.BASIC
+if employee.company_id.venrides_deduction_base_mode == 'total':
+    base = categories.BASIC + categories.ASIGNA + categories.SUBS + categories.BONO
+result = base * (employee.islr / 100)
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="job_atc" model="hr.job">
+            <field name="name">ATC</field>
+            <field name="venrides_area">atc</field>
+            <field name="venrides_test_template_id" ref="test_atc"/>
+            <field name="description">Atención al cliente, toma de pedidos, caja y servicio en salón.</field>
+        </record>
+
+        <record id="job_general" model="hr.job">
+            <field name="name">Ayudante general</field>
+            <field name="venrides_area">general</field>
+            <field name="venrides_test_template_id" ref="test_general"/>
+            <field name="description">Apoyo en limpieza, traslado de insumos, recepción de mercancía y apoyo operativo.</field>
+        </record>
+
+        <record id="job_kitchen" model="hr.job">
+            <field name="name">Cocina</field>
+            <field name="venrides_area">kitchen</field>
+            <field name="venrides_test_template_id" ref="test_kitchen"/>
+            <field name="description">Preparación de alimentos, higiene, cadena de frío y organización de la cocina.</field>
+        </record>
+
+        <record id="vacancy_atc" model="venrides.vacancy">
+            <field name="name">ATC — Atención al cliente</field>
+            <field name="code">VAC-ATC-2026</field>
+            <field name="job_id" ref="job_atc"/>
+            <field name="slots">1</field>
+            <field name="state">open</field>
+            <field name="test_template_id" ref="test_atc"/>
+            <field name="salary_summary">Salario base + bonificaciones + cestatickets (según tabla salarial)</field>
+            <field name="description" type="html">
+                <p>Buscamos una persona para atención al cliente: recibir pedidos, cobrar,
+                mantener el área limpia y brindar un servicio cordial.</p>
+            </field>
+            <field name="requirements" type="html">
+                <ul>
+                    <li>Bachiller o técnico medio.</li>
+                    <li>Experiencia previa en atención al público (deseable).</li>
+                    <li>Disponibilidad para el horario publicado.</li>
+                </ul>
+            </field>
+        </record>
+
+        <record id="vacancy_general" model="venrides.vacancy">
+            <field name="name">Ayudante general</field>
+            <field name="code">VAC-GEN-2026</field>
+            <field name="job_id" ref="job_general"/>
+            <field name="slots">1</field>
+            <field name="state">open</field>
+            <field name="test_template_id" ref="test_general"/>
+            <field name="salary_summary">Salario base + bonificaciones + cestatickets (según tabla salarial)</field>
+            <field name="description" type="html">
+                <p>Apoyo operativo: limpieza, orden, traslado de insumos y recepción de
+                mercancía.</p>
+            </field>
+            <field name="requirements" type="html">
+                <ul>
+                    <li>Bachiller o experiencia equivalente.</li>
+                    <li>Disponibilidad para el horario publicado.</li>
+                </ul>
+            </field>
+        </record>
+
+        <record id="vacancy_kitchen" model="venrides.vacancy">
+            <field name="name">Cocina</field>
+            <field name="code">VAC-COC-2026</field>
+            <field name="job_id" ref="job_kitchen"/>
+            <field name="slots">1</field>
+            <field name="state">open</field>
+            <field name="test_template_id" ref="test_kitchen"/>
+            <field name="salary_summary">Salario base + bonificaciones + cestatickets (según tabla salarial)</field>
+            <field name="description" type="html">
+                <p>Preparación de alimentos, higiene, cadena de frío y organización de la
+                cocina.</p>
+            </field>
+            <field name="requirements" type="html">
+                <ul>
+                    <li>Experiencia en cocina (deseable).</li>
+                    <li>Conocimientos de higiene y manipulación de alimentos.</li>
+                    <li>Disponibilidad para el horario publicado.</li>
+                </ul>
+            </field>
+        </record>
+
+    </data>
+</odoo>

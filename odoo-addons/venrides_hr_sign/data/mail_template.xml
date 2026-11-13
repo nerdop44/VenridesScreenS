@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_sign_request" model="mail.template">
+        <field name="name">Firmas — Enlace para firmar documento</field>
+        <field name="model_id" ref="model_venrides_sign_request"/>
+        <field name="subject">VenridesCafé — Documento para firmar</field>
+        <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="body_html" type="html">
+            <div style="margin:0;padding:0;background:#f6f1e7;font-family:Arial,Helvetica,sans-serif;color:#3b2b2b;">
+                <div style="max-width:600px;margin:0 auto;padding:24px;">
+                    <div style="background:#6E161E;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0;">
+                        <h2 style="margin:0;font-size:20px;">VenridesCafé</h2>
+                        <p style="margin:4px 0 0;opacity:.85;">Vive la experiencia VenridesCafé</p>
+                    </div>
+                    <div style="background:#fff;padding:24px;border-radius:0 0 8px 8px;">
+                        <p>Hola <strong t-out="object.employee_id.name or ''"/>:</p>
+                        <p>
+                            Tienes un documento pendiente de firma:
+                            <strong t-out="object.reference or ''"/>.
+                        </p>
+                        <p t-if="object.amount_usd">
+                            Monto: <strong t-out="'%.2f USD' % object.amount_usd"/>
+                            (<span t-out="'%.2f Bs' % object.amount_bs"/>).
+                        </p>
+                        <p style="text-align:center;margin:28px 0;">
+                            <a t-att-href="object.sign_url"
+                               style="background:#6E161E;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;display:inline-block;">
+                                Revisar y firmar
+                            </a>
+                        </p>
+                        <p style="font-size:13px;color:#666;">
+                            Recibirás un código de 6 dígitos en tu correo para confirmar
+                            la firma. Si el botón no funciona, copia esta dirección:<br/>
+                            <span t-out="object.sign_url or ''"/>
+                        </p>
+                    </div>
+                    <p style="text-align:center;font-size:12px;color:#8a7a6a;margin-top:16px;">
+                        VenridesCafé, C.A. · Barinas, Venezuela
+                    </p>
+                </div>
+            </div>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_payslip_run_inherit_views" model="ir.ui.view">
+            <field name="name">hr.payslip.run.form.venrides</field>
+            <field name="model">hr.payslip.run</field>
+            <field name="arch" type="xml">
+                <form string="Lote de Nómina">
+                    <header>
+                        <button name="action_open_report" type="object" string="Ver Informe"
+                                invisible="not slip_ids"/>
+                        <button name="action_close" type="object" string="Cerrar" class="oe_highlight"
+                                invisible="state != 'draft'"/>
+                        <button name="action_draft" type="object" string="Reabrir"
+                                invisible="state != 'close'"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Nombre del lote"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                                <field name="tasa_cambio"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Recibos" name="slips">
+                                <field name="slip_ids">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="employee_id"/>
+                                        <field name="date_from"/>
+                                        <field name="date_to"/>
+                                        <field name="basic_wage"/>
+                                        <field name="net_wage"/>
+                                        <field name="state"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

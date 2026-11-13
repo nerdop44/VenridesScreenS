@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_payslip_receipts_form" model="ir.ui.view">
+        <field name="name">venrides.payslip.receipts.form</field>
+        <field name="model">venrides.payslip.receipts</field>
+        <field name="arch" type="xml">
+            <form string="Recibos por concepto">
+                <group>
+                    <group>
+                        <field name="payslip_id"/>
+                        <field name="payment_date"/>
+                    </group>
+                    <group>
+                        <field name="rate_bs_usd"/>
+                        <field name="create_receipts"/>
+                    </group>
+                </group>
+                <separator string="Conceptos a pagar"/>
+                <field name="line_ids">
+                    <list>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="category_id"/>
+                        <field name="total"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_generate" type="object"
+                            string="Generar recibos" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_payslip_receipts" model="ir.actions.act_window">
+        <field name="name">Recibos por concepto</field>
+        <field name="res_model">venrides.payslip.receipts</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_payslip_id': active_id}</field>
+    </record>
+</odoo>

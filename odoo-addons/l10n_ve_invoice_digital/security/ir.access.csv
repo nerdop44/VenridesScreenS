@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id/id,operation,domain
+access_account_retention_alert_wizard,account.retention.alert.wizard,model_account_retention_alert_wizard,base.group_user,crud,

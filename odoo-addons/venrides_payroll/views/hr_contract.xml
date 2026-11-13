@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="hr_contract_form_inherit_views_ve" model="ir.ui.view">
+            <field name="name">hr.contract.form.ve</field>
+            <field name="model">hr.contract</field>
+            <field name="arch" type="xml">
+                <form string="Contrato">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="employee_id"/>
+                                <field name="company_id"/>
+                                <field name="structure_type_id"/>
+                                <field name="contract_type_id"/>
+                                <field name="schedule_pay"/>
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                                <field name="retencion_islr"/>
+                                <field name="retencion_faov"/>
+                                <field name="retencion_sso"/>
+                                <field name="retencion_rpe"/>
+                            </group>
+                            <group>
+                                <field name="currency_id"/>
+                                <field name="currency_id_dif"/>
+                                <field name="wage"/>
+                                <field name="wage_usd"/>
+                                <field name="basado_usd"/>
+                                <field name="dias_utilidades"/>
+                                <field name="dias_bono_vacacional"/>
+                                <field name="complemento"/>
+                                <field name="complemento_mensual"/>
+                                <field name="complemento_diario"/>
+                                <field name="HED"/>
+                                <field name="HED_usd"/>
+                                <field name="HEN"/>
+                                <field name="HEN_usd"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Vacaciones">
+                                <group>
+                                    <group>
+                                        <field name="dias_bono_vacacional"/>
+                                        <field name="anios_antiguedad"/>
+                                        <field name="meses_antiguedad"/>
+                                        <field name="dias_antiguedad"/>
+                                        <field name="dias_provision_vaca" string="Dias de Vacaciones anual"/>
+                                        <field name="vaca_disponible"/>
+                                    </group>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

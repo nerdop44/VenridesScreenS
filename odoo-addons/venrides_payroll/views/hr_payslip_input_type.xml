@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_hr_payslip_input_type_form_inherit_ve" model="ir.ui.view">
+            <field name="name">hr.payslip.input.type.form.ve</field>
+            <field name="model">hr.payslip.input.type</field>
+            <field name="arch" type="xml">
+                <form string="Tipo de Entrada">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="monstar_automatico"/>
+                            <field name="available_in_attachments"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

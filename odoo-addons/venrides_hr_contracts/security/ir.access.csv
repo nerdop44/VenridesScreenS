@@ -1,0 +1,13 @@
+id,name,model_id,group_id/id,operation,domain
+access_clause_user,venrides.contract.clause user,venrides.contract.clause,hr.group_hr_user,crud,
+access_clause_manager,venrides.contract.clause manager,venrides.contract.clause,hr.group_hr_manager,crud,
+access_annex_user,venrides.contract.annex user,venrides.contract.annex,hr.group_hr_user,crud,
+access_annex_manager,venrides.contract.annex manager,venrides.contract.annex,hr.group_hr_manager,crud,
+access_salary_table_user,venrides.salary.table user,venrides.salary.table,hr.group_hr_user,crud,
+access_salary_table_manager,venrides.salary.table manager,venrides.salary.table,hr.group_hr_manager,crud,
+access_salary_line_user,venrides.salary.table.line user,venrides.salary.table.line,hr.group_hr_user,crud,
+access_salary_line_manager,venrides.salary.table.line manager,venrides.salary.table.line,hr.group_hr_manager,crud,
+access_template_user,venrides.contract.template user,venrides.contract.template,hr.group_hr_user,crud,
+access_template_manager,venrides.contract.template manager,venrides.contract.template,hr.group_hr_manager,crud,
+access_signature_user,venrides.contract.signature user,venrides.contract.signature,hr.group_hr_user,crud,
+access_signature_manager,venrides.contract.signature manager,venrides.contract.signature,hr.group_hr_manager,crud,

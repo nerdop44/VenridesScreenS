@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_account_list" model="ir.ui.view">
+        <field name="name">venrides.employee.account.list</field>
+        <field name="model">venrides.employee.account</field>
+        <field name="arch" type="xml">
+            <list string="Cuentas de empleados">
+                <field name="employee_id"/>
+                <field name="balance"/>
+                <field name="credit_limit"/>
+                <field name="settlement_mode"/>
+                <field name="settlement_percent"/>
+                <field name="settlement_fixed"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_account_form" model="ir.ui.view">
+        <field name="name">venrides.employee.account.form</field>
+        <field name="model">venrides.employee.account</field>
+        <field name="arch" type="xml">
+            <form string="Cuenta de consumo">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="employee_id"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="currency_id"/>
+                            <field name="balance"/>
+                            <field name="credit_limit"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Forma de descuento en nómina">
+                            <field name="settlement_mode"/>
+                            <field name="settlement_percent"
+                                   invisible="settlement_mode != 'percent'"/>
+                            <field name="settlement_fixed"
+                                   invisible="settlement_mode != 'fixed'"/>
+                        </group>
+                    </group>
+                    <separator string="Movimientos"/>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="date"/>
+                            <field name="name"/>
+                            <field name="line_type"/>
+                            <field name="amount"/>
+                            <field name="payslip_id"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_employee_account" model="ir.actions.act_window">
+        <field name="name">Cuentas de empleados</field>
+        <field name="res_model">venrides.employee.account</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

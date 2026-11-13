@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_payslip_concept" model="ir.actions.report">
+        <field name="name">Recibo de nómina por concepto</field>
+        <field name="model">hr.payslip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">venrides_payroll_ext.report_payslip_concept</field>
+        <field name="print_report_name">'Recibo concepto - %s - %s' % (object.employee_id.name, object.date_from)</field>
+    </record>
+
+    <template id="report_payslip_concept">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Recibo de nómina por concepto</h2>
+                        <p class="text-muted">
+                            Documento parcial. Corresponde únicamente a los conceptos
+                            seleccionados del recibo <strong t-out="o.number or ''"/>.
+                        </p>
+                        <table class="table table-sm">
+                            <tr><th>Empleado</th><td t-out="o.employee_id.name or ''"/></tr>
+                            <tr><th>Periodo</th><td t-out="'%s a %s' % (o.date_from, o.date_to)"/></tr>
+                            <tr><th>Cargo</th><td t-out="o.job_id.name or ''"/></tr>
+                        </table>
+
+                        <t t-set="selected" t-value="o.line_ids.filtered(lambda l: l.id in (line_ids or []))"/>
+                        <table class="table table-bordered mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Concepto</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="selected" t-as="line">
+                                    <td t-out="line.code or ''"/>
+                                    <td t-out="line.name or ''"/>
+                                    <td class="text-center" t-out="'%.2f' % (line.quantity or 0)"/>
+                                    <td class="text-end" t-out="'%.2f' % (line.total or 0)"/>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Total seleccionado</th>
+                                    <th class="text-end" t-out="'%.2f' % sum(selected.mapped('total'))"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <p class="small text-muted">
+                            Este recibo no sustituye el recibo unificado de nómina.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_payment_list" model="ir.ui.view">
+        <field name="name">venrides.payroll.payment.list</field>
+        <field name="model">venrides.payroll.payment</field>
+        <field name="arch" type="xml">
+            <list string="Pagos por concepto">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="concept_id"/>
+                <field name="payment_date"/>
+                <field name="amount_usd"/>
+                <field name="rate_bs_usd"/>
+                <field name="amount_bs"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('signed', 'paid')"
+                       decoration-warning="state == 'sent'"
+                       decoration-muted="state in ('draft', 'void')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payment_form" model="ir.ui.view">
+        <field name="name">venrides.payroll.payment.form</field>
+        <field name="model">venrides.payroll.payment</field>
+        <field name="arch" type="xml">
+            <form string="Pago por concepto">
+                <header>
+                    <button name="action_create_receipt" type="object"
+                            string="Generar recibo y enviar" class="btn-primary"
+                            invisible="state in ('signed', 'paid', 'void')"/>
+                    <button name="action_view_sign_request" type="object"
+                            string="Ver firma" invisible="not sign_request_id"/>
+                    <button name="action_mark_paid" type="object" string="Marcar pagado"
+                            invisible="state != 'signed'"/>
+                    <button name="action_void" type="object" string="Anular"
+                            invisible="state in ('paid', 'void')"/>
+                    <button name="action_reissue" type="object" string="Reemitir"
+                            invisible="state == 'void'"/>
+                    <button name="%(action_report_receipt)d" type="action"
+                            string="Imprimir recibo"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not duplicate_warning">
+                        Ya existe otro pago para este empleado, concepto y fecha.
+                        Verifica antes de continuar.
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="contract_id"/>
+                            <field name="concept_id"/>
+                            <field name="plan_id"/>
+                            <field name="payslip_id"/>
+                            <field name="payment_date"/>
+                        </group>
+                        <group>
+                            <field name="amount_usd"/>
+                            <field name="rate_bs_usd"/>
+                            <field name="amount_bs"/>
+                            <field name="bank_reference"/>
+                            <field name="sign_request_id"/>
+                        </group>
+                    </group>
+                    <group string="Soporte de abono">
+                        <field name="bank_support" widget="binary"/>
+                        <field name="bank_support_filename"/>
+                    </group>
+                    <group string="Anulación">
+                        <field name="void_reason" placeholder="Motivo de anulación (si aplica)"/>
+                        <field name="void_date" invisible="not void_date"/>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_payroll_payment" model="ir.actions.act_window">
+        <field name="name">Pagos por concepto</field>
+        <field name="res_model">venrides.payroll.payment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

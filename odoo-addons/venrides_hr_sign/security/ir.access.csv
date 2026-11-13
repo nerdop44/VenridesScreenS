@@ -1,0 +1,5 @@
+id,name,model_id,group_id/id,operation,domain
+access_sign_request_user,venrides.sign.request user,venrides.sign.request,hr.group_hr_user,crud,
+access_sign_request_manager,venrides.sign.request manager,venrides.sign.request,hr.group_hr_manager,crud,
+access_medical_support_user,venrides.medical.support user,venrides.medical.support,hr.group_hr_user,crud,
+access_medical_support_manager,venrides.medical.support manager,venrides.medical.support,hr.group_hr_manager,crud,

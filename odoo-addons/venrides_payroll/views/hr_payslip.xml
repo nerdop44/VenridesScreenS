@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_payslip_form_inherit_views_lunes" model="ir.ui.view">
+            <field name="name">hr.payslip.form.venrides</field>
+            <field name="model">hr.payslip</field>
+            <field name="arch" type="xml">
+                <form string="Nómina">
+                    <header>
+                        <button name="compute_sheet" type="object" string="Calcular"
+                                class="oe_highlight" invisible="state not in ('draft', 'verify')"/>
+                        <button name="action_payslip_done" type="object" string="Confirmar"
+                                class="oe_highlight" invisible="state not in ('draft', 'verify')"/>
+                        <button name="action_payslip_paid" type="object" string="Pagar"
+                                invisible="state != 'done'"/>
+                        <button name="refund_sheet" type="object" string="Nota de Crédito"
+                                invisible="state not in ('done', 'paid') or credit_note"/>
+                        <button name="action_payslip_cancel" type="object" string="Cancelar"
+                                invisible="state in ('paid', 'cancel')"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Nombre del recibo"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="employee_id"/>
+                                <field name="department_id"/>
+                                <field name="job_id"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                                <field name="struct_id"/>
+                                <field name="contract_id"/>
+                                <field name="payslip_run_id"/>
+                                <field name="number"/>
+                                <field name="credit_note" invisible="not credit_note"/>
+                            </group>
+                            <group>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="tasa_cambio"/>
+                                <field name="basic_wage"/>
+                                <field name="gross_wage"/>
+                                <field name="net_wage"/>
+                                <field name="net_wage_usd"/>
+                                <field name="paid_date" invisible="state not in ('paid',)"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Líneas" name="lines">
+                                <field name="line_ids" readonly="1">
+                                    <list editable="bottom">
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="category_id"/>
+                                        <field name="quantity"/>
+                                        <field name="rate"/>
+                                        <field name="amount"/>
+                                        <field name="total"/>
+                                        <field name="total_usd"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Días Trabajados" name="worked_days">
+                                <field name="worked_days_line_ids">
+                                    <list editable="bottom">
+                                        <field name="code"/>
+                                        <field name="number_of_days"/>
+                                        <field name="number_of_hours"/>
+                                        <field name="amount"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Entradas" name="inputs">
+                                <field name="input_line_ids">
+                                    <list editable="bottom">
+                                        <field name="input_type_id"/>
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="amount"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Firma" name="firma">
+                                <group>
+                                    <field name="sign_request_id"/>
+                                    <field name="pdf_signed"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    <record id="hr_payslip_tree_inherit_views_totales" model="ir.ui.view">
+        <field name="name">hr.payslip.list.venrides</field>
+        <field name="model">hr.payslip</field>
+        <field name="arch" type="xml">
+            <list string="Nóminas" decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'paid'">
+                <field name="name"/>
+                <field name="number"/>
+                <field name="employee_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="tasa_cambio"/>
+                <field name="basic_wage"/>
+                <field name="gross_wage"/>
+                <field name="net_wage"/>
+                <field name="net_wage_usd"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+
+    </data>
+</odoo>

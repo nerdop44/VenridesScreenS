@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem name="Enlaces de postulación" id="menu_venrides_application_links"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_venrides_application_link" sequence="2"/>
+
+    <menuitem name="Vacantes" id="menu_venrides_vacancies"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_venrides_vacancy" sequence="1"/>
+
+    <menuitem name="Tests" id="menu_venrides_tests"
+              parent="hr_recruitment.menu_hr_recruitment_root" sequence="30"/>
+
+    <menuitem name="Tests de selección" id="menu_venrides_test_templates"
+              parent="menu_venrides_tests"
+              action="action_venrides_test_template" sequence="1"/>
+    <menuitem name="Invitaciones" id="menu_venrides_test_invitations"
+              parent="menu_venrides_tests"
+              action="action_venrides_test_invitation" sequence="2"/>
+    <menuitem name="Resultados" id="menu_venrides_test_attempts"
+              parent="menu_venrides_tests"
+              action="action_venrides_test_attempt" sequence="3"/>
+
+    <menuitem name="Fases de selección" id="menu_venrides_phases"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_venrides_selection_phase" sequence="35"/>
+
+    <menuitem name="Expediente digital" id="menu_venrides_documents"
+              parent="hr_recruitment.menu_hr_recruitment_root"
+              action="action_venrides_employee_document" sequence="40"/>
+</odoo>

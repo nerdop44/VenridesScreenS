@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        BUG-022: las vistas nativas de Tasas de Odoo declaraban
+        digits="[12,12]", por lo que la TRM se mostraba como
+        857.887600000000 en lugar de 857.8876.
+
+        Se fija 'Tasa' (4 decimales) en los campos que son la tasa
+        propiamente dicha: 'rate' y 'company_rate'.
+
+        'inverse_company_rate' NO se deja en 4 decimales a proposito:
+        es el factor inverso (1 / tasa). Con la TRM 857.8876 ese factor
+        vale 0.0011656 y a 4 decimales quedaria 0.0012, que representa
+        mal la tasa y desorienta al usuario. Se mantiene a 8 decimales
+        para que el factor siga siendo fiel, mientras que la tasa que el
+        usuario lee y digita es siempre de 4 decimales.
+    -->
+
+    <record id="view_currency_rate_form_inherit_locve_4dec" model="ir.ui.view">
+        <field name="name">res.currency.rate.form.inherit.locve.4dec</field>
+        <field name="model">res.currency.rate</field>
+        <field name="inherit_id" ref="base.view_currency_rate_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='rate']" position="attributes">
+                <attribute name="digits">Tasa</attribute>
+            </xpath>
+            <xpath expr="//field[@name='company_rate']" position="attributes">
+                <attribute name="digits">Tasa</attribute>
+            </xpath>
+            <xpath expr="//field[@name='inverse_company_rate']" position="attributes">
+                <attribute name="digits">[16, 8]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_currency_rate_tree_inherit_locve_4dec" model="ir.ui.view">
+        <field name="name">res.currency.rate.list.inherit.locve.4dec</field>
+        <field name="model">res.currency.rate</field>
+        <field name="inherit_id" ref="base.view_currency_rate_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_rate']" position="attributes">
+                <attribute name="digits">Tasa</attribute>
+            </xpath>
+            <xpath expr="//field[@name='inverse_company_rate']" position="attributes">
+                <attribute name="digits">[16, 8]</attribute>
+            </xpath>
+            <xpath expr="//field[@name='rate']" position="attributes">
+                <attribute name="digits">Tasa</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

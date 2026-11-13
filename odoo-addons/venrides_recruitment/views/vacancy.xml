@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vacancy_list" model="ir.ui.view">
+        <field name="name">venrides.vacancy.list</field>
+        <field name="model">venrides.vacancy</field>
+        <field name="arch" type="xml">
+            <list string="Vacantes">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="job_id"/>
+                <field name="slots"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'open'"
+                       decoration-muted="state == 'closed'"/>
+                <field name="application_count"/>
+                <field name="date_open"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vacancy_kanban" model="ir.ui.view">
+        <field name="name">venrides.vacancy.kanban</field>
+        <field name="model">venrides.vacancy</field>
+        <field name="arch" type="xml">
+            <kanban default_order="sequence, id desc">
+                <field name="name"/>
+                <field name="job_id"/>
+                <field name="slots"/>
+                <field name="application_count"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong class="o_kanban_record_title">
+                                <field name="name"/>
+                            </strong>
+                            <div><field name="job_id"/></div>
+                            <div class="text-muted">
+                                <field name="slots"/> cupo(s) ·
+                                <field name="application_count"/> postulación(es)
+                            </div>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'open'"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_vacancy_form" model="ir.ui.view">
+        <field name="name">venrides.vacancy.form</field>
+        <field name="model">venrides.vacancy</field>
+        <field name="arch" type="xml">
+            <form string="Vacante">
+                <header>
+                    <button name="action_publish" type="object" string="Publicar"
+                            class="btn-primary" invisible="state == 'open'"/>
+                    <button name="action_close" type="object" string="Cerrar"
+                            invisible="state == 'closed'"/>
+                    <button name="action_share_whatsapp" type="object"
+                            string="Compartir por WhatsApp"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_applications" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="application_count" widget="statinfo"
+                                   string="Postulaciones"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre de la vacante"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="job_id"/>
+                            <field name="department_id"/>
+                            <field name="slots"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="date_open"/>
+                            <field name="date_close"/>
+                            <field name="test_template_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="schedule_description"/>
+                        <field name="salary_summary"/>
+                        <field name="public_url" widget="url" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Descripción" name="description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Requisitos" name="requirements">
+                            <field name="requirements"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vacancy_search" model="ir.ui.view">
+        <field name="name">venrides.vacancy.search</field>
+        <field name="model">venrides.vacancy</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="job_id"/>
+                <filter name="open" string="Publicadas" domain="[('state', '=', 'open')]"/>
+                <filter name="closed" string="Cerradas" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter name="group_job" string="Puesto" domain="[]" context="{'group_by': 'job_id'}"/>
+                <filter name="group_state" string="Estado" domain="[]" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_venrides_vacancy" model="ir.actions.act_window">
+        <field name="name">Vacantes</field>
+        <field name="res_model">venrides.vacancy</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea una vacante</p>
+            <p>Publica el puesto, asigna el test y comparte el enlace del formulario.</p>
+        </field>
+    </record>
+</odoo>

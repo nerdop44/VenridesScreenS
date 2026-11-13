@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_contract_form_venrides" model="ir.ui.view">
+        <field name="name">hr.contract.form.venrides</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="venrides_payroll.hr_contract_form_inherit_views_ve"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_send_signature_link" type="object"
+                            string="Enviar a firma" class="btn-primary"
+                            invisible="signature_state == 'signed'"/>
+                    <button name="action_open_signature_page" type="object"
+                            string="Abrir firma"
+                            invisible="not signature_token or signature_state == 'signed'"/>
+                    <button name="%(action_report_contract)d" type="action"
+                            string="Imprimir contrato"/>
+                    <button name="action_renew" type="object"
+                            string="Renovar contrato" invisible="not date_end"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+            </xpath>
+            <xpath expr="//sheet/group" position="after">
+                <group>
+                    <group string="Contrato">
+                        <field name="contract_number"/>
+                        <field name="contract_stage"/>
+                        <field name="job_id"/>
+                        <field name="duration_days"/>
+                        <field name="renewal_due"/>
+                    </group>
+                    <group string="Plantilla y firma">
+                        <field name="template_id"/>
+                        <field name="signer_email"/>
+                        <field name="signature_state" widget="badge"
+                               decoration-success="signature_state == 'signed'"
+                               decoration-warning="signature_state in ('sent', 'otp_sent')"/>
+                        <field name="signature_method"/>
+                        <field name="signed_date"/>
+                        <field name="signature_url" widget="url" readonly="1"/>
+                    </group>
+                </group>
+                <group string="Jornada">
+                    <field name="schedule_description"/>
+                </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Remuneración" name="venrides_remuneration">
+                    <group>
+                        <group>
+                            <field name="salary_table_id"/>
+                            <field name="salary_table_line_id"/>
+                        </group>
+                        <group>
+                            <field name="total_package_usd"/>
+                        </group>
+                    </group>
+                    <separator string="Conceptos mensuales en USD"/>
+                    <group>
+                        <group>
+                            <field name="wage_usd"/>
+                            <field name="bono_guerra_usd"/>
+                            <field name="bono_transporte_usd"/>
+                        </group>
+                        <group>
+                            <field name="bono_desempeno_max_usd"/>
+                            <field name="cestaticket_usd"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Cláusulas y anexos" name="venrides_clauses">
+                    <group>
+                        <field name="template_id" readonly="1"/>
+                    </group>
+                    <separator string="Anexos del contrato"/>
+                    <field name="annex_ids">
+                        <list>
+                            <field name="sequence" widget="handle"/>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="annex_type"/>
+                        </list>
+                    </field>
+                    <separator string="Vista previa del cuerpo"/>
+                    <field name="rendered_body" readonly="1" widget="html"/>
+                </page>
+                <page string="Firma" name="venrides_signature">
+                    <group>
+                        <group string="Estado">
+                            <field name="signature_state"/>
+                            <field name="signature_method"/>
+                            <field name="signer_email"/>
+                            <field name="signed_date"/>
+                            <field name="document_hash"/>
+                        </group>
+                        <group string="Evidencia">
+                            <field name="signature_ip"/>
+                            <field name="signature_user_agent"/>
+                            <field name="signature_otp_attempts"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="signed_pdf" widget="binary"/>
+                        <field name="signature_image" widget="image"/>
+                    </group>
+                    <button name="action_mark_physical_signed" type="object"
+                            string="Marcar como firmado (PDF subido)"
+                            class="btn-secondary"
+                            invisible="signature_state == 'signed' or not signed_pdf"/>
+                    <separator string="Historial de firmas"/>
+                    <field name="child_contract_ids" invisible="1"/>
+                </page>
+                <page string="Renovaciones" name="venrides_renewals">
+                    <group>
+                        <field name="parent_contract_id"/>
+                    </group>
+                    <field name="child_contract_ids" readonly="1">
+                        <list>
+                            <field name="contract_number"/>
+                            <field name="contract_stage"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="state"/>
+                            <field name="signature_state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_contract_list_venrides" model="ir.ui.view">
+        <field name="name">hr.contract.list.venrides</field>
+        <field name="model">hr.contract</field>
+        <field name="arch" type="xml">
+            <list string="Contratos">
+                <field name="contract_number"/>
+                <field name="employee_id"/>
+                <field name="job_id"/>
+                <field name="contract_stage"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="wage_usd"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'open'"
+                       decoration-warning="state == 'pending'"
+                       decoration-muted="state == 'close'"/>
+                <field name="signature_state" widget="badge"
+                       decoration-success="signature_state == 'signed'"/>
+                <field name="renewal_due"/>
+            </list>
+        </field>
+    </record>
+</odoo>

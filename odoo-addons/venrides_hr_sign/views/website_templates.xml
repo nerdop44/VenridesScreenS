@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="sign_portal" name="Firma — Portal">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-sign">
+                <div class="container py-4 py-lg-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-9">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <div class="text-center mb-4">
+                                        <h1 class="h3">Documento para firmar</h1>
+                                        <p class="text-muted mb-0" t-out="sign_request.name"/>
+                                    </div>
+
+                                    <div t-if="error" class="alert alert-danger" t-out="error"/>
+
+                                    <t t-if="signed">
+                                        <div class="alert alert-success">
+                                            <h4 class="alert-heading">Documento firmado</h4>
+                                            <p class="mb-1">
+                                                Gracias, <strong t-out="employee.name or ''"/>.
+                                                La firma quedó registrada el
+                                                <span t-out="sign_request.signed_date or ''"/>.
+                                            </p>
+                                            <p class="small mb-0">
+                                                Hash: <span t-out="sign_request.content_hash or ''"/>
+                                            </p>
+                                        </div>
+                                        <div class="text-center">
+                                            <a class="btn btn-primary"
+                                               t-attf-href="/firma/descargar/#{sign_request.token}">
+                                                Descargar documento firmado
+                                            </a>
+                                            <a t-if="sign_request.support" class="btn btn-outline-secondary"
+                                               t-attf-href="/firma/soporte/#{sign_request.token}">
+                                                Descargar soporte
+                                            </a>
+                                        </div>
+                                    </t>
+
+                                    <t t-else="">
+                                        <table class="table table-sm">
+                                            <tr><th>Empleado</th><td t-out="employee.name or ''"/></tr>
+                                            <tr><th>Documento</th><td t-out="sign_request.reference or ''"/></tr>
+                                            <tr><th>Concepto</th><td t-out="sign_request.concept_name or ''"/></tr>
+                                            <tr t-if="sign_request.amount_usd">
+                                                <th>Monto</th>
+                                                <td t-out="'%.2f USD' % sign_request.amount_usd"/>
+                                            </tr>
+                                            <tr t-if="sign_request.amount_bs">
+                                                <th>Monto en Bs</th>
+                                                <td t-out="'%.2f Bs (tasa %.4f)' % (sign_request.amount_bs, sign_request.rate_bs_usd)"/>
+                                            </tr>
+                                            <tr t-if="sign_request.payment_date">
+                                                <th>Fecha</th><td t-out="sign_request.payment_date"/>
+                                            </tr>
+                                        </table>
+
+                                        <div class="mb-4">
+                                            <a class="btn btn-sm btn-outline-primary"
+                                               t-attf-href="/firma/documento/#{sign_request.token}" target="_blank">
+                                                Ver documento
+                                            </a>
+                                            <a t-if="sign_request.support" class="btn btn-sm btn-outline-secondary"
+                                               t-attf-href="/firma/soporte/#{sign_request.token}">
+                                                Ver soporte de pago
+                                            </a>
+                                        </div>
+
+                                        <t t-if="not otp_sent">
+                                            <div class="alert alert-light border">
+                                                Enviaremos un código de 6 dígitos a
+                                                <strong t-out="sign_request.signer_email or ''"/>
+                                                para confirmar tu firma.
+                                            </div>
+                                            <form t-attf-action="/firma/#{sign_request.token}/otp"
+                                                  method="post" class="text-center">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-primary px-4">
+                                                    Enviar código de verificación
+                                                </button>
+                                            </form>
+                                        </t>
+
+                                        <t t-else="">
+                                            <div class="alert alert-info" t-out="message"/>
+                                            <form t-attf-action="/firma/#{sign_request.token}/confirmar"
+                                                  method="post" id="sign_form">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <input type="hidden" name="signature_data" id="signature_data"/>
+                                                <input type="hidden" name="signature_strokes" id="signature_strokes"/>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">Código recibido por correo</label>
+                                                    <input class="form-control form-control-lg"
+                                                           type="text" name="otp_code" inputmode="numeric"
+                                                           maxlength="6" pattern="[0-9]{6}" required="required"
+                                                           autocomplete="one-time-code"
+                                                           style="max-width:220px;letter-spacing:6px;"/>
+                                                </div>
+
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold">Firma con tu dedo o el mouse</label>
+                                                    <canvas id="signature_canvas"
+                                                            style="width:100%;height:200px;border:1px dashed #999;border-radius:8px;touch-action:none;background:#fff;"></canvas>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-3">
+                                                    <button type="button" id="clear_signature"
+                                                            class="btn btn-sm btn-light">Borrar firma</button>
+                                                    <span class="small text-muted">
+                                                        La firma se valida con la registrada en tu contrato.
+                                                    </span>
+                                                </div>
+
+                                                <div class="text-center">
+                                                    <button type="submit" class="btn btn-primary px-4">
+                                                        Firmar documento
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            <details class="mt-4">
+                                                <summary class="text-danger">No acepto el documento</summary>
+                                                <form t-attf-action="/firma/#{sign_request.token}/rechazar"
+                                                      method="post" class="mt-2">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <textarea class="form-control mb-2" name="reason" rows="2"
+                                                              placeholder="Escribe el motivo del rechazo..." required="required"/>
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        Rechazar documento
+                                                    </button>
+                                                </form>
+                                            </details>
+
+                                            <script>
+                                                (function () {
+                                                    var canvas = document.getElementById('signature_canvas');
+                                                    var form = document.getElementById('sign_form');
+                                                    var hidden = document.getElementById('signature_data');
+                                                    var hiddenStrokes = document.getElementById('signature_strokes');
+                                                    if (!canvas || !form) { return; }
+                                                    var ctx = canvas.getContext('2d');
+                                                    var drawing = false;
+                                                    var last = null;
+                                                    var strokes = [];
+                                                    var current = null;
+                                                    var t0 = 0;
+                                                    var hasInk = false;
+
+                                                    function setup() {
+                                                        var ratio = window.devicePixelRatio || 1;
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        canvas.width = rect.width * ratio;
+                                                        canvas.height = rect.height * ratio;
+                                                        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                                                        ctx.lineWidth = 2;
+                                                        ctx.lineCap = 'round';
+                                                        ctx.lineJoin = 'round';
+                                                        ctx.strokeStyle = '#111111';
+                                                        ctx.fillStyle = '#ffffff';
+                                                        ctx.fillRect(0, 0, rect.width, rect.height);
+                                                    }
+
+                                                    function pos(event) {
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        return {
+                                                            x: event.clientX - rect.left,
+                                                            y: event.clientY - rect.top
+                                                        };
+                                                    }
+
+                                                    function addPoint(event) {
+                                                        if (!current) { return; }
+                                                        var p = pos(event);
+                                                        current.push({
+                                                            x: Math.round(p.x),
+                                                            y: Math.round(p.y),
+                                                            t: Math.round(performance.now() - t0)
+                                                        });
+                                                        if (last) {
+                                                            ctx.beginPath();
+                                                            ctx.moveTo(last.x, last.y);
+                                                            ctx.lineTo(p.x, p.y);
+                                                            ctx.stroke();
+                                                        } else {
+                                                            ctx.beginPath();
+                                                            ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+                                                            ctx.fill();
+                                                        }
+                                                        last = p;
+                                                        hasInk = true;
+                                                    }
+
+                                                    canvas.addEventListener('pointerdown', function (event) {
+                                                        event.preventDefault();
+                                                        drawing = true;
+                                                        current = [];
+                                                        strokes.push(current);
+                                                        if (!t0) { t0 = performance.now(); }
+                                                        last = null;
+                                                        addPoint(event);
+                                                        canvas.setPointerCapture(event.pointerId);
+                                                    });
+                                                    canvas.addEventListener('pointermove', function (event) {
+                                                        if (!drawing) { return; }
+                                                        event.preventDefault();
+                                                        addPoint(event);
+                                                    });
+                                                    function stop() {
+                                                        drawing = false;
+                                                        current = null;
+                                                        last = null;
+                                                    }
+                                                    canvas.addEventListener('pointerup', stop);
+                                                    canvas.addEventListener('pointerleave', stop);
+                                                    canvas.addEventListener('pointercancel', stop);
+
+                                                    document.getElementById('clear_signature').addEventListener('click', function () {
+                                                        var rect = canvas.getBoundingClientRect();
+                                                        ctx.fillStyle = '#ffffff';
+                                                        ctx.fillRect(0, 0, rect.width, rect.height);
+                                                        strokes = [];
+                                                        current = null;
+                                                        last = null;
+                                                        t0 = 0;
+                                                        hasInk = false;
+                                                    });
+
+                                                    form.addEventListener('submit', function (event) {
+                                                        var points = strokes.reduce(function (total, stroke) {
+                                                            return total + stroke.length;
+                                                        }, 0);
+                                                        if (!hasInk || points &lt; 8) {
+                                                            event.preventDefault();
+                                                            alert('Debes firmar en el recuadro con el dedo o el mouse. No se aceptan imágenes pegadas.');
+                                                            return;
+                                                        }
+                                                        hidden.value = canvas.toDataURL('image/png');
+                                                        hiddenStrokes.value = JSON.stringify(strokes);
+                                                    });
+
+                                                    setup();
+                                                })();
+                                            </script>
+                                        </t>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="sign_verify" name="Firma — Verificación">
+        <t t-call="website.layout">
+            <div id="wrap" class="venrides-sign">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <h1 class="h4">Verificación de documento</h1>
+                                    <p class="text-muted" t-out="sign_request.name"/>
+
+                                    <div t-if="sign_request.state == 'signed'" class="alert alert-success">
+                                        Documento firmado y registrado.
+                                    </div>
+                                    <div t-else="" class="alert alert-warning">
+                                        Documento pendiente de firma.
+                                    </div>
+
+                                    <table class="table table-sm">
+                                        <tr><th>Empleado</th><td t-out="employee.name or ''"/></tr>
+                                        <tr><th>Documento</th><td t-out="sign_request.reference or ''"/></tr>
+                                        <tr><th>Concepto</th><td t-out="sign_request.concept_name or ''"/></tr>
+                                        <tr><th>Estado</th><td t-out="sign_request.state_label"/></tr>
+                                        <tr t-if="sign_request.payment_date"><th>Fecha</th><td t-out="sign_request.payment_date"/></tr>
+                                        <tr t-if="sign_request.amount_usd">
+                                            <th>Monto</th>
+                                            <td t-out="'%.2f USD / %.2f Bs' % (sign_request.amount_usd, sign_request.amount_bs)"/>
+                                        </tr>
+                                        <tr><th>Validación de firma</th><td t-out="sign_request.signature_check or 'Pendiente'"/></tr>
+                                        <tr><th>Similitud con contrato</th><td><span t-out="'%.1f' % (sign_request.signature_similarity or 0.0)"/> %</td></tr>
+                                        <tr><th>Hash del contenido</th><td class="text-break" t-out="sign_request.content_hash or ''"/></tr>
+                                        <tr><th>Hash del PDF</th><td class="text-break" t-out="sign_request.signed_pdf_hash or ''"/></tr>
+                                    </table>
+
+                                    <div t-if="sign_request.state == 'signed'" class="text-center">
+                                        <a class="btn btn-primary"
+                                           t-attf-href="/firma/descargar/#{sign_request.token}">
+                                            Descargar documento firmado
+                                        </a>
+                                        <a t-if="sign_request.support" class="btn btn-outline-secondary"
+                                           t-attf-href="/firma/soporte/#{sign_request.token}">
+                                            Descargar soporte
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

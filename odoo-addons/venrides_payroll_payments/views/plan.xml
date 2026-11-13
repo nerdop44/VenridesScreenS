@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_plan_list" model="ir.ui.view">
+        <field name="name">venrides.pay.concept.plan.list</field>
+        <field name="model">venrides.pay.concept.plan</field>
+        <field name="arch" type="xml">
+            <list string="Planes de pago">
+                <field name="employee_id"/>
+                <field name="concept_id"/>
+                <field name="amount_usd"/>
+                <field name="cycle_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-muted="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_plan_form" model="ir.ui.view">
+        <field name="name">venrides.pay.concept.plan.form</field>
+        <field name="model">venrides.pay.concept.plan</field>
+        <field name="arch" type="xml">
+            <form string="Plan de pago">
+                <header>
+                    <button name="action_activate" type="object" string="Activar"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_done" type="object" string="Cumplido"
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="contract_id"/>
+                            <field name="employee_id"/>
+                            <field name="concept_id"/>
+                        </group>
+                        <group>
+                            <field name="amount_usd"/>
+                            <field name="cycle_id"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_pay_concept_plan" model="ir.actions.act_window">
+        <field name="name">Planes de pago</field>
+        <field name="res_model">venrides.pay.concept.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

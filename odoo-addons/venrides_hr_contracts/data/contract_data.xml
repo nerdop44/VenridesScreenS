@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="contract_type_determinado" model="hr.contract.type">
+            <field name="name">Tiempo Determinado</field>
+            <field name="code">TDF</field>
+        </record>
+
+        <!-- ============================ CLÁUSULAS ============================ -->
+        <record id="clause_obj" model="venrides.contract.clause">
+            <field name="code">CL-GEN-01</field>
+            <field name="name">Objeto y funciones</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">10</field>
+            <field name="body" type="html">
+                <p><strong>PRIMERA. OBJETO.</strong> EL TRABAJADOR se obliga a prestar sus
+                servicios personales bajo la dependencia y subordinación de LA EMPRESA, en el
+                puesto de <strong>${cargo}</strong>, cumpliendo las funciones, horarios y
+                normas internas que se indican en este contrato y en sus anexos.</p>
+                <p>Las funciones específicas del puesto se detallan en la cláusula específica
+                aplicable y en el anexo de normas internas.</p>
+            </field>
+        </record>
+
+        <record id="clause_jornada" model="venrides.contract.clause">
+            <field name="code">CL-GEN-02</field>
+            <field name="name">Jornada de trabajo</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">20</field>
+            <field name="body" type="html">
+                <p><strong>SEGUNDA. JORNADA.</strong> La jornada ordinaria será
+                <strong>${jornada}</strong>, con los descansos y días feriados previstos en la
+                ley y en el calendario interno. El trabajo en día de descanso, feriado o fuera
+                de la jornada ordinaria se remunerará conforme a la ley y deberá ser autorizado
+                previamente por su supervisor.</p>
+            </field>
+        </record>
+
+        <record id="clause_remuneracion" model="venrides.contract.clause">
+            <field name="code">CL-GEN-03</field>
+            <field name="name">Remuneración</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">30</field>
+            <field name="body" type="html">
+                <p><strong>TERCERA. REMUNERACIÓN.</strong> EL TRABAJADOR recibirá un salario
+                base mensual de <strong>${sueldo} USD</strong>, más los conceptos que se
+                detallan en la tabla salarial anexa: bono de guerra (${bono_guerra} USD), bono
+                de transporte y asistencia (${bono_transporte} USD), bono de desempeño variable
+                de hasta ${bono_desempeno} USD y cestatickets por ${cestaticket} USD.</p>
+                <p>El pago se realizará en la moneda y con la periodicidad que LA EMPRESA
+                informe por escrito, aplicando la tasa de cambio de referencia cuando
+                corresponda. Las deducciones de ley (IVSS, FAOV, RPE, ISLR y demás) se
+                practicarán conforme a la normativa vigente.</p>
+            </field>
+        </record>
+
+        <record id="clause_bonos_extra" model="venrides.contract.clause">
+            <field name="code">CL-GEN-04</field>
+            <field name="name">Bonificaciones no contractuales</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">40</field>
+            <field name="body" type="html">
+                <p><strong>CUARTA. BONIFICACIONES EXTRA.</strong> Cualquier bonificación,
+                incentivo, premio o beneficio adicional que no esté expresamente previsto en
+                este contrato o en sus anexos constituye una liberalidad de LA EMPRESA y no
+                forma parte de las obligaciones contractuales, del salario normal ni de la base
+                de cálculo de prestaciones o indemnizaciones, y podrá otorgarse, modificarse o
+                suspenderse sin que ello genere derecho adquirido alguno.</p>
+                <p>Lo anterior no afecta los conceptos legalmente obligatorios ni los derechos
+                irrenunciables del trabajador.</p>
+            </field>
+        </record>
+
+        <record id="clause_confidencialidad" model="venrides.contract.clause">
+            <field name="code">CL-GEN-05</field>
+            <field name="name">Confidencialidad y uso de bienes</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">50</field>
+            <field name="body" type="html">
+                <p><strong>QUINTA. CONFIDENCIALIDAD.</strong> EL TRABAJADOR se obliga a
+                mantener reserva sobre la información comercial, financiera, recetas,
+                proveedores, clientes, sistemas y cualquier dato interno de LA EMPRESA, durante
+                la relación laboral y después de su terminación. Asimismo, se obliga a usar
+                correctamente los bienes, equipos, uniformes e instalaciones, y a responder por
+                el deterioro o pérdida causados por dolo o negligencia.</p>
+            </field>
+        </record>
+
+        <record id="clause_normas" model="venrides.contract.clause">
+            <field name="code">CL-GEN-06</field>
+            <field name="name">Normas internas y anexos</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">60</field>
+            <field name="body" type="html">
+                <p><strong>SEXTA. NORMAS INTERNAS Y ANEXOS.</strong> Forman parte integral de
+                este contrato los anexos de beneficios del personal, normas y prohibiciones,
+                penalidades y premiaciones, rotación de puestos y tabla salarial. EL TRABAJADOR
+                declara haber recibido y leído dichos anexos y acepta sus disposiciones, las
+                cuales prevalecen sobre cualquier costumbre o práctica en contrario, sin
+                menoscabo de los derechos irrenunciables que consagra la ley.</p>
+            </field>
+        </record>
+
+        <record id="clause_terminacion" model="venrides.contract.clause">
+            <field name="code">CL-GEN-07</field>
+            <field name="name">Duración y terminación</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">70</field>
+            <field name="body" type="html">
+                <p><strong>SÉPTIMA. DURACIÓN Y TERMINACIÓN.</strong> El presente contrato
+                comienza el <strong>${fecha_inicio}</strong> y finaliza el
+                <strong>${fecha_fin}</strong>, salvo que las partes acuerden por escrito su
+                renovación o prórroga. Cualquiera de las partes podrá darlo por terminado
+                conforme a las causales y al procedimiento previsto en la ley. Al término del
+                contrato, LA EMPRESA liquidará los conceptos que correspondan conforme a la
+                LOTTT.</p>
+            </field>
+        </record>
+
+        <record id="clause_datos" model="venrides.contract.clause">
+            <field name="code">CL-GEN-08</field>
+            <field name="name">Protección de datos personales</field>
+            <field name="clause_type">general</field>
+            <field name="sequence">80</field>
+            <field name="body" type="html">
+                <p><strong>OCTAVA. DATOS PERSONALES.</strong> EL TRABAJADOR autoriza el
+                tratamiento de sus datos personales, incluidos los datos de contacto, bancarios,
+                de seguridad social y de salud necesarios para la relación laboral, con la
+                finalidad de gestionar la nómina, los beneficios, la seguridad y el cumplimiento
+                de obligaciones legales. LA EMPRESA adoptará medidas razonables de
+                confidencialidad y conservación.</p>
+            </field>
+        </record>
+
+        <record id="clause_funciones_atc" model="venrides.contract.clause">
+            <field name="code">CL-ESP-ATC</field>
+            <field name="name">Funciones específicas — ATC</field>
+            <field name="clause_type">specific</field>
+            <field name="sequence">110</field>
+            <field name="job_ids" eval="[(6, 0, [ref('venrides_recruitment.job_atc')])]"/>
+            <field name="body" type="html">
+                <p><strong>FUNCIONES DEL PUESTO — ATC.</strong> Recibir y orientar a los
+                clientes; tomar pedidos presenciales, telefónicos y digitales; confirmar
+                productos, cantidades y observaciones; cobrar y entregar el cambio con su
+                recibo; mantener limpia y ordenada el área de salón y caja; reportar
+                diferencias de caja, quejas y novedades al supervisor; apoyar el cierre y
+                apertura de caja; y cumplir las normas de higiene, uniforme y trato al
+                cliente.</p>
+            </field>
+        </record>
+
+        <record id="clause_funciones_general" model="venrides.contract.clause">
+            <field name="code">CL-ESP-GEN</field>
+            <field name="name">Funciones específicas — Ayudante general</field>
+            <field name="clause_type">specific</field>
+            <field name="sequence">120</field>
+            <field name="job_ids" eval="[(6, 0, [ref('venrides_recruitment.job_general')])]"/>
+            <field name="body" type="html">
+                <p><strong>FUNCIONES DEL PUESTO — AYUDANTE GENERAL.</strong> Mantener el orden
+                y la limpieza de las áreas asignadas; trasladar insumos y cajas siguiendo las
+                normas de seguridad; apoyar la recepción y verificación de mercancía; reportar
+                fallas, derrames y riesgos; apoyar a cocina y salón en horas pico; y cumplir las
+                normas de higiene, uniforme y seguridad.</p>
+            </field>
+        </record>
+
+        <record id="clause_funciones_cocina" model="venrides.contract.clause">
+            <field name="code">CL-ESP-COC</field>
+            <field name="name">Funciones específicas — Cocina</field>
+            <field name="clause_type">specific</field>
+            <field name="sequence">130</field>
+            <field name="job_ids" eval="[(6, 0, [ref('venrides_recruitment.job_kitchen')])]"/>
+            <field name="body" type="html">
+                <p><strong>FUNCIONES DEL PUESTO — COCINA.</strong> Preparar los alimentos
+                conforme a las recetas y fichas técnicas; cumplir la cadena de frío, la
+                rotación de inventario y las normas de higiene; mantener la mise en place y la
+                limpieza de utensilios y áreas; controlar mermas y desperdicios; reportar
+                productos vencidos o en mal estado; y cumplir las normas de seguridad y
+                manipulación de alimentos.</p>
+            </field>
+        </record>
+
+        <!-- ============================= ANEXOS ============================= -->
+        <record id="annex_beneficios" model="venrides.contract.annex">
+            <field name="code">ANX-BEN</field>
+            <field name="name">Beneficios del personal</field>
+            <field name="annex_type">benefits</field>
+            <field name="sequence">10</field>
+            <field name="body" type="html">
+                <p><strong>ANEXO A — BENEFICIOS DEL PERSONAL.</strong></p>
+                <ul>
+                    <li>Descuento en el consumo de productos del restaurante, en los
+                    porcentajes que LA EMPRESA defina por producto o categoría.</li>
+                    <li>Posibilidad de abrir cuenta de consumo, cuyo saldo se descontará de la
+                    nómina en el 100 %, por porcentaje o en cuota fija, según el acuerdo
+                    registrado con el empleado.</li>
+                    <li>Los descuentos y vales son personales, no transferibles y están sujetos
+                    a los límites y al procedimiento interno.</li>
+                </ul>
+                <p>Los beneficios no constituyen salario y pueden modificarse por decisión de
+                LA EMPRESA, respetando los acuerdos ya registrados.</p>
+            </field>
+        </record>
+
+        <record id="annex_normas" model="venrides.contract.annex">
+            <field name="code">ANX-NOR</field>
+            <field name="name">Normas y prohibiciones</field>
+            <field name="annex_type">rules</field>
+            <field name="sequence">20</field>
+            <field name="body" type="html">
+                <p><strong>ANEXO B — NORMAS Y PROHIBICIONES.</strong></p>
+                <ul>
+                    <li>Cumplir el horario, registrar entrada y salida y avisar con antelación
+                    cualquier retardo o falta.</li>
+                    <li>Usar el uniforme limpio y los implementos de seguridad exigidos.</li>
+                    <li>Mantener higiene personal y lavado de manos conforme al protocolo.</li>
+                    <li>Tratar con respeto a compañeros, clientes y proveedores.</li>
+                    <li>No consumir alimentos o bebidas del inventario sin autorización.</li>
+                    <li>No usar el teléfono personal durante la atención al cliente, salvo
+                    emergencias autorizadas.</li>
+                    <li>No ingerir bebidas alcohólicas ni sustancias prohibidas en el trabajo.</li>
+                    <li>No sustraer bienes, dinero ni información de LA EMPRESA.</li>
+                    <li>No agredir física o verbalmente a ninguna persona.</li>
+                    <li>No manipular caja, inventarios o sistemas sin autorización.</li>
+                </ul>
+            </field>
+        </record>
+
+        <record id="annex_penalidades" model="venrides.contract.annex">
+            <field name="code">ANX-PEN</field>
+            <field name="name">Penalidades y premiaciones</field>
+            <field name="annex_type">penalties</field>
+            <field name="sequence">30</field>
+            <field name="body" type="html">
+                <p><strong>ANEXO C — PENALIDADES Y PREMIACIONES.</strong></p>
+                <p>Las faltas se clasifican en leves, graves y muy graves. Las leves generan
+                amonestación verbal o escrita; las graves, suspensión conforme a la ley; las
+                muy graves, evaluación para terminación de la relación laboral conforme al
+                procedimiento legal. Toda medida respetará el derecho a la defensa y el
+                debido proceso.</p>
+                <p>Se reconocen premiaciones por puntualidad, asistencia, desempeño sobresaliente,
+                cuidado de los recursos y trato al cliente. Los premios son eventuales y no
+                forman parte del salario.</p>
+            </field>
+        </record>
+
+        <record id="annex_rotacion" model="venrides.contract.annex">
+            <field name="code">ANX-ROT</field>
+            <field name="name">Rotación de puestos</field>
+            <field name="annex_type">rotation</field>
+            <field name="sequence">40</field>
+            <field name="body" type="html">
+                <p><strong>ANEXO D — ROTACIÓN DE PUESTOS.</strong> EL TRABAJADOR acepta
+                participar en el plan de rotación entre los puestos de ATC, Ayudante general y
+                Cocina, con la frecuencia y duración que LA EMPRESA defina y comunique por
+                escrito. La rotación no implica cambio de salario base ni de condiciones
+                laborales; las metas de desempeño se calculan según el puesto que esté
+                desempeñando en cada periodo. La rotación busca desarrollar competencias y
+                garantizar la continuidad operativa.</p>
+            </field>
+        </record>
+
+        <record id="annex_tabla" model="venrides.contract.annex">
+            <field name="code">ANX-SAL</field>
+            <field name="name">Tabla salarial</field>
+            <field name="annex_type">salary</field>
+            <field name="sequence">50</field>
+            <field name="body" type="html">
+                <p><strong>ANEXO E — TABLA SALARIAL.</strong> Los montos aplicables al puesto
+                se detallan al final de este contrato. Cualquier ajuste se comunicará por
+                escrito y regirá desde la fecha que indique LA EMPRESA.</p>
+            </field>
+        </record>
+
+        <!-- ========================== TABLA SALARIAL ========================== -->
+        <record id="salary_table_2026" model="venrides.salary.table">
+            <field name="name">Tabla salarial inicial 2026</field>
+            <field name="code">SAL-2026</field>
+            <field name="date_from">2026-11-01</field>
+        </record>
+
+        <record id="salary_line_atc" model="venrides.salary.table.line">
+            <field name="table_id" ref="salary_table_2026"/>
+            <field name="job_id" ref="venrides_recruitment.job_atc"/>
+            <field name="base_usd">50</field>
+            <field name="bono_guerra_usd">50</field>
+            <field name="bono_transporte_usd">50</field>
+            <field name="bono_desempeno_max_usd">50</field>
+            <field name="cestaticket_usd">40</field>
+        </record>
+
+        <record id="salary_line_general" model="venrides.salary.table.line">
+            <field name="table_id" ref="salary_table_2026"/>
+            <field name="job_id" ref="venrides_recruitment.job_general"/>
+            <field name="base_usd">50</field>
+            <field name="bono_guerra_usd">50</field>
+            <field name="bono_transporte_usd">50</field>
+            <field name="bono_desempeno_max_usd">50</field>
+            <field name="cestaticket_usd">40</field>
+        </record>
+
+        <record id="salary_line_kitchen" model="venrides.salary.table.line">
+            <field name="table_id" ref="salary_table_2026"/>
+            <field name="job_id" ref="venrides_recruitment.job_kitchen"/>
+            <field name="base_usd">50</field>
+            <field name="bono_guerra_usd">50</field>
+            <field name="bono_transporte_usd">50</field>
+            <field name="bono_desempeno_max_usd">50</field>
+            <field name="cestaticket_usd">40</field>
+        </record>
+
+        <!-- ========================== PLANTILLAS ============================ -->
+        <record id="template_determinado" model="venrides.contract.template">
+            <field name="code">CT-TD</field>
+            <field name="name">Contrato a tiempo determinado</field>
+            <field name="version">1</field>
+            <field name="contract_type_id" ref="contract_type_determinado"/>
+            <field name="salary_table_id" ref="salary_table_2026"/>
+            <field name="job_ids" eval="[(6, 0, [ref('venrides_recruitment.job_atc'), ref('venrides_recruitment.job_general'), ref('venrides_recruitment.job_kitchen')])]"/>
+            <field name="clause_ids" eval="[(6, 0, [ref('clause_obj'), ref('clause_jornada'), ref('clause_remuneracion'), ref('clause_bonos_extra'), ref('clause_confidencialidad'), ref('clause_normas'), ref('clause_terminacion'), ref('clause_datos'), ref('clause_funciones_atc'), ref('clause_funciones_general'), ref('clause_funciones_cocina')])]"/>
+            <field name="annex_ids" eval="[(6, 0, [ref('annex_beneficios'), ref('annex_normas'), ref('annex_penalidades'), ref('annex_rotacion'), ref('annex_tabla')])]"/>
+            <field name="body_html" type="html">
+                <h2 style="text-align:center;">CONTRATO DE TRABAJO A TIEMPO DETERMINADO</h2>
+                <p>Entre <strong>${empresa}</strong>, RIF <strong>${rif}</strong>, domiciliada en
+                ${domicilio}, representada en este acto por su representante legal, en lo
+                sucesivo <strong>LA EMPRESA</strong>, y por la otra parte
+                <strong>${empleado}</strong>, titular de la cédula de identidad
+                <strong>${cedula}</strong>, en lo sucesivo <strong>EL TRABAJADOR</strong>, se
+                ha convenido celebrar el presente contrato de trabajo, regido por la Ley
+                Orgánica del Trabajo, los Trabajadores y las Trabajadoras (LOTTT) y demás
+                normativa aplicable, conforme a las siguientes cláusulas:</p>
+                <p><strong>Datos del contrato:</strong> N.º ${numero_contrato}; puesto:
+                ${cargo}; fecha de inicio: ${fecha_inicio}; fecha de culminación:
+                ${fecha_fin}.</p>
+                <p>Las cláusulas generales, la cláusula específica del puesto y los anexos
+                forman parte integrante de este contrato y se entienden aquí reproducidos.</p>
+            </field>
+        </record>
+
+        <record id="template_indefinido" model="venrides.contract.template">
+            <field name="code">CT-IND</field>
+            <field name="name">Contrato por tiempo indefinido</field>
+            <field name="version">1</field>
+            <field name="contract_type_id" ref="venrides_payroll.hr_contract_type_TI"/>
+            <field name="salary_table_id" ref="salary_table_2026"/>
+            <field name="job_ids" eval="[(6, 0, [ref('venrides_recruitment.job_atc'), ref('venrides_recruitment.job_general'), ref('venrides_recruitment.job_kitchen')])]"/>
+            <field name="clause_ids" eval="[(6, 0, [ref('clause_obj'), ref('clause_jornada'), ref('clause_remuneracion'), ref('clause_bonos_extra'), ref('clause_confidencialidad'), ref('clause_normas'), ref('clause_terminacion'), ref('clause_datos'), ref('clause_funciones_atc'), ref('clause_funciones_general'), ref('clause_funciones_cocina')])]"/>
+            <field name="annex_ids" eval="[(6, 0, [ref('annex_beneficios'), ref('annex_normas'), ref('annex_penalidades'), ref('annex_rotacion'), ref('annex_tabla')])]"/>
+            <field name="body_html" type="html">
+                <h2 style="text-align:center;">CONTRATO DE TRABAJO POR TIEMPO INDEFINIDO</h2>
+                <p>Entre <strong>${empresa}</strong>, RIF <strong>${rif}</strong>, domiciliada en
+                ${domicilio}, representada en este acto por su representante legal, en lo
+                sucesivo <strong>LA EMPRESA</strong>, y por la otra parte
+                <strong>${empleado}</strong>, titular de la cédula de identidad
+                <strong>${cedula}</strong>, en lo sucesivo <strong>EL TRABAJADOR</strong>, se
+                ha convenido celebrar el presente contrato de trabajo por tiempo indefinido,
+                regido por la LOTTT y demás normativa aplicable, conforme a las siguientes
+                cláusulas:</p>
+                <p><strong>Datos del contrato:</strong> N.º ${numero_contrato}; puesto:
+                ${cargo}; fecha de inicio: ${fecha_inicio}.</p>
+                <p>Las cláusulas generales, la cláusula específica del puesto y los anexos
+                forman parte integrante de este contrato y se entienden aquí reproducidos.</p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

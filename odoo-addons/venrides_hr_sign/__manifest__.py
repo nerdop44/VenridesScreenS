@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+{
+    'name': '[VenridesCafé] Firmas y documentos',
+    'summary': 'Firma de recibos y documentos con OTP, validación de trazos, similitud, hash y QR',
+    'description': 'Firma digital de recibos, reposos y documentos del empleado.',
+    'author': 'Ing. Nerdo José Pulido Aguirre',
+    'website': 'https://github.com/nerdop44',
+    'category': 'Human Resources',
+    'sequence': 252,
+    'version': '20.0.1.0.0',
+    'depends': ['hr', 'mail', 'portal', 'website'],
+    'data': [
+        'security/ir.access.csv',
+        'data/mail_template.xml',
+        'report/signature_page.xml',
+        'views/sign_request.xml',
+        'views/medical_support.xml',
+        'views/hr_employee.xml',
+        'views/menus.xml',
+        'views/website_templates.xml',
+    ],
+    'license': 'OPL-1',
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}

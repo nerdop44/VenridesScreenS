@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_contract" model="ir.actions.report">
+        <field name="name">Contrato de trabajo</field>
+        <field name="model">hr.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">venrides_hr_contracts.report_contract_document</field>
+        <field name="print_report_name">'Contrato - %s' % (object.contract_number or object.id)</field>
+        <field name="binding_model_id" ref="venrides_payroll.model_hr_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

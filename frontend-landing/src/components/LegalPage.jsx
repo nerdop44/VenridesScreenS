@@ -21,10 +21,11 @@ const legalContent = {
     sections: (
       <>
         <Section title="1. Titular del sitio">
-          <p><strong>Denominación social:</strong> {site.legalName}</p>
+          <p><strong>Titular:</strong> {site.legalName} ({site.legalForm})</p>
           <p><strong>Nombre comercial:</strong> {site.commercialName}</p>
           <p><strong>RIF:</strong> {site.rif}</p>
           <p><strong>Domicilio:</strong> {site.address}, {site.country}</p>
+          <p><strong>Teléfono / WhatsApp:</strong> {site.phone}</p>
           <p><strong>Correo de contacto:</strong> <a className="text-primary" href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a></p>
         </Section>
         <Section title="2. Objeto">

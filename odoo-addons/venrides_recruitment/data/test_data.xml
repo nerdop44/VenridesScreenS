@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================ ATC ============================ -->
+        <record id="test_atc" model="venrides.test.template">
+            <field name="name">ATC — Atención al cliente</field>
+            <field name="code">TEST-ATC</field>
+            <field name="area">atc</field>
+            <field name="version">1.0</field>
+            <field name="duration_minutes">25</field>
+            <field name="pass_score">60</field>
+            <field name="instructions" type="html">
+                <p>Banco inicial de ejemplo, editable por el reclutador. Mide criterio de
+                servicio, manejo de caja y trabajo en equipo. No es eliminatorio.</p>
+            </field>
+        </record>
+
+        <record id="q_atc_1" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">10</field>
+            <field name="name">Un cliente reclama porque su pedido tardó más de lo esperado. ¿Qué haces primero?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_atc_1_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_1"/><field name="sequence">1</field>
+            <field name="name">Escuchar, disculparte y ofrecer una solución concreta.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_1_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_1"/><field name="sequence">2</field>
+            <field name="name">Explicarle que la cocina está llena y que espere.</field>
+        </record>
+        <record id="q_atc_1_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_1"/><field name="sequence">3</field>
+            <field name="name">Decirle que no es tu culpa.</field>
+        </record>
+
+        <record id="q_atc_2" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">20</field>
+            <field name="name">El cliente recibe un plato distinto al que pidió. ¿Cuál es la acción correcta?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_atc_2_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_2"/><field name="sequence">1</field>
+            <field name="name">Verificar el pedido, disculparte y cambiarlo por el correcto.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_2_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_2"/><field name="sequence">2</field>
+            <field name="name">Pedirle que lo consuma igual.</field>
+        </record>
+        <record id="q_atc_2_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_2"/><field name="sequence">3</field>
+            <field name="name">Cobrarle la diferencia sin avisar.</field>
+        </record>
+
+        <record id="q_atc_3" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">30</field>
+            <field name="name">Antes de enviar un pedido a cocina, ¿qué debes confirmar?</field>
+            <field name="question_type">multiple</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_atc_3_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_3"/><field name="sequence">1</field>
+            <field name="name">Los productos y cantidades.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_3_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_3"/><field name="sequence">2</field>
+            <field name="name">Las observaciones del cliente (sin cebolla, sin hielo, etc.).</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_3_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_3"/><field name="sequence">3</field>
+            <field name="name">El total a cobrar.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_3_d" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_3"/><field name="sequence">4</field>
+            <field name="name">El color de la mesa.</field>
+        </record>
+
+        <record id="q_atc_4" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">40</field>
+            <field name="name">Al cobrar en efectivo, el cliente entrega un billete grande. ¿Qué haces?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_atc_4_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_4"/><field name="sequence">1</field>
+            <field name="name">Contar el cambio en voz alta y entregarlo junto con el recibo.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_4_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_4"/><field name="sequence">2</field>
+            <field name="name">Guardar el billete y dar el cambio al final del turno.</field>
+        </record>
+        <record id="q_atc_4_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_4"/><field name="sequence">3</field>
+            <field name="name">Decirle que no tienes cambio.</field>
+        </record>
+
+        <record id="q_atc_5" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">50</field>
+            <field name="name">La caja no cuadra al cierre. ¿Cuál es el procedimiento correcto?</field>
+            <field name="question_type">single</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_atc_5_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_5"/><field name="sequence">1</field>
+            <field name="name">Revisar el arqueo y reportar la diferencia al supervisor.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_5_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_5"/><field name="sequence">2</field>
+            <field name="name">Poner dinero de tu bolsillo sin avisar.</field>
+        </record>
+        <record id="q_atc_5_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_5"/><field name="sequence">3</field>
+            <field name="name">Dejar la caja abierta para el siguiente turno.</field>
+        </record>
+
+        <record id="q_atc_6" model="venrides.test.question">
+            <field name="template_id" ref="test_atc"/>
+            <field name="sequence">60</field>
+            <field name="name">Un compañero está saturado y tu área está al día. ¿Qué haces?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_atc_6_a" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_6"/><field name="sequence">1</field>
+            <field name="name">Ofrecer ayuda y coordinar con el supervisor.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_atc_6_b" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_6"/><field name="sequence">2</field>
+            <field name="name">Esperar instrucciones sin moverte.</field>
+        </record>
+        <record id="q_atc_6_c" model="venrides.test.option">
+            <field name="question_id" ref="q_atc_6"/><field name="sequence">3</field>
+            <field name="name">Salir a descansar porque ya terminaste.</field>
+        </record>
+
+        <!-- ======================= AYUDANTE GENERAL ======================= -->
+        <record id="test_general" model="venrides.test.template">
+            <field name="name">Ayudante general — Operaciones</field>
+            <field name="code">TEST-GEN</field>
+            <field name="area">general</field>
+            <field name="version">1.0</field>
+            <field name="duration_minutes">25</field>
+            <field name="pass_score">60</field>
+            <field name="instructions" type="html">
+                <p>Banco inicial de ejemplo, editable por el reclutador. Mide orden, higiene,
+                seguridad y disposición al trabajo. No es eliminatorio.</p>
+            </field>
+        </record>
+
+        <record id="q_gen_1" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">10</field>
+            <field name="name">Encuentras líquido derramado en el pasillo. ¿Qué haces primero?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_gen_1_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_1"/><field name="sequence">1</field>
+            <field name="name">Señalizar la zona y limpiar de inmediato.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_1_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_1"/><field name="sequence">2</field>
+            <field name="name">Avisar al final del turno.</field>
+        </record>
+        <record id="q_gen_1_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_1"/><field name="sequence">3</field>
+            <field name="name">Pasar por encima con cuidado.</field>
+        </record>
+
+        <record id="q_gen_2" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">20</field>
+            <field name="name">Debes mover una caja pesada. ¿Cuál es la forma correcta?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_gen_2_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_2"/><field name="sequence">1</field>
+            <field name="name">Flexionar las piernas, mantener la espalda recta y pedir ayuda si es necesario.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_2_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_2"/><field name="sequence">2</field>
+            <field name="name">Levantarla con la espalda y caminar rápido.</field>
+        </record>
+        <record id="q_gen_2_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_2"/><field name="sequence">3</field>
+            <field name="name">Arrastrarla por las escaleras.</field>
+        </record>
+
+        <record id="q_gen_3" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">30</field>
+            <field name="name">¿Qué elementos de protección personal son obligatorios en cocina y limpieza?</field>
+            <field name="question_type">multiple</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_gen_3_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_3"/><field name="sequence">1</field>
+            <field name="name">Guantes cuando aplique.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_3_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_3"/><field name="sequence">2</field>
+            <field name="name">Calzado cerrado y antideslizante.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_3_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_3"/><field name="sequence">3</field>
+            <field name="name">Uniforme limpio.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_3_d" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_3"/><field name="sequence">4</field>
+            <field name="name">Lentes de sol.</field>
+        </record>
+
+        <record id="q_gen_4" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">40</field>
+            <field name="name">Se daña un equipo y no puedes terminar tu tarea. ¿Qué haces?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_gen_4_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_4"/><field name="sequence">1</field>
+            <field name="name">Reportar de inmediato y continuar con otra tarea asignada.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_4_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_4"/><field name="sequence">2</field>
+            <field name="name">Quedarte esperando sin avisar.</field>
+        </record>
+        <record id="q_gen_4_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_4"/><field name="sequence">3</field>
+            <field name="name">Intentar repararlo sin autorización.</field>
+        </record>
+
+        <record id="q_gen_5" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">50</field>
+            <field name="name">Al recibir mercancía, ¿qué debes verificar?</field>
+            <field name="question_type">multiple</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_gen_5_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_5"/><field name="sequence">1</field>
+            <field name="name">Cantidad y estado de los productos.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_5_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_5"/><field name="sequence">2</field>
+            <field name="name">Fecha de vencimiento y temperatura cuando aplique.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_5_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_5"/><field name="sequence">3</field>
+            <field name="name">Que coincida con la factura o guía.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_5_d" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_5"/><field name="sequence">4</field>
+            <field name="name">Solo el color de las cajas.</field>
+        </record>
+
+        <record id="q_gen_6" model="venrides.test.question">
+            <field name="template_id" ref="test_general"/>
+            <field name="sequence">60</field>
+            <field name="name">Llegas 10 minutos tarde a tu turno. ¿Qué corresponde hacer?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_gen_6_a" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_6"/><field name="sequence">1</field>
+            <field name="name">Avisar al supervisor lo antes posible y registrar la novedad.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_gen_6_b" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_6"/><field name="sequence">2</field>
+            <field name="name">Entrar sin avisar y firmar como si hubieras llegado a tiempo.</field>
+        </record>
+        <record id="q_gen_6_c" model="venrides.test.option">
+            <field name="question_id" ref="q_gen_6"/><field name="sequence">3</field>
+            <field name="name">No presentarse y avisar al día siguiente.</field>
+        </record>
+
+        <!-- =========================== COCINA =========================== -->
+        <record id="test_kitchen" model="venrides.test.template">
+            <field name="name">Cocina — Higiene y producción</field>
+            <field name="code">TEST-COC</field>
+            <field name="area">kitchen</field>
+            <field name="version">1.0</field>
+            <field name="duration_minutes">25</field>
+            <field name="pass_score">60</field>
+            <field name="instructions" type="html">
+                <p>Banco inicial de ejemplo, editable por el reclutador. Mide higiene, cadena
+                de frío, contaminación cruzada y organización. No es eliminatorio.</p>
+            </field>
+        </record>
+
+        <record id="q_coc_1" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">10</field>
+            <field name="name">¿Cuál es la temperatura segura de refrigeración para alimentos perecederos?</field>
+            <field name="question_type">single</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_coc_1_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_1"/><field name="sequence">1</field>
+            <field name="name">Entre 0 °C y 4 °C.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_1_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_1"/><field name="sequence">2</field>
+            <field name="name">Entre 10 °C y 15 °C.</field>
+        </record>
+        <record id="q_coc_1_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_1"/><field name="sequence">3</field>
+            <field name="name">A temperatura ambiente.</field>
+        </record>
+
+        <record id="q_coc_2" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">20</field>
+            <field name="name">Vas a cortar pollo crudo y luego vegetales. ¿Qué debes hacer?</field>
+            <field name="question_type">single</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_coc_2_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_2"/><field name="sequence">1</field>
+            <field name="name">Cambiar o lavar y desinfectar tabla y cuchillo entre uno y otro.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_2_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_2"/><field name="sequence">2</field>
+            <field name="name">Usar la misma tabla sin lavar para no perder tiempo.</field>
+        </record>
+        <record id="q_coc_2_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_2"/><field name="sequence">3</field>
+            <field name="name">Limpiar solo con un paño seco.</field>
+        </record>
+
+        <record id="q_coc_3" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">30</field>
+            <field name="name">¿En qué momento debes lavarte las manos?</field>
+            <field name="question_type">multiple</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_coc_3_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_3"/><field name="sequence">1</field>
+            <field name="name">Al entrar a la cocina y antes de manipular alimentos.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_3_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_3"/><field name="sequence">2</field>
+            <field name="name">Después de ir al baño.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_3_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_3"/><field name="sequence">3</field>
+            <field name="name">Después de tocar residuos o dinero.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_3_d" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_3"/><field name="sequence">4</field>
+            <field name="name">Solo al final del turno.</field>
+        </record>
+
+        <record id="q_coc_4" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">40</field>
+            <field name="name">Recibes un producto con la cadena de frío rota. ¿Qué haces?</field>
+            <field name="question_type">single</field>
+            <field name="weight">2</field>
+        </record>
+        <record id="q_coc_4_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_4"/><field name="sequence">1</field>
+            <field name="name">Rechazarlo, separarlo y reportarlo al encargado.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_4_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_4"/><field name="sequence">2</field>
+            <field name="name">Guardarlo igual y usarlo primero.</field>
+        </record>
+        <record id="q_coc_4_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_4"/><field name="sequence">3</field>
+            <field name="name">Congelarlo para que no se dañe.</field>
+        </record>
+
+        <record id="q_coc_5" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">50</field>
+            <field name="name">¿Qué es la mise en place?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_coc_5_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_5"/><field name="sequence">1</field>
+            <field name="name">Tener ingredientes y utensilios listos antes del servicio.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_5_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_5"/><field name="sequence">2</field>
+            <field name="name">Limpiar la cocina al final del día.</field>
+        </record>
+        <record id="q_coc_5_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_5"/><field name="sequence">3</field>
+            <field name="name">El menú del día siguiente.</field>
+        </record>
+
+        <record id="q_coc_6" model="venrides.test.question">
+            <field name="template_id" ref="test_kitchen"/>
+            <field name="sequence">60</field>
+            <field name="name">Sobran alimentos preparados al final del turno. ¿Qué corresponde?</field>
+            <field name="question_type">single</field>
+            <field name="weight">1</field>
+        </record>
+        <record id="q_coc_6_a" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_6"/><field name="sequence">1</field>
+            <field name="name">Enfriar rápido, rotular con fecha y almacenar según la norma.</field>
+            <field name="is_correct" eval="True"/>
+        </record>
+        <record id="q_coc_6_b" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_6"/><field name="sequence">2</field>
+            <field name="name">Dejarlos en la mesa hasta el día siguiente.</field>
+        </record>
+        <record id="q_coc_6_c" model="venrides.test.option">
+            <field name="question_id" ref="q_coc_6"/><field name="sequence">3</field>
+            <field name="name">Mezclarlos con la preparación del día siguiente.</field>
+        </record>
+
+    </data>
+</odoo>

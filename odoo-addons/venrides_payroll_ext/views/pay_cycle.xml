@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pay_cycle_list" model="ir.ui.view">
+        <field name="name">venrides.pay.cycle.list</field>
+        <field name="model">venrides.pay.cycle</field>
+        <field name="arch" type="xml">
+            <list string="Ciclos de pago">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="schedule_pay"/>
+                <field name="pay_day"/>
+                <field name="period_days"/>
+                <field name="contract_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pay_cycle_form" model="ir.ui.view">
+        <field name="name">venrides.pay.cycle.form</field>
+        <field name="model">venrides.pay.cycle</field>
+        <field name="arch" type="xml">
+            <form string="Ciclo de pago">
+                <header>
+                    <button name="action_view_contracts" type="object"
+                            string="Contratos" invisible="not contract_count"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="schedule_pay"/>
+                            <field name="pay_day"/>
+                        </group>
+                        <group>
+                            <field name="period_days"/>
+                            <field name="proration_mode"/>
+                            <field name="contract_count"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_venrides_pay_cycle" model="ir.actions.act_window">
+        <field name="name">Ciclos de pago</field>
+        <field name="res_model">venrides.pay.cycle</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
