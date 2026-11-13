@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Cron: Verificar expiración de planes (diario 00:05) -->
+    <record id="cron_check_plan_expiration" model="ir.cron">
+        <field name="name">VScreenS: Verificar expiración de planes</field>
+        <field name="model_id" ref="model_vscreens_company"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_plan_expiration()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall">False</field>
+        <field name="active" eval="True"/>
+        <field name="user_id" ref="base.user_root"/>
+    </record>
+
+    <!-- Cron: Reenvío de saludos de cumpleaños (diario 08:00) -->
+    <record id="cron_send_birthday_greetings" model="ir.cron">
+        <field name="name">VScreenS: Enviar saludos de cumpleaños</field>
+        <field name="model_id" ref="model_res_partner"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_birthday_greetings()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall">False</field>
+        <field name="active" eval="True"/>
+        <field name="user_id" ref="base.user_root"/>
+    </record>
+
+    <!-- Cron: Sembrar feriados venezolanos (mensual, día 1) -->
+    <record id="cron_seed_venezuelan_holidays" model="ir.cron">
+        <field name="name">VScreenS: Sembrar feriados venezolanos</field>
+        <field name="model_id" ref="model_vscreens_calendar_activity"/>
+        <field name="state">code</field>
+        <field name="code">model.seed_venezuelan_holidays()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="numbercall">-1</field>
+        <field name="doall">False</field>
+        <field name="active" eval="True"/>
+        <field name="user_id" ref="base.user_root"/>
+    </record>
+</odoo>

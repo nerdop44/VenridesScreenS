@@ -13,3 +13,9 @@ from . import vscreens_currency
 from . import res_users
 from . import res_config_settings
 from . import vscreens_benry
+from . import vscreens_email_template
+from . import vscreens_promotion
+from . import vscreens_affiliate
+from . import vscreens_calendar_activity
+from . import vscreens_free_plan_usage
+from . import vscreens_birthday

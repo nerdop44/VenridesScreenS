@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Affiliates -->
+    <record id="view_vscreens_affiliate_tree" model="ir.ui.view">
+        <field name="name">vscreens.affiliate.tree</field>
+        <field name="model">vscreens.affiliate</field>
+        <field name="arch" type="xml">
+            <tree string="Afiliados">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="code"/>
+                <field name="commission_pct"/>
+                <field name="total_referred"/>
+                <field name="total_earned"/>
+                <field name="is_active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_affiliate_form" model="ir.ui.view">
+        <field name="name">vscreens.affiliate.form</field>
+        <field name="model">vscreens.affiliate</field>
+        <field name="arch" type="xml">
+            <form string="Afiliado">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group string="Afiliado">
+                        <group>
+                            <field name="email"/>
+                            <field name="code"/>
+                            <field name="commission_pct"/>
+                            <field name="is_active"/>
+                        </group>
+                        <group>
+                            <field name="total_referred"/>
+                            <field name="total_earned"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vscreens_affiliate" model="ir.actions.act_window">
+        <field name="name">Afiliados</field>
+        <field name="res_model">vscreens.affiliate</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_vscreens_affiliate"
+              name="Afiliados"
+              parent="vscreens.menu_crm"
+              action="action_vscreens_affiliate"
+              sequence="30"/>
+</odoo>

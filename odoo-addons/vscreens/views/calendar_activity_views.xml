@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Calendar Activities / Holidays -->
+    <record id="view_vscreens_calendar_activity_tree" model="ir.ui.view">
+        <field name="name">vscreens.calendar.activity.tree</field>
+        <field name="model">vscreens.calendar.activity</field>
+        <field name="arch" type="xml">
+            <tree string="Calendario / Feriados">
+                <field name="title"/>
+                <field name="activity_date"/>
+                <field name="is_holiday"/>
+                <field name="send_auto_greeting"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_calendar_activity_form" model="ir.ui.view">
+        <field name="name">vscreens.calendar.activity.form</field>
+        <field name="model">vscreens.calendar.activity</field>
+        <field name="arch" type="xml">
+            <form string="Actividad del Calendario">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="title"/>
+                        </h1>
+                    </div>
+                    <group string="Actividad">
+                        <group>
+                            <field name="activity_date"/>
+                            <field name="is_holiday"/>
+                            <field name="send_auto_greeting"/>
+                        </group>
+                        <group>
+                            <field name="greeting_template_id"/>
+                        </group>
+                    </group>
+                    <group string="Descripción">
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vscreens_calendar_activity" model="ir.actions.act_window">
+        <field name="name">Calendario y Feriados</field>
+        <field name="res_model">vscreens.calendar.activity</field>
+        <field name="view_mode">tree,form,calendar</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_vscreens_calendar_activity"
+              name="Calendario y Feriados"
+              parent="vscreens.menu_crm"
+              action="action_vscreens_calendar_activity"
+              sequence="40"/>
+</odoo>

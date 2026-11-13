@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -209,6 +210,20 @@ class VScreenSCompany(models.Model):
             if users:
                 users.unlink()
         return super().unlink()
+
+    @api.model
+    def _cron_check_plan_expiration(self):
+        """Cron diario: suspende empresas cuyo plan ha vencido."""
+        companies = self.sudo().search([("is_active", "=", True), ("valid_until", "!=", False)])
+        expired = 0
+        now = fields.Datetime.now()
+        for company in companies:
+            if company.valid_until and company.valid_until < now:
+                company.sudo().write({"is_active": False})
+                expired += 1
+        _logger = logging.getLogger(__name__)
+        _logger.info("Cron expiración planes: %d empresas suspendidas", expired)
+        return expired
 
     def _plan_allows(self, feature):
         self.ensure_one()

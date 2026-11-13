@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Free Plan Usage -->
+    <record id="view_vscreens_free_plan_usage_tree" model="ir.ui.view">
+        <field name="name">vscreens.free.plan.usage.tree</field>
+        <field name="model">vscreens.free.plan.usage</field>
+        <field name="arch" type="xml">
+            <tree string="Uso de Prueba Gratuita">
+                <field name="uuid"/>
+                <field name="company_id"/>
+                <field name="used_at"/>
+                <field name="expires_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_free_plan_usage_form" model="ir.ui.view">
+        <field name="name">vscreens.free.plan.usage.form</field>
+        <field name="model">vscreens.free.plan.usage</field>
+        <field name="arch" type="xml">
+            <form string="Uso de Prueba Gratuita">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="uuid"/>
+                        </h1>
+                    </div>
+                    <group string="Dispositivo">
+                        <group>
+                            <field name="uuid"/>
+                            <field name="company_id"/>
+                            <field name="used_at"/>
+                            <field name="expires_at"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vscreens_free_plan_usage" model="ir.actions.act_window">
+        <field name="name">Uso de Prueba Gratuita</field>
+        <field name="res_model">vscreens.free.plan.usage</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem id="menu_vscreens_free_plan_usage"
+              name="Uso de Prueba Gratuita"
+              parent="vscreens.menu_devices"
+              action="action_vscreens_free_plan_usage"
+              sequence="30"/>
+</odoo>

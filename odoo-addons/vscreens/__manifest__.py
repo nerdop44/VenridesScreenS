@@ -43,6 +43,12 @@ Incluye:
         "views/analytics_views.xml",
         "views/dashboard.xml",
         "views/menus.xml",
+        "views/email_template_views.xml",
+        "views/promotion_views.xml",
+        "views/affiliate_views.xml",
+        "views/calendar_activity_views.xml",
+        "views/free_plan_usage_views.xml",
+        "data/cron_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
