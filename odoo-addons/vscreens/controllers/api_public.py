@@ -234,7 +234,7 @@ class VScreenSPublicController(http.Controller):
     @http.route("/downloads/mobile", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def download_mobile(self, **kwargs):
         path = request.env["ir.config_parameter"].sudo().get_str(
-            "vscreens.apk_mobile_path", "/opt/vscreens/releases/VScreenS.apk"
+            "vscreens.apk_mobile_path", "/opt/vscreens/releases/VScreenS_Mobile.apk"
         )
         if not path or not os.path.exists(path):
             return error(404, "APK móvil no disponible")
@@ -242,7 +242,7 @@ class VScreenSPublicController(http.Controller):
             content = handle.read()
         return request.make_response(content, headers=[
             ("Content-Type", "application/vnd.android.package-archive"),
-            ("Content-Disposition", 'attachment; filename="VScreenS.apk"'),
+            ("Content-Disposition", 'attachment; filename="VScreenS_Mobile.apk"'),
         ])
 
     @http.route("/api/downloads/mobile/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
