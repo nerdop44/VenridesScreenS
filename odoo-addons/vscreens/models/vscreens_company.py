@@ -94,7 +94,7 @@ class VScreenSCompany(models.Model):
     device_ids = fields.One2many("vscreens.device", "company_id", string="Pantallas")
     payment_ids = fields.One2many("vscreens.payment", "company_id", string="Pagos")
     menu_item_ids = fields.One2many("vscreens.menu.item", "company_id", string="Menú")
-    message_ids = fields.One2many("vscreens.message", "company_id", string="Mensajes")
+    vscreens_message_ids = fields.One2many("vscreens.message", "company_id", string="Mensajes VScreenS")
     ticket_ids = fields.One2many("vscreens.ticket", "company_id", string="Tickets")
 
     total_screens = fields.Integer(string="Pantallas totales", compute="_compute_screen_counts")
