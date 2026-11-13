@@ -56,6 +56,9 @@ Incluye:
             "vscreens/static/src/js/vscreens_fields.js",
             "vscreens/static/src/xml/vscreens_fields.xml",
         ],
+        "web.assets_frontend": [
+            "vscreens/static/src/js/benry_widget.js",
+        ],
     },
     "installable": True,
     "application": True,
