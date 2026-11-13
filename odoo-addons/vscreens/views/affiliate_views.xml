@@ -54,7 +54,7 @@
 
     <menuitem id="menu_vscreens_affiliate"
               name="Afiliados"
-              parent="vscreens.menu_crm"
+              parent="vscreens.menu_vscreens_crm"
               action="action_vscreens_affiliate"
               sequence="30"/>
 </odoo>

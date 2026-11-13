@@ -52,7 +52,7 @@
 
     <menuitem id="menu_vscreens_calendar_activity"
               name="Calendario y Feriados"
-              parent="vscreens.menu_crm"
+              parent="vscreens.menu_vscreens_crm"
               action="action_vscreens_calendar_activity"
               sequence="40"/>
 </odoo>

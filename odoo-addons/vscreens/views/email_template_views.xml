@@ -57,7 +57,7 @@
 
     <menuitem id="menu_vscreens_email_template"
               name="Plantillas de Email"
-              parent="vscreens.menu_crm"
+              parent="vscreens.menu_vscreens_crm"
               action="action_vscreens_email_template"
               sequence="10"/>
 </odoo>

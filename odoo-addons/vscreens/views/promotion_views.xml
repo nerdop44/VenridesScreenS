@@ -55,7 +55,7 @@
 
     <menuitem id="menu_vscreens_promotion"
               name="Promociones"
-              parent="vscreens.menu_crm"
+              parent="vscreens.menu_vscreens_crm"
               action="action_vscreens_promotion"
               sequence="20"/>
 </odoo>

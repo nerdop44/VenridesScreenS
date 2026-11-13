@@ -47,7 +47,7 @@
 
     <menuitem id="menu_vscreens_free_plan_usage"
               name="Uso de Prueba Gratuita"
-              parent="vscreens.menu_devices"
+              parent="vscreens.menu_vscreens_devices"
               action="action_vscreens_free_plan_usage"
               sequence="30"/>
 </odoo>
