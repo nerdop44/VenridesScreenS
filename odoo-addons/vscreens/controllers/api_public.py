@@ -251,6 +251,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/website/logo/<string:filename>", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def website_logo(self, filename, **kwargs):
+        if not filename.endswith(".png"):
+            filename = filename + ".png"
         allowed = ("logo_icon.png", "logo_title.png", "logo_subtitle.png")
         if filename not in allowed:
             return error(404, "No encontrado")
