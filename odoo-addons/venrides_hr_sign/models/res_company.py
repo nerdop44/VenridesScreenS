@@ -10,7 +10,7 @@ class ResCompany(models.Model):
         help='Si la firma del recibo se parece menos que este porcentaje a la '
              'firma del contrato, queda marcada para revisión.')
     venrides_hr_alert_email = fields.Char(
-        string='Correo de alertas de RRHH', default='info@venrides.com',
+        string='Correo de alertas de RRHH', default='info.vscreens@inverpave.com',
         help='Recibe avisos cuando un documento se firma, queda en revisión o se rechaza.')
     venrides_signature_require_strokes = fields.Boolean(
         string='Exigir trazos de firma', default=True,

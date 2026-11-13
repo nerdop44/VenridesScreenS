@@ -446,7 +446,7 @@ class AccountMove(models.Model):
         tipo_id = vat_clean[0] if vat_clean[0].isalpha() else "J"
         num_id = vat_clean[1:] if vat_clean[0].isalpha() else vat_clean
 
-        phone = partner.mobile or partner.phone or "02120000000"
+        phone = partner.phone or "02120000000"
         email = partner.email or "cliente@empresa.com"
         country_code = partner.country_id.code or "VE"
 

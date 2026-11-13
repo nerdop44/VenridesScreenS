@@ -89,9 +89,9 @@ class VenridesApplicationLink(models.Model):
                     (' ' + link.recipient_name) if link.recipient_name else '',
                     link.url, link.url))
             mail = self.env['mail.mail'].sudo().create({
-                'subject': 'VenridesCafé — Completa tu postulación y tests',
+                'subject': 'VScreenS — Completa tu postulación y tests',
                 'email_to': email,
-                'email_from': link.company_id.email or 'no-reply@venrides.com',
+                'email_from': link.company_id.email or 'no-reply@inverpave.com',
                 'body_html': body,
             })
             try:

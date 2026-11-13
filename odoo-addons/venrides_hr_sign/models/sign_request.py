@@ -298,7 +298,7 @@ class VenridesSignRequest(models.Model):
         mail = self.env['mail.mail'].sudo().create({
             'subject': subject,
             'email_to': email,
-            'email_from': self.company_id.email or 'no-reply@venrides.com',
+            'email_from': self.company_id.email or 'no-reply@inverpave.com',
             'body_html': body,
         })
         try:
