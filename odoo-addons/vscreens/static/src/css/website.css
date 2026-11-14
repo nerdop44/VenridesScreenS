@@ -1,0 +1,194 @@
+/* ==========================================================================
+   VScreenS — Cabecera y elementos globales del sitio web Odoo
+   ========================================================================== */
+
+:root {
+    --vs-navbar-bg: #070c16;
+    --vs-navbar-bg-2: #12233d;
+    --vs-navbar-line: rgba(120, 200, 245, 0.22);
+    --vs-navbar-text: #eaf2fb;
+    --vs-navbar-accent: #c8ff00;
+}
+
+/* --- Barra de navegación ------------------------------------------------ */
+header .navbar,
+#wrapwrap > header .navbar,
+header .o_header_mobile {
+    background:
+        radial-gradient(1200px 180px at 12% -40%, rgba(0, 157, 255, 0.28), transparent 70%),
+        linear-gradient(95deg, var(--vs-navbar-bg) 0%, var(--vs-navbar-bg-2) 58%, #0a1527 100%) !important;
+    min-height: 96px !important;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--vs-navbar-line) !important;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+header .navbar .nav-link,
+header .navbar .nav-link span,
+header .navbar .nav-link a {
+    color: var(--vs-navbar-text) !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+header .navbar .nav-link:hover,
+header .navbar .nav-link:hover span,
+header .navbar .nav-link.show span {
+    color: var(--vs-navbar-accent) !important;
+}
+
+header .navbar .navbar-toggler,
+header .o_header_mobile .navbar-toggler {
+    color: var(--vs-navbar-text) !important;
+    border-color: rgba(234, 242, 251, 0.35) !important;
+}
+
+/* --- Marca VScreenS: contenedores independientes ------------------------ */
+header .navbar-brand.vs-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 80px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    text-decoration: none !important;
+    flex-shrink: 0;
+}
+
+/* Contenedor 1: isotipo */
+header .vs-brand-icon-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+}
+
+header .vs-brand-icon {
+    display: block !important;
+    width: 64px !important;
+    height: 64px !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    filter: drop-shadow(0 6px 16px rgba(0, 157, 255, 0.28));
+}
+
+/* Contenedor 2: título + subtítulo, cada uno en su propia caja */
+header .vs-brand-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    min-width: 0;
+    overflow: visible !important;
+}
+
+header .vs-brand-title-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: 44px;
+    overflow: visible !important;
+    line-height: 1 !important;
+}
+
+header .vs-brand-title {
+    display: block !important;
+    height: 44px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    overflow: visible !important;
+}
+
+header .vs-brand-subtitle-box {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 16px;
+    overflow: visible !important;
+}
+
+header .vs-brand-subtitle {
+    display: block !important;
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    font-size: 11.5px;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: 0.235em;
+    text-transform: uppercase;
+    color: #d8e7f7 !important;
+    white-space: nowrap;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+}
+
+/* --- Ajustes responsive ------------------------------------------------- */
+@media (max-width: 991.98px) {
+    header .navbar,
+    header .o_header_mobile {
+        min-height: 72px !important;
+    }
+
+    header .navbar-brand.vs-brand {
+        gap: 10px !important;
+        height: 58px !important;
+    }
+
+    header .vs-brand-icon-box {
+        width: 46px;
+        height: 46px;
+    }
+
+    header .vs-brand-icon {
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    header .vs-brand-title-box {
+        height: 30px;
+    }
+
+    header .vs-brand-title {
+        height: 30px !important;
+    }
+
+    header .vs-brand-subtitle {
+        font-size: 8.5px;
+        letter-spacing: 0.18em;
+    }
+}
+
+@media (max-width: 575.98px) {
+    header .vs-brand-subtitle {
+        font-size: 7.5px;
+        letter-spacing: 0.14em;
+    }
+
+    header .vs-brand-title-box {
+        height: 26px;
+    }
+
+    header .vs-brand-title {
+        height: 26px !important;
+    }
+}
+
+/* --- Limpieza del carrito y copyright en la landing -------------------- */
+.o_wsale_my_cart,
+.o_wsale_my_cart_link {
+    display: none !important;
+}
+
+.o_footer_copyright,
+#footer .o_footer_copyright {
+    display: none !important;
+}

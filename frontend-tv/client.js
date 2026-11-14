@@ -1,1230 +1,1382 @@
-const API_URL = "https://vscreens-api.inverpave.com";
-const CLIENT_ID_STORAGE_KEY = "device_uuid";
-console.log("VScreenS TV Client v2.0 - Preview Mode:", new URLSearchParams(window.location.search).get('preview'));
+/* ==========================================================================
+   VScreenS TV Client 3.0
+   Experiencia de señalización: video, sidebar rotativa, ticker y alertas.
+   ========================================================================== */
 
-const urlParams = new URLSearchParams(window.location.search);
-const previewCompanyId = urlParams.get('preview');
-console.log("Full TV App URL:", window.location.href);
-console.log("Detected Preview ID:", previewCompanyId);
+(function () {
+    "use strict";
 
-// Generate or Retrieve Device UUID
-// Simple UUID Generator for compatibility with old Smart TV browsers
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
+    /* ---------------------------------------------------------------------
+       Configuración y estado
+       --------------------------------------------------------------------- */
 
-// Generate or Retrieve Device UUID
-let deviceUuid = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
-if (!deviceUuid) {
-    // Try crypto if available, else fallback
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        deviceUuid = crypto.randomUUID();
-    } else {
-        deviceUuid = generateUUID();
-    }
-    localStorage.setItem(CLIENT_ID_STORAGE_KEY, deviceUuid);
-}
+    var API_URL = window.VSCREENS_API_URL || "https://vscreens-api.inverpave.com";
+    var params = new URLSearchParams(window.location.search);
+    var previewCompanyId = params.get("preview") || params.get("company");
+    var DEVICE_KEY = "device_uuid";
 
-let player;
-let currentKeywords = "";
-let sidebarItems = [];
-let bottomData = {};
-let bcvRate = 0;
-let rotationInterval;
-let currentDriveLink = "";
-let activePriorityUrl = "";
-let isInterrupted = false;
-let playerReady = false;
-let playlist = [];
-let currentVideoIndex = 0;
-let lastPlaylistStr = "";
-let lastAlertId = null;
-let isAlertShowing = false;
-let lastConfigTimestamp = null;
-let currentConfig = null;
-
-// Load YouTube API
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player('main-video-player', {
-        height: '100%',
-        width: '100%',
-        videoId: '5qap5aO4i9A',
-        playerVars: {
-            'autoplay': 1,
-            'controls': 0,
-            'mute': 0,
-            'loop': 1,
-            'playlist': '5qap5aO4i9A',
-            'rel': 0,
-            'showinfo': 0,
-            'modestbranding': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
-}
-
-function onPlayerReady(event) {
-    playerReady = true;
-    event.target.unMute();
-    event.target.setVolume(100);
-    event.target.playVideo();
-    console.log("YouTube Player Ready event fired.");
-}
-
-function loadNextVideo(source) {
-    if (!source) return;
-    let videoId = extractYoutubeId(source);
-    if (!videoId) {
-        // Keyword mapping logic
-        const lowerK = source.toLowerCase();
-        if (lowerK.includes('coffee') || lowerK.includes('jazz')) videoId = 'CH50zuS8dd0';
-        else if (lowerK.includes('food') || lowerK.includes('restaurant')) videoId = 'J1vL0yW9f70';
-        else if (lowerK.includes('city') || lowerK.includes('travel')) videoId = 'JB0A8Me8EKk';
-        else if (lowerK.includes('beach') || lowerK.includes('ocean')) videoId = 'n61ULEU7CO0';
-        else videoId = '5qap5aO4i9A';
-    }
-
-    if (playerReady && player && typeof player.loadVideoById === 'function') {
-        console.log("YouTube Player Loading:", videoId, "Source:", source);
-        player.loadVideoById({ videoId: videoId, suggestedQuality: 'hd1080' });
-        return true;
-    }
-    return false;
-}
-
-function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.ENDED) {
-        // If we are showing priority, loop it
-        if (activePriorityUrl && (activePriorityUrl.includes('youtube.com') || activePriorityUrl.includes('youtu.be'))) {
-            player.playVideo();
-            return;
-        }
-
-        if (playlist.length > 1) {
-            currentVideoIndex = (currentVideoIndex + 1) % playlist.length;
-            loadNextVideo(playlist[currentVideoIndex]);
-        } else {
-            player.playVideo(); // Loop single video
-        }
-    }
-}
-
-// Setup Priority Video
-document.addEventListener('DOMContentLoaded', () => {
-    const priorityVideo = document.getElementById("priority-video");
-    const priorityContainer = document.getElementById("priority-player-container");
-
-    priorityVideo.onended = () => {
-        priorityContainer.classList.add("hidden");
-        priorityVideo.pause();
-        isInterrupted = false;
-        console.log("Priority video ended, resuming normal loop.");
+    var state = {
+        uuid: getDeviceUuid(),
+        config: null,
+        lastUpdated: null,
+        sidebarSlides: [],
+        slideIndex: 0,
+        slideTimer: null,
+        tickerTimer: null,
+        alertTimer: null,
+        activeAlertId: null,
+        queue: [],
+        queueSignature: "",
+        videoIndex: 0,
+        failedVideos: {},
+        player: null,
+        playerReady: false,
+        playerLoading: false,
+        currentItem: null,
+        currentKind: null,
+        muted: true,
+        priorityReturnItem: null,
+        inPriority: false,
+        priorityUrl: null,
+        pingTimer: null,
+        fallbackTimer: null,
+        fallbackIndex: 0,
+        soundHideTimer: null,
+        adTimer: null,
+        lastPingAt: 0
     };
 
-    // Initialize config fetch immediately
-    fetchConfig();
+    /* ---------------------------------------------------------------------
+       Utilidades
+       --------------------------------------------------------------------- */
 
-    // Listen for Real-Time Preview Updates (Admin Iframe)
-    window.addEventListener('message', (event) => {
-        const msg = event.data;
-        if (msg.type === 'PREVIEW_UPDATE') {
-            const data = msg.payload;
-            console.log("PREVIEW_UPDATE received:", data);
-
-            const newData = { ...data };
-            // Ensure strings are parsed if they come as strings from Admin state
-            ['design_settings', 'sidebar_content', 'bottom_bar_content'].forEach(key => {
-                if (newData[key] && typeof newData[key] === 'string') {
-                    try { newData[key] = JSON.parse(newData[key]); } catch (e) { }
-                }
-            });
-
-            window.currentConfig = { ...(window.currentConfig || {}), ...newData };
-            console.log("Merged Config for Preview:", window.currentConfig);
-
-            // Reset rotation state to show new changes from page 1
-            currentRotationPage = 0;
-
-            // Re-apply visual settings immediately
-            applyBranding(window.currentConfig);
-
-            // Special handling for BCV in preview
-            if (typeof newData.bcv_rate !== 'undefined') {
-                bcvRate = newData.bcv_rate;
-                console.log("⚡ PREVIEW: Force BCV Update:", bcvRate);
-            }
-
-            if (typeof updateBottomBar === 'function') {
-                updateBottomBar();
-            }
-        }
-    });
-});
-
-// Helper to transform Drive URLs for Images (View)
-function transformDriveImgUrl(url) {
-    if (!url) return "";
-    try {
-        if (url.includes("drive.google.com") || url.includes("docs.google.com")) {
-            // Match ID more permissively: /d/ID, id=ID, or just the ID string if sufficiently long
-            const idMatch = url.match(/(?:\/d\/|id=|open\?id=)([-\w]{15,})/) || url.match(/([-\w]{25,})/);
-            if (idMatch && idMatch[1]) {
-                const id = idMatch[1];
-                // Use lh3.googleusercontent.com for images as it handles CORS better and no 302 redirects
-                return `https://lh3.googleusercontent.com/d/${id}=w1000?authuser=0`;
-            }
-        }
-    } catch (e) { console.error("URL transform error", e); }
-    return url;
-}
-
-// Helper to transform Drive URLs for Videos (Download/Stream)
-function transformDriveVideoUrl(url) {
-    if (!url) return "";
-    try {
-        if (url.includes("drive.google.com") || url.includes("docs.google.com")) {
-            const idMatch = url.match(/(?:\/d\/|id=|open\?id=)([-\w]{15,})/) || url.match(/([-\w]{25,})/);
-            if (idMatch && idMatch[1]) {
-                return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
-            }
-        }
-    } catch (e) { console.error("URL transform error", e); }
-    return url;
-}
-
-function handlePriorityContent(url) {
-    if (!url || url === activePriorityUrl) {
-        if (!url && activePriorityUrl) {
-            // Priority removed, hide and resume
-            const priorityContainer = document.getElementById("priority-player-container");
-            if (priorityContainer) priorityContainer.classList.add("hidden");
-            activePriorityUrl = null;
-            isInterrupted = false;
-        }
-        return;
+    function $(id) {
+        return document.getElementById(id);
     }
 
-    // Check if it's a YouTube URL
-    const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-
-    if (isYoutube) {
-        console.log("Priority content is YouTube, will be handled by main player logic.");
-        activePriorityUrl = url;
-        isInterrupted = false; // We use main player, so not "interrupted" by overlay
-        const priorityContainer = document.getElementById("priority-player-container");
-        if (priorityContainer) priorityContainer.classList.add("hidden");
-        return;
-    }
-
-    activePriorityUrl = url;
-    const priorityVideo = document.getElementById("priority-video");
-    const priorityContainer = document.getElementById("priority-player-container");
-
-    console.log("Triggering priority interruption (Direct Video):", url);
-    priorityVideo.src = transformDriveVideoUrl(url);
-    priorityContainer.classList.remove("hidden");
-    priorityVideo.play().catch(e => console.error("Priority play error:", e));
-    isInterrupted = true;
-}
-
-// Global Error Handler for debugging on TV
-window.onerror = function (msg, url, lineNo, columnNo, error) {
-    const nameEl = document.getElementById("company-name");
-    if (nameEl) {
-        nameEl.style.color = "#ff8e8e";
-        nameEl.innerText = "Error: " + msg;
-    }
-    // Also show on registration screen if possible
-    const uuidDisplay = document.getElementById("device-uuid-display");
-    if (uuidDisplay) uuidDisplay.innerHTML += `<div style="color:red; font-size:0.6em; margin-top:20px;">[DEBUG] ${msg}</div>`;
-    return false;
-};
-
-async function fetchConfig() {
-    try {
-        console.log("Fetching config for UUID:", deviceUuid);
-        let url = `${API_URL}/devices/${deviceUuid}/config`;
-
-        if (previewCompanyId) {
-            console.log("Preview Mode active for Company ID:", previewCompanyId);
-            url = `${API_URL}/companies/${previewCompanyId}/preview-config`;
-        }
-
-        // Cache busting: Add timestamp to prevent old config from being cached by proxy/browser
-        const timestamp = new Date().getTime();
-        const separator = url.includes('?') ? '&' : '?';
-        const finalUrl = `${url}${separator}_t=${timestamp}`;
-
-        const res = await fetch(finalUrl);
-
-        if (res.status === 404) {
-            console.log("Device not registered (404). Showing registration screen.");
-            if (!previewCompanyId) showRegistrationScreen();
-            return;
-        }
-
-        if (!res.ok) {
-            throw new Error(`HTTP Error ${res.status}`);
-        }
-
-        const data = await res.json();
-        console.log("Config fetch success. Last updated:", data.last_updated);
-
-        // Optimización: Evitar re-renderizado si no hay cambios
-        if (data.last_updated && lastConfigTimestamp === data.last_updated) {
-            // Still check for ping command
-            if (data.ping_command) handlePing(true, data.name);
-            return;
-        }
-
-        window.currentConfig = data;
-        lastConfigTimestamp = data.last_updated;
-        console.log("New config applied:", data);
-        applyBranding(data);
-    } catch (e) {
-        console.error("Fetch Config Error:", e);
-
-        const nameEl = document.getElementById("company-name");
-        if (nameEl) {
-            nameEl.innerHTML = `Reconectando... <br/><span style="font-size:0.5em; opacity:0.7;">${e.message}</span>`;
-        }
-
-        if (!window.currentConfig && !previewCompanyId) {
-            showRegistrationScreen();
-            const uuidDisplay = document.getElementById("device-uuid-display");
-            if (uuidDisplay) {
-                uuidDisplay.innerHTML = `${deviceUuid}<br/><span style="font-size:0.5em; color:#f87171;">Buscando servidor...</span>`;
-            }
-        }
-    } finally {
-        // Precise scheduling of next fetch to ensure continuity
-        setTimeout(fetchConfig, 10000);
-    }
-}
-
-function getContrastColor(hex) {
-    if (!hex || hex === 'transparent') return '#ffffff';
-    const r = parseInt(hex.substring(1, 3), 16);
-    const g = parseInt(hex.substring(3, 5), 16);
-    const b = parseInt(hex.substring(5, 7), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 128) ? '#000000' : '#ffffff';
-}
-
-function applyBranding(data) {
-    if (!data) return;
-    const root = document.documentElement;
-
-    // Ensure nested objects are actual objects (robustness against stringified API responses)
-    if (typeof data.design_settings === 'string') {
-        try { data.design_settings = JSON.parse(data.design_settings); } catch (e) { }
-    }
-    if (typeof data.sidebar_content === 'string') {
-        try { data.sidebar_content = JSON.parse(data.sidebar_content); } catch (e) { }
-    }
-    if (typeof data.bottom_bar_content === 'string') {
-        try { data.bottom_bar_content = JSON.parse(data.bottom_bar_content); } catch (e) { }
-    }
-
-    handlePriorityContent(data.priority_content_url);
-    handleAlert(data.active_alert);
-    handlePing(data.ping_command, data.name);
-
-    const regOverlay = document.getElementById("registration-overlay");
-    const mainContainer = document.querySelector(".screen-container");
-
-    if (regOverlay) regOverlay.classList.add("hidden");
-    if (mainContainer) {
-        mainContainer.style.display = "grid";
-    }
-
-    const body = document.body;
-
-    if (!data.is_active && !previewCompanyId) {
-        showSuspended();
-        return;
-    } else {
-        document.getElementById("kill-switch").classList.add("hidden");
-    }
-
-    // Apply Layout & Colors
-    body.className = data.layout_type || 'layout-a';
-    const ds = data.design_settings || {};
-    root.style.setProperty('--primary-color', data.primary_color || '#3e2723');
-    root.style.setProperty('--secondary-color', data.secondary_color || '#5d4037');
-    root.style.setProperty('--accent-color', data.accent_color || '#8d6e63');
-    root.style.setProperty('--text-color', getContrastColor(data.primary_color));
-
-    // Independent Bar Colors
-    root.style.setProperty('--sidebar-bg', ds.sidebar_bg || data.primary_color || '#3e2723');
-    root.style.setProperty('--sidebar-text', ds.sidebar_text || getContrastColor(data.primary_color));
-    root.style.setProperty('--bottom-bg', ds.bottom_bar_bg || data.accent_color || '#8d6e63');
-    root.style.setProperty('--ticker-text-color', ds.ticker_color || ds.bottom_bar_text || getContrastColor(ds.bottom_bar_bg || data.accent_color));
-
-    // Dynamic Dimensions (Fix for Sidebar/Footer sizing)
-    if (ds.sidebar_width) {
-        root.style.setProperty('--sidebar-width', `${ds.sidebar_width}vw`);
-    } else {
-        root.style.setProperty('--sidebar-width', '22vw'); // Fallback
-    }
-
-    if (ds.bottom_bar_height) {
-        root.style.setProperty('--bottom-height', `${ds.bottom_bar_height}vh`);
-    } else {
-        root.style.setProperty('--bottom-height', '10vh'); // Fallback
-    }
-
-    // Safety Margin (Overscan fix)
-    const safety = ds.safety_margin || 0;
-    root.style.setProperty('--safe-area', `${safety}vw`);
-
-    // Sidebar Background Image & Effects
-    const sidebar = document.getElementById("sidebar");
-    if (sidebar) {
-        // Apply background image
-        if (ds.sidebar_bg_image) {
-            const bgUrl = transformDriveImgUrl(ds.sidebar_bg_image);
-            sidebar.style.backgroundImage = `url('${bgUrl}')`;
-            sidebar.style.backgroundSize = "cover";
-            sidebar.style.backgroundPosition = "center";
-            sidebar.style.backgroundRepeat = "no-repeat";
-        } else {
-            sidebar.style.backgroundImage = "none";
-        }
-
-        // Apply visual effects
-        const effect = ds.sidebar_effect || 'none';
-        sidebar.classList.remove('effect-glass-3d', 'effect-neon-glow', 'effect-deep-shadow');
-
-        if (effect === 'glass_3d') {
-            sidebar.classList.add('effect-glass-3d');
-        } else if (effect === 'neon_glow') {
-            sidebar.classList.add('effect-neon-glow');
-        } else if (effect === 'deep_shadow') {
-            sidebar.classList.add('effect-deep-shadow');
+    function parseJson(value, fallback) {
+        if (value === null || value === undefined || value === "") return fallback;
+        if (typeof value === "object") return value;
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            return fallback;
         }
     }
 
-    // Dynamic Animation Speed
-    const tickerSpeed = ds.ticker_speed || 30;
-    const tickerWrapper = document.getElementById("ticker-wrapper");
-    if (tickerWrapper) {
-        tickerWrapper.style.animationDuration = `${tickerSpeed}s`;
+    function pad2(value) {
+        value = String(value);
+        return value.length < 2 ? "0" + value : value;
     }
 
-    // Apply Content
-    const nameEl = document.getElementById("company-name");
-    if (nameEl) {
-        nameEl.innerText = data.name || "VScreenS Screen";
-        if (data.design_settings) {
-            const ds = data.design_settings;
-            nameEl.style.fontFamily = ds.name_font || 'inherit';
-            nameEl.style.fontSize = ds.name_size || '1.2rem';
-            nameEl.style.color = ds.name_color || 'inherit';
-            nameEl.style.fontWeight = ds.name_weight || 'bold';
+    function getDeviceUuid() {
+        var uuid = null;
+        try {
+            uuid = window.localStorage.getItem(DEVICE_KEY);
+        } catch (err) {
+            uuid = null;
         }
-    }
-
-    // Logo Handling (Bottom Logo)
-    const logoImg = document.getElementById("logo");
-    const logoContainer = document.getElementById("logo-container");
-    // const ds = data.design_settings || {}; // Already defined
-
-    // Determine which logo to show
-    // Priority: sidebar_bottom_logo -> logo_url
-    // Explicitly check sidebar_bottom_logo first as it corresponds to the new "Logo Inferior" section
-    let logoUrl = ds.sidebar_bottom_logo;
-    if (!logoUrl) logoUrl = data.logo_url;
-
-    // Visibility Check
-    // If show_bottom_logo is explicitly false, hide it. Default true.
-    if (logoUrl && ds.show_bottom_logo !== false) {
-        if (logoUrl.startsWith("/logos/")) logoUrl = "/api" + logoUrl;
-
-        logoImg.src = transformDriveImgUrl(logoUrl);
-
-        logoImg.style.transition = "width 0.3s ease, height 0.3s ease";
-
-        // Size Control
-        // Use new sidebar_bottom_logo_size if available, else legacy logo_size or default
-        const size = ds.sidebar_bottom_logo_size || ds.logo_size || 85;
-
-        logoImg.style.width = `${size}%`;
-        logoImg.style.height = "auto";
-        logoImg.style.maxWidth = "100%";
-        logoImg.style.maxHeight = "100%";
-        logoImg.style.objectFit = "contain";
-
-        if (logoContainer) {
-            const isLayoutB = document.body.classList.contains('layout-b');
-            logoContainer.style.height = isLayoutB ? "12vh" : "18vh";
-            logoContainer.style.display = "flex";
-            logoContainer.style.justifyContent = "center";
-            logoContainer.style.alignItems = "center";
-            logoContainer.style.overflow = "hidden";
-        }
-        logoImg.classList.remove("hidden");
-    } else {
-        logoImg.classList.add("hidden");
-        if (logoContainer) logoContainer.style.height = "0";
-    }
-
-    // Sidebar & Bottom Bar Data
-    try {
-        sidebarItems = Array.isArray(data.sidebar_content) ? data.sidebar_content : JSON.parse(data.sidebar_content || '[]');
-    } catch (e) { console.error("Sidebar parse error", e); sidebarItems = []; }
-
-    try {
-        // Original parsing for bottomData
-        bottomData = (data.bottom_bar_content && typeof data.bottom_bar_content === 'object') ? data.bottom_bar_content : JSON.parse(data.bottom_bar_content || '{}');
-    } catch (e) { console.error("Bottom bar parse error", e); bottomData = {}; }
-
-    bcvRate = data.bcv_rate || 0;
-
-    startSidebarRotation();
-    updateBottomBar();
-
-    // 4. Ad Frequency Logic (Priority Drive Video)
-    handleAdFrequency(data);
-
-    // Video Source Handling
-    const playerDiv = document.getElementById("main-video-player");
-    const drivePlayer = document.getElementById("drive-player");
-    const youtubePriority = (data.priority_content_url && (data.priority_content_url.includes('youtube.com') || data.priority_content_url.includes('youtu.be'))) ? data.priority_content_url : null;
-    const isDriveMode = data.video_source === 'drive' || data.video_source === 'direct';
-    const showYoutube = youtubePriority || (!isDriveMode);
-
-    if (showYoutube) {
-        if (!isInterrupted) {
-            drivePlayer.classList.add("hidden");
-            playerDiv.classList.remove("hidden");
-        }
-        if (typeof drivePlayer.pause === 'function') drivePlayer.pause();
-
-        // 1. Check for PRIORITY YOUTUBE
-        if (youtubePriority) {
-            if (youtubePriority !== lastPlaylistStr) {
-                console.log("Priority YouTube detected:", youtubePriority);
-                if (loadNextVideo(youtubePriority)) {
-                    lastPlaylistStr = youtubePriority;
-                    playlist = [youtubePriority]; // Treat as single playlist
-                }
-            }
-            return;
-        }
-
-        // 2. Normal Playlist Handling
-        let newPlaylist = [];
-        if (data.video_playlist && Array.isArray(data.video_playlist) && data.video_playlist.length > 0) {
-            newPlaylist = data.video_playlist;
-        } else if (data.filler_keywords) {
-            newPlaylist = [data.filler_keywords];
-        } else {
-            newPlaylist = ["nature"];
-        }
-
-        // Check if playlist changed
-        const newPlStr = JSON.stringify(newPlaylist);
-        if (newPlStr !== lastPlaylistStr) {
-            console.log("Playlist updated:", newPlaylist);
-            playlist = newPlaylist;
-            lastPlaylistStr = newPlStr;
-            currentVideoIndex = 0;
-
-            if (!loadNextVideo(playlist[0])) {
-                console.warn("YouTube player NOT ready yet. Update queued.");
-                lastPlaylistStr = "";
-            }
-        }
-    } else {
-        if (!isInterrupted) {
-            playerDiv.classList.add("hidden");
-            drivePlayer.classList.remove("hidden");
-        }
-
-        if (data.google_drive_link && data.google_drive_link !== currentDriveLink) {
-            currentDriveLink = data.google_drive_link;
-            const finalUrl = data.video_source === 'drive' ? transformDriveVideoUrl(data.google_drive_link) : data.google_drive_link;
-            console.log("Loading Background Video:", finalUrl);
-            drivePlayer.src = finalUrl;
-            drivePlayer.play().catch(e => console.log("Autoplay blocked:", e));
-        }
-    }
-}
-
-let adInterval;
-function handleAdFrequency(data) {
-    if (!data.ad_frequency || data.ad_frequency <= 0 || !data.google_drive_link) {
-        if (adInterval) clearInterval(adInterval);
-        return;
-    }
-
-    const freqMs = data.ad_frequency * 1000;
-    if (adInterval) clearInterval(adInterval);
-
-    adInterval = setInterval(() => {
-        if (isInterrupted || isAlertShowing) return;
-        playPriorityAd(data);
-    }, freqMs);
-}
-
-function playPriorityAd(data) {
-    const priorityContainer = document.getElementById("priority-player-container");
-    const priorityVideo = document.getElementById("priority-video");
-    if (!priorityContainer || !priorityVideo) return;
-
-    console.log("Starting Priority Ad...");
-    isInterrupted = true;
-
-    // Pause main player
-    if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
-    const drivePlayer = document.getElementById("drive-player");
-    if (drivePlayer && typeof drivePlayer.pause === 'function') drivePlayer.pause();
-
-    // Setup Priority Ad
-    const finalUrl = data.video_source === 'drive' ? transformDriveVideoUrl(data.google_drive_link) : data.google_drive_link;
-    priorityVideo.src = finalUrl;
-    priorityContainer.classList.remove("hidden");
-
-    priorityVideo.play().catch(e => console.log("Ad Autoplay blocked:", e));
-
-    // Wait for end or pause_duration
-    const pauseMs = (data.pause_duration || 1) * 60 * 1000;
-
-    const endAd = () => {
-        priorityContainer.classList.add("hidden");
-        priorityVideo.pause();
-        isInterrupted = false;
-
-        // Resume main player
-        if (player && typeof player.playVideo === 'function') player.playVideo();
-        if (drivePlayer && data.video_source === 'drive') drivePlayer.play();
-
-        priorityVideo.removeEventListener('ended', endAd);
-    };
-
-    priorityVideo.addEventListener('ended', endAd);
-    setTimeout(endAd, pauseMs);
-}
-
-function extractYoutubeId(url) {
-    if (!url) return null;
-    // Enhanced regex to handle watch?v=, embeds, shorts, youtu.be, and complex URLs with params
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regex);
-    return (match && match[1]) ? match[1] : null;
-}
-
-// Keep helper for consistency if needed, but transformDriveImgUrl is preferred
-function transformDriveUrl(url) {
-    return transformDriveImgUrl(url);
-}
-
-let currentRotationPage = 0;
-
-function startSidebarRotation() {
-    if (rotationInterval) clearInterval(rotationInterval);
-
-    const animateBlocks = () => {
-        const slots = [
-            document.getElementById("sidebar-slot-1"),
-            document.getElementById("sidebar-slot-2"),
-            document.getElementById("sidebar-slot-3")
-        ];
-
-        const ds = window.currentConfig?.design_settings || {};
-        const layout = ds.sidebar_layout || 1;
-        const totalItems = sidebarItems.length;
-
-        if (totalItems === 0) {
-            slots.forEach(s => s && (s.style.display = 'none'));
-            return;
-        }
-
-        // Apply Visibility based on layout
-        slots.forEach((slot, i) => {
-            if (!slot) return;
-            slot.style.display = (i < layout) ? 'flex' : 'none';
-        });
-
-        // Calculate Items for this Page
-        // page 0: [0, layout-1]
-        // page 1: [layout, 2*layout-1]
-        const startIndex = (currentRotationPage * layout) % totalItems;
-        const pageItems = [];
-        for (let i = 0; i < layout; i++) {
-            const idx = (startIndex + i) % totalItems;
-            pageItems.push(sidebarItems[idx]);
-        }
-
-        // Phase 1: Fade Out
-        slots.forEach(slot => {
-            if (slot && slot.style.display !== 'none') {
-                slot.style.opacity = '0';
-                slot.style.transform = 'translateY(10px)';
-            }
-        });
-
-        setTimeout(() => {
-            // Phase 2: Update Content
-            slots.forEach((slot, i) => {
-                if (i >= layout || !slot) return;
-                slot.innerHTML = '';
-
-                const item = pageItems[i];
-                if (item) {
-                    const wrapper = document.createElement('div');
-                    wrapper.style.width = '100%';
-                    wrapper.style.height = '100%';
-                    wrapper.style.display = 'flex';
-                    wrapper.style.justifyContent = 'center';
-                    wrapper.style.alignItems = 'center';
-
-                    if (item.type === 'image') {
-                        const img = document.createElement('img');
-                        img.src = transformDriveImgUrl(item.value);
-                        img.className = 'anim-zoom';
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'contain';
-                        img.style.borderRadius = '12px';
-
-                        const maxH = layout === 1 ? '70vh' : (layout === 2 ? '35vh' : '23vh');
-                        img.style.maxHeight = maxH;
-
-                        wrapper.appendChild(img);
-                    } else {
-                        const txt = document.createElement('div');
-                        txt.className = 'anim-slide';
-                        txt.innerText = item.value;
-                        txt.style.color = item.color || 'var(--sidebar-text, #fff)';
-                        txt.style.fontSize = item.font_size || (layout === 1 ? '2.5rem' : '1.4rem');
-                        txt.style.fontWeight = item.weight || 'bold';
-                        txt.style.fontFamily = item.font_family || 'inherit';
-                        txt.style.textAlign = 'center';
-                        txt.style.whiteSpace = 'pre-wrap';
-                        wrapper.appendChild(txt);
-                    }
-                    slot.appendChild(wrapper);
-                }
-            });
-
-            // Phase 3: Cascade Fade In
-            slots.forEach((slot, i) => {
-                if (i >= layout || !slot) return;
-                setTimeout(() => {
-                    slot.style.opacity = '1';
-                    slot.style.transform = 'translateY(0)';
-                }, i * 300);
-            });
-
-            // Advance Page
-            if (totalItems > layout) {
-                currentRotationPage = (currentRotationPage + 1) % Math.ceil(totalItems / layout);
+        if (!uuid) {
+            if (window.crypto && typeof window.crypto.randomUUID === "function") {
+                uuid = window.crypto.randomUUID();
             } else {
-                currentRotationPage = 0;
-            }
-
-        }, 800);
-    };
-
-    animateBlocks();
-    const duration = window.currentConfig?.pause_duration || 15;
-    rotationInterval = setInterval(animateBlocks, duration * 1000);
-}
-
-function updateBottomBar() {
-    console.log("Updating Bottom Bar with config:", window.currentConfig);
-    const wrapper = document.getElementById("ticker-wrapper");
-    if (!wrapper) return;
-    wrapper.innerHTML = ""; // Clean
-
-    // Build items array
-    const items = [];
-    const ds = window.currentConfig?.design_settings || {};
-
-    // Common Font Settings for Ticker
-    const tickerStyle = {
-        color: ds.ticker_color || bottomData.color || "var(--ticker-text-color)",
-        fontSize: bottomData.font_size || "1.2rem",
-        fontWeight: bottomData.weight || "bold",
-        fontFamily: ds.ticker_font || 'inherit'
-    };
-
-    // 1. Multiple Scrolling Messages (Ticker)
-    const msgs = Array.isArray(bottomData.messages) ? bottomData.messages : [bottomData.static || "VScreenS Pantallas Inteligentes"];
-
-    msgs.forEach(text => {
-        items.push({
-            type: 'text',
-            content: text,
-            style: {
-                ...tickerStyle,
-                marginRight: "6vw"
-            }
-        });
-    });
-
-    // 4. Inject Ad Scripts (Google/Meta if provided)
-    const configData = window.currentConfig || {};
-    if (configData.ad_scripts && Array.isArray(configData.ad_scripts)) {
-        configData.ad_scripts.forEach(scriptCode => {
-            if (!document.querySelector(`[data-ad-script="${btoa(scriptCode).substring(0, 20)}"]`)) {
-                const container = document.createElement('div');
-                container.setAttribute('data-ad-script', btoa(scriptCode).substring(0, 20));
-                container.innerHTML = scriptCode;
-                document.body.appendChild(container);
-
-                // Re-execute scripts if any were injected via innerHTML
-                const scripts = container.querySelectorAll('script');
-                scripts.forEach(s => {
-                    const newScript = document.createElement('script');
-                    if (s.src) newScript.src = s.src;
-                    else newScript.textContent = s.textContent;
-                    document.head.appendChild(newScript);
+                uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+                    var r = (Math.random() * 16) | 0;
+                    var v = c === "x" ? r : (r & 0x3) | 0x8;
+                    return v.toString(16);
                 });
             }
+            try {
+                window.localStorage.setItem(DEVICE_KEY, uuid);
+            } catch (err) {
+                /* almacenamiento no disponible en algunos televisores */
+            }
+        }
+        return uuid;
+    }
+
+    function isYoutubeUrl(url) {
+        return typeof url === "string" && /youtube\.com|youtu\.be/i.test(url);
+    }
+
+    function extractYoutubeId(url) {
+        if (!url) return null;
+        var value = String(url).trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
+        var match = value.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        return match ? match[1] : null;
+    }
+
+    function driveToDirect(url) {
+        if (!url) return url;
+        if (!/drive\.google\.com|docs\.google\.com/i.test(url)) return url;
+        var match = url.match(/(?:\/d\/|id=|open\?id=)([-\w]{15,})/) || url.match(/([-\w]{25,})/);
+        if (match && match[1]) {
+            return "https://drive.google.com/uc?export=download&id=" + match[1];
+        }
+        return url;
+    }
+
+    function driveToImage(url) {
+        if (!url) return url;
+        if (!/drive\.google\.com|docs\.google\.com/i.test(url)) return url;
+        var match = url.match(/(?:\/d\/|id=|open\?id=)([-\w]{15,})/) || url.match(/([-\w]{25,})/);
+        if (match && match[1]) {
+            return "https://lh3.googleusercontent.com/d/" + match[1] + "=w1200";
+        }
+        return url;
+    }
+
+    function absoluteUrl(url) {
+        if (!url) return "";
+        if (/^(https?:|data:|blob:)/i.test(url)) return url;
+        if (url.charAt(0) === "/") return API_URL + url;
+        return API_URL + "/" + url.replace(/^\.?\//, "");
+    }
+
+    function contrastColor(hex) {
+        if (!hex || typeof hex !== "string") return "#ffffff";
+        var value = hex.replace("#", "");
+        if (value.length === 3) {
+            value = value.charAt(0) + value.charAt(0) + value.charAt(1) + value.charAt(1) + value.charAt(2) + value.charAt(2);
+        }
+        if (!/^[0-9a-f]{6}$/i.test(value)) return "#ffffff";
+        var r = parseInt(value.substr(0, 2), 16);
+        var g = parseInt(value.substr(2, 2), 16);
+        var b = parseInt(value.substr(4, 2), 16);
+        var yiq = (r * 299 + g * 587 + b * 114) / 1000;
+        return yiq >= 150 ? "#08111f" : "#ffffff";
+    }
+
+    function formatNumber(value, decimals) {
+        var number = Number(value);
+        if (!isFinite(number)) return "—";
+        try {
+            return number.toLocaleString("es-VE", {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        } catch (err) {
+            return number.toFixed(decimals);
+        }
+    }
+
+    function isPriceText(value) {
+        return typeof value === "string" && /(^|\s)(\$|bs\.?|usd|precio)/i.test(value) && /\d/.test(value);
+    }
+
+    /* ---------------------------------------------------------------------
+       Relojes y fecha
+       --------------------------------------------------------------------- */
+
+    var DAYS_SHORT = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+    var DAYS_LONG = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
+    var MONTHS_SHORT = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+    var MONTHS_LONG = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+
+    function updateClocks() {
+        var now = new Date();
+        var time = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+        var sideClock = $("side-clock");
+        var bottomTime = $("bottom-time");
+        var bottomDay = $("bottom-day");
+        var topDate = $("topbar-date");
+
+        if (sideClock) sideClock.textContent = time;
+        if (bottomTime) bottomTime.textContent = time;
+        if (bottomDay) {
+            bottomDay.textContent = DAYS_SHORT[now.getDay()] + " · " + pad2(now.getDate()) + " " + MONTHS_SHORT[now.getMonth()];
+        }
+        if (topDate) {
+            topDate.textContent = DAYS_LONG[now.getDay()] + ", " + now.getDate() + " DE " + MONTHS_LONG[now.getMonth()] + " " + now.getFullYear();
+        }
+    }
+
+    /* ---------------------------------------------------------------------
+       Carga de configuración
+       --------------------------------------------------------------------- */
+
+    function configUrl() {
+        var base = previewCompanyId
+            ? API_URL + "/companies/" + encodeURIComponent(previewCompanyId) + "/preview-config"
+            : API_URL + "/devices/" + encodeURIComponent(state.uuid) + "/config";
+        return base + (base.indexOf("?") === -1 ? "?" : "&") + "_t=" + Date.now();
+    }
+
+    function fetchConfig() {
+        var url = configUrl();
+        fetch(url, { cache: "no-store" })
+            .then(function (response) {
+                if (response.status === 404) {
+                    if (!previewCompanyId) showRegistration();
+                    return null;
+                }
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data) return;
+                if (data.last_updated && data.last_updated === state.lastUpdated) {
+                    handlePing(data);
+                    return;
+                }
+                state.lastUpdated = data.last_updated || null;
+                applyConfig(data, false);
+            })
+            .catch(function (error) {
+                var fallbackSub = $("fallback-sub");
+                if (fallbackSub && !state.config) fallbackSub.textContent = "Reconectando con VScreenS…";
+                if (!state.config && !previewCompanyId) {
+                    showRegistration("Reconectando con el servidor…");
+                }
+                console.warn("VScreenS config error:", error);
+            })
+            .then(function () {
+                window.setTimeout(fetchConfig, 10000);
+            });
+    }
+
+    /* ---------------------------------------------------------------------
+       Aplicación de configuración
+       --------------------------------------------------------------------- */
+
+    function applyConfig(data, force) {
+        state.config = data;
+
+        var design = parseJson(data.design_settings, {}) || {};
+        var sidebarItems = parseJson(data.sidebar_content, []) || [];
+        var bottom = parseJson(data.bottom_bar_content, {}) || {};
+        var playlist = parseJson(data.video_playlist, []) || [];
+        var scheduled = parseJson(data.scheduled_videos, []) || [];
+        var menus = parseJson(data.menus, []) || [];
+
+        if (data.is_active === false && !previewCompanyId) {
+            showSuspended();
+            return;
+        }
+
+        hideOverlay("kill-switch");
+
+        applyTheme(data, design);
+        applyBrand(data, design);
+        buildSidebar(sidebarItems, menus, design);
+        buildTicker(bottom, data, design);
+        buildQueue(playlist, scheduled, data);
+        handlePriority(data.priority_content_url || null);
+        handleAlert(data.active_alert);
+        handlePing(data);
+
+        var splash = $("splash");
+        if (splash) splash.classList.add("is-hidden");
+
+        var fallbackSub = $("fallback-sub");
+        if (fallbackSub) fallbackSub.textContent = "Contenido en reproducción";
+
+        if (force) {
+            state.lastUpdated = data.last_updated || state.lastUpdated;
+        }
+    }
+
+    function applyTheme(data, design) {
+        var app = $("tv-app");
+        var root = document.documentElement;
+
+        root.style.setProperty("--vs-primary", data.primary_color || "#12233d");
+        root.style.setProperty("--vs-secondary", data.secondary_color || "#c8ff00");
+        root.style.setProperty("--vs-accent", data.accent_color || "#ff6b35");
+        root.style.setProperty("--vs-highlight", data.secondary_color || "#c8ff00");
+
+        if (app) {
+            app.className = "tv-app " + (data.layout_type || "layout-a");
+        }
+
+        if (design.safety_margin !== undefined && design.safety_margin !== null) {
+            root.style.setProperty("--safe", Number(design.safety_margin) + "vw");
+        }
+
+        if (design.sidebar_width) {
+            root.style.setProperty("--sidebar-w", Number(design.sidebar_width) + "vw");
+        }
+
+        if (design.bottom_bar_height) {
+            root.style.setProperty("--bottom-h", Number(design.bottom_bar_height) + "vh");
+        }
+
+        var sidebar = $("sidebar");
+        if (sidebar) {
+            var bg = design.sidebar_bg_image ? driveToImage(design.sidebar_bg_image) : "";
+            if (bg) {
+                sidebar.style.backgroundImage = "linear-gradient(180deg, rgba(4,8,15,0.58) 0%, rgba(4,8,15,0.9) 72%, rgba(4,8,15,0.97) 100%), url(\"" + bg + "\")";
+                sidebar.style.backgroundSize = "cover";
+                sidebar.style.backgroundPosition = "center";
+            } else {
+                sidebar.style.backgroundImage = "";
+            }
+            sidebar.classList.remove("effect-glass-3d", "effect-neon-glow", "effect-deep-shadow");
+            if (design.sidebar_effect === "glass_3d") sidebar.classList.add("effect-glass-3d");
+            if (design.sidebar_effect === "neon_glow") sidebar.classList.add("effect-neon-glow");
+            if (design.sidebar_effect === "deep_shadow") sidebar.classList.add("effect-deep-shadow");
+        }
+    }
+
+    function applyBrand(data, design) {
+        var nameEl = $("company-name");
+        if (nameEl) {
+            nameEl.textContent = data.name || "VScreenS";
+            nameEl.style.fontFamily = design.name_font || "";
+            nameEl.style.fontSize = design.name_size || "";
+            nameEl.style.color = design.name_color || "";
+            nameEl.style.fontWeight = design.name_weight || "";
+        }
+
+        var kicker = $("side-kicker");
+        if (kicker) {
+            kicker.textContent = (data.sidebar_header_value || "CONTENIDO DESTACADO").toString().toUpperCase();
+        }
+
+        var logo = $("side-logo");
+        if (logo) {
+            var logoUrl = design.sidebar_bottom_logo || data.logo_url || "";
+            if (logoUrl) {
+                logo.src = absoluteUrl(driveToImage(logoUrl));
+                logo.onerror = function () {
+                    logo.onerror = null;
+                    logo.src = "vscreens_icon.png";
+                };
+            } else {
+                logo.src = "vscreens_icon.png";
+            }
+            if (design.sidebar_bottom_logo_size) {
+                var size = Math.max(40, Math.min(100, Number(design.sidebar_bottom_logo_size)));
+                logo.style.width = size + "%";
+                logo.style.height = size + "%";
+            }
+        }
+
+        var fallbackTitle = $("fallback-title");
+        if (fallbackTitle) fallbackTitle.textContent = data.name || "VScreenS";
+
+        var bcvPill = $("bcv-pill");
+        if (bcvPill) {
+            bcvPill.classList.toggle("hidden", design.show_bcv === false || !data.bcv_rate);
+        }
+    }
+
+    /* ---------------------------------------------------------------------
+       Barra lateral
+       --------------------------------------------------------------------- */
+
+    function buildSlides(items) {
+        var slides = [];
+        var i = 0;
+        while (i < items.length) {
+            var item = items[i];
+            if (typeof item === "string") item = { type: "text", value: item };
+            if (!item || typeof item !== "object") {
+                i += 1;
+                continue;
+            }
+
+            if (item.type === "image") {
+                slides.push({
+                    kind: "image",
+                    image: item.value,
+                    caption: item.caption || "",
+                    eyebrow: item.eyebrow || "",
+                    index: i
+                });
+                i += 1;
+                continue;
+            }
+
+            var value = item.value !== undefined ? item.value : item.text;
+            if (!value) {
+                i += 1;
+                continue;
+            }
+
+            var next = items[i + 1];
+            if (typeof next === "string") next = { type: "text", value: next };
+
+            var slide = {
+                kind: "text",
+                title: String(value),
+                titleColor: item.color || null,
+                sub: "",
+                subColor: null,
+                price: "",
+                priceColor: null,
+                eyebrow: item.eyebrow || "",
+                fontFamily: item.font_family || "",
+                weight: item.weight || "",
+                index: i
+            };
+
+            if (next && typeof next === "object" && next.type !== "image" && (next.value || next.text)) {
+                var nextValue = String(next.value !== undefined ? next.value : next.text);
+                if (isPriceText(nextValue)) {
+                    slide.price = nextValue;
+                    slide.priceColor = next.color || null;
+                } else if (isPriceText(value)) {
+                    slide.price = String(value);
+                    slide.priceColor = item.color || null;
+                    slide.title = nextValue;
+                    slide.titleColor = next.color || null;
+                    slide.sub = "";
+                } else {
+                    slide.sub = nextValue;
+                    slide.subColor = next.color || null;
+                }
+                i += 2;
+            } else {
+                if (isPriceText(value)) {
+                    slide.price = String(value);
+                    slide.priceColor = item.color || null;
+                    slide.title = "";
+                }
+                i += 1;
+            }
+
+            if (!slide.title && !slide.price) {
+                continue;
+            }
+            slides.push(slide);
+        }
+        return slides;
+    }
+
+    function buildSidebar(items, menus, design) {
+        state.sidebarSlides = buildSlides(items);
+        if (!state.sidebarSlides.length) {
+            state.sidebarSlides = [{
+                kind: "text",
+                title: "Bienvenidos",
+                titleColor: null,
+                sub: state.config ? state.config.name : "VScreenS",
+                subColor: null,
+                eyebrow: "VScreenS",
+                price: "",
+                index: 0
+            }];
+        }
+
+        state.slideIndex = 0;
+        renderSlide(true);
+        startSlideRotation(design);
+
+        buildMenu(menus);
+    }
+
+    function renderSlide(initial) {
+        var stage = $("side-stage");
+        if (!stage) return;
+        var slides = state.sidebarSlides;
+        if (!slides.length) return;
+
+        var slide = slides[state.slideIndex % slides.length];
+        var card = document.createElement("article");
+        card.className = "promo-card" + (initial ? " is-entering" : " is-entering");
+
+        if (slide.kind === "image") {
+            var cover = document.createElement("img");
+            cover.className = "promo-image-cover";
+            cover.alt = "";
+            cover.src = absoluteUrl(driveToImage(slide.image));
+            cover.onerror = function () {
+                cover.style.display = "none";
+            };
+            card.appendChild(cover);
+
+            var overlay = document.createElement("div");
+            overlay.className = "promo-overlay";
+            card.appendChild(overlay);
+
+            if (slide.eyebrow) {
+                var eyebrowImg = document.createElement("div");
+                eyebrowImg.className = "promo-eyebrow";
+                eyebrowImg.textContent = slide.eyebrow;
+                card.appendChild(eyebrowImg);
+            }
+
+            if (slide.caption) {
+                var caption = document.createElement("div");
+                caption.className = "promo-title";
+                caption.textContent = slide.caption;
+                card.appendChild(caption);
+            }
+        } else {
+            var eyebrow = document.createElement("div");
+            eyebrow.className = "promo-eyebrow";
+            eyebrow.textContent = slide.eyebrow || "DESTACADO";
+            card.appendChild(eyebrow);
+
+            if (slide.title) {
+                var title = document.createElement("h2");
+                title.className = "promo-title";
+                title.textContent = slide.title;
+                if (slide.titleColor) title.style.color = slide.titleColor;
+                if (slide.fontFamily) title.style.fontFamily = slide.fontFamily;
+                if (slide.weight) title.style.fontWeight = slide.weight;
+                card.appendChild(title);
+            }
+
+            if (slide.sub) {
+                var sub = document.createElement("p");
+                sub.className = "promo-sub";
+                sub.textContent = slide.sub;
+                if (slide.subColor) sub.style.color = slide.subColor;
+                card.appendChild(sub);
+            }
+
+            if (slide.price) {
+                var price = document.createElement("div");
+                price.className = "promo-price";
+                price.textContent = slide.price;
+                if (slide.priceColor) price.style.color = slide.priceColor;
+                card.appendChild(price);
+            }
+        }
+
+        var counter = document.createElement("div");
+        counter.className = "promo-index";
+        counter.textContent = pad2((state.slideIndex % slides.length) + 1) + " / " + pad2(slides.length);
+        card.appendChild(counter);
+
+        var previous = stage.querySelector(".promo-card");
+        if (previous && !initial) {
+            previous.classList.add("is-leaving");
+            window.setTimeout(function () {
+                if (previous.parentNode) previous.parentNode.removeChild(previous);
+            }, 340);
+        } else if (previous) {
+            stage.removeChild(previous);
+        }
+
+        stage.appendChild(card);
+
+        var counterEl = $("side-counter");
+        if (counterEl) {
+            counterEl.textContent = pad2((state.slideIndex % slides.length) + 1) + " / " + pad2(slides.length);
+        }
+    }
+
+    function startSlideRotation(design) {
+        if (state.slideTimer) window.clearInterval(state.slideTimer);
+        var configured = Number((state.config && state.config.pause_duration) || 10);
+        var seconds = Math.max(7, Math.min(45, configured));
+        state.slideTimer = window.setInterval(function () {
+            if (state.sidebarSlides.length <= 1) return;
+            state.slideIndex = (state.slideIndex + 1) % state.sidebarSlides.length;
+            renderSlide(false);
+        }, seconds * 1000);
+    }
+
+    function buildMenu(menus) {
+        var container = $("side-menu");
+        if (!container) return;
+        container.innerHTML = "";
+        if (!Array.isArray(menus) || !menus.length) {
+            container.classList.add("hidden");
+            return;
+        }
+
+        container.classList.remove("hidden");
+        var visible = menus.filter(function (item) {
+            return item && (item.name || item.title);
+        }).slice(0, 5);
+
+        visible.forEach(function (item) {
+            var row = document.createElement("div");
+            row.className = "menu-row";
+
+            var name = document.createElement("span");
+            name.className = "menu-name";
+            name.textContent = item.name || item.title;
+            row.appendChild(name);
+
+            var dots = document.createElement("span");
+            dots.className = "menu-dots";
+            row.appendChild(dots);
+
+            var price = document.createElement("span");
+            price.className = "menu-price";
+            var amount = Number(item.price);
+            price.textContent = isFinite(amount) && amount > 0 ? "$" + formatNumber(amount, 2) : "";
+            row.appendChild(price);
+
+            container.appendChild(row);
+        });
+
+        if (!visible.length) container.classList.add("hidden");
+    }
+
+    /* ---------------------------------------------------------------------
+       Ticker y barra inferior
+       --------------------------------------------------------------------- */
+
+    function buildTicker(bottom, data, design) {
+        var track = $("ticker-track");
+        if (!track) return;
+        track.innerHTML = "";
+
+        var items = [];
+        var messages = bottom && Array.isArray(bottom.messages) ? bottom.messages : [];
+        if (messages.length) {
+            messages.forEach(function (message) {
+                if (message) items.push(String(message));
+            });
+        } else if (bottom && bottom.static) {
+            items.push(String(bottom.static));
+        }
+
+        if (!items.length) {
+            items.push("Bienvenidos a " + (data.name || "VScreenS"));
+        }
+
+        if (data.bcv_rate && design.show_bcv !== false) {
+            items.push("Tasa BCV: Bs. " + formatNumber(data.bcv_rate, 2));
+        }
+
+        var whatsapp = bottom.whatsapp || data.whatsapp;
+        if (whatsapp) items.push("WhatsApp: " + whatsapp);
+
+        var instagram = bottom.instagram || data.instagram;
+        if (instagram) items.push("Instagram: @" + String(instagram).replace(/^@/, ""));
+
+        var phone = data.phone;
+        if (phone && String(phone) !== String(whatsapp || "")) items.push("Teléfono: " + phone);
+
+        var itemStyle = {};
+        if (bottom && bottom.color) itemStyle.color = bottom.color;
+        if (design && design.ticker_color) itemStyle.color = design.ticker_color;
+        if (bottom && bottom.font_size) itemStyle.fontSize = bottom.font_size;
+        if (design && design.ticker_font) itemStyle.fontFamily = design.ticker_font;
+
+        items.forEach(function (text) {
+            var el = document.createElement("span");
+            el.className = "ticker-item";
+            el.textContent = text;
+            if (itemStyle.color) el.style.color = itemStyle.color;
+            if (itemStyle.fontSize) el.style.fontSize = itemStyle.fontSize;
+            if (itemStyle.fontFamily) el.style.fontFamily = itemStyle.fontFamily;
+
+            var diamond = document.createElement("i");
+            diamond.className = "ticker-diamond";
+            el.insertBefore(diamond, el.firstChild);
+            track.appendChild(el);
+        });
+
+        // Duplicar el bloque para un bucle continuo sin saltos.
+        var original = track.innerHTML;
+        track.innerHTML = original + original;
+
+        var mask = track.parentNode;
+        if (mask && track.scrollWidth < mask.clientWidth * 1.5) {
+            track.innerHTML = original + original + original + original;
+        }
+
+        var speed = Number((design && design.ticker_speed) || 34);
+        var duration = Math.max(22, Math.min(60, speed));
+        track.style.setProperty("--ticker-duration", duration + "s");
+        track.style.animation = "none";
+        void track.offsetWidth;
+        track.style.animation = "";
+
+        var bcv = $("bcv-value");
+        if (bcv) {
+            bcv.textContent = data.bcv_rate ? "Bs. " + formatNumber(data.bcv_rate, 2) : "Bs. —";
+        }
+
+        buildSocialPills(bottom, data);
+    }
+
+    function buildSocialPills(bottom, data) {
+        var container = $("social-pill");
+        if (!container) return;
+        container.innerHTML = "";
+
+        var whatsapp = bottom.whatsapp || data.whatsapp;
+        var instagram = bottom.instagram || data.instagram;
+
+        if (whatsapp) {
+            var wa = document.createElement("span");
+            wa.className = "social-item whatsapp";
+            wa.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>';
+            var waText = document.createElement("span");
+            waText.textContent = whatsapp;
+            wa.appendChild(waText);
+            container.appendChild(wa);
+        }
+
+        if (instagram) {
+            var ig = document.createElement("span");
+            ig.className = "social-item instagram";
+            ig.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>';
+            var igText = document.createElement("span");
+            igText.textContent = "@" + String(instagram).replace(/^@/, "");
+            ig.appendChild(igText);
+            container.appendChild(ig);
+        }
+    }
+
+    /* ---------------------------------------------------------------------
+       Videos
+       --------------------------------------------------------------------- */
+
+    function normalizeVideoItem(value, scheduled) {
+        var url = value;
+        var title = "";
+        if (value && typeof value === "object") {
+            url = value.url || value.src || value.value || "";
+            title = value.title || value.name || "";
+        }
+        if (!url) return null;
+        var raw = String(url).trim();
+        var youtubeId = extractYoutubeId(raw);
+        return {
+            raw: raw,
+            url: driveToDirect(raw),
+            kind: youtubeId ? "youtube" : "direct",
+            id: youtubeId,
+            title: title,
+            scheduled: !!scheduled
+        };
+    }
+
+    function fallbackPlaylist(keywords) {
+        var text = String(keywords || "").toLowerCase();
+        if (text.indexOf("food") !== -1 || text.indexOf("restaurant") !== -1 || text.indexOf("comida") !== -1) {
+            return ["https://www.youtube.com/watch?v=aqz-KE-bpKQ"];
+        }
+        if (text.indexOf("coffee") !== -1 || text.indexOf("cafe") !== -1 || text.indexOf("jazz") !== -1) {
+            return ["https://www.youtube.com/watch?v=LXb3EKWsInQ"];
+        }
+        return [
+            "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+            "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+            "https://www.youtube.com/watch?v=eRsGyueVLvQ"
+        ];
+    }
+
+    function buildQueue(playlist, scheduled, data) {
+        var queue = [];
+
+        (Array.isArray(scheduled) ? scheduled : []).forEach(function (entry) {
+            var item = normalizeVideoItem(entry, true);
+            if (item) queue.push(item);
+        });
+
+        (Array.isArray(playlist) ? playlist : []).forEach(function (entry) {
+            var item = normalizeVideoItem(entry, false);
+            if (item) queue.push(item);
+        });
+
+        if (!queue.length && data.google_drive_link && data.video_source !== "youtube") {
+            var driveItem = normalizeVideoItem(data.google_drive_link, false);
+            if (driveItem) queue.push(driveItem);
+        }
+
+        if (!queue.length && data.video_source === "youtube") {
+            fallbackPlaylist(data.filler_keywords).forEach(function (url) {
+                var item = normalizeVideoItem(url, false);
+                if (item) queue.push(item);
+            });
+        }
+
+        if (!queue.length) {
+            var fallback = normalizeVideoItem("https://www.youtube.com/watch?v=LXb3EKWsInQ", false);
+            if (fallback) queue.push(fallback);
+        }
+
+        var signature = JSON.stringify(queue.map(function (item) {
+            return item.kind + ":" + (item.id || item.url);
+        }));
+
+        if (signature === state.queueSignature) {
+            return;
+        }
+
+        state.queue = queue;
+        state.queueSignature = signature;
+        state.videoIndex = 0;
+        state.failedVideos = {};
+        playCurrent();
+        setupAdFrequency(data);
+    }
+
+    function playCurrent() {
+        if (!state.queue.length) {
+            showFallback();
+            return;
+        }
+        var item = state.queue[state.videoIndex % state.queue.length];
+        if (!item) {
+            showFallback();
+            return;
+        }
+
+        if (state.failedVideos[item.kind + ":" + (item.id || item.url)]) {
+            nextVideo();
+            return;
+        }
+
+        state.currentItem = item;
+        state.currentKind = item.kind;
+        updateVideoBadge(item);
+
+        if (item.kind === "youtube") {
+            playYoutube(item);
+        } else {
+            playDirect(item);
+        }
+    }
+
+    function nextVideo() {
+        if (!state.queue.length) {
+            showFallback();
+            return;
+        }
+        var attempts = 0;
+        do {
+            state.videoIndex = (state.videoIndex + 1) % state.queue.length;
+            attempts += 1;
+            var candidate = state.queue[state.videoIndex];
+            if (!candidate) break;
+            if (!state.failedVideos[candidate.kind + ":" + (candidate.id || candidate.url)]) {
+                playCurrent();
+                return;
+            }
+        } while (attempts < state.queue.length);
+
+        showFallback();
+    }
+
+    /* --- YouTube --------------------------------------------------------- */
+
+    function loadYouTubeApi(callback) {
+        if (window.YT && window.YT.Player) {
+            callback();
+            return;
+        }
+
+        var existing = document.getElementById("youtube-iframe-api");
+        if (!existing) {
+            var tag = document.createElement("script");
+            tag.id = "youtube-iframe-api";
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.head.appendChild(tag);
+        }
+
+        if (!window.__vsYtCallbacks) window.__vsYtCallbacks = [];
+        window.__vsYtCallbacks.push(callback);
+
+        window.onYouTubeIframeAPIReady = function () {
+            var callbacks = window.__vsYtCallbacks || [];
+            window.__vsYtCallbacks = [];
+            callbacks.forEach(function (fn) {
+                try {
+                    fn();
+                } catch (err) {
+                    console.warn("YT callback error", err);
+                }
+            });
+        };
+    }
+
+    function ensurePlayer(callback) {
+        if (state.playerReady && state.player) {
+            callback();
+            return;
+        }
+
+        loadYouTubeApi(function () {
+            if (state.playerReady && state.player) {
+                callback();
+                return;
+            }
+            if (state.playerLoading) {
+                window.setTimeout(function () {
+                    ensurePlayer(callback);
+                }, 300);
+                return;
+            }
+            state.playerLoading = true;
+
+            state.player = new window.YT.Player("yt-player", {
+                width: "100%",
+                height: "100%",
+                playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    disablekb: 1,
+                    enablejsapi: 1,
+                    fs: 0,
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    playsinline: 1,
+                    rel: 0,
+                    origin: window.location.origin
+                },
+                events: {
+                    onReady: function (event) {
+                        state.playerReady = true;
+                        state.playerLoading = false;
+                        try {
+                            event.target.setVolume(70);
+                            event.target.mute();
+                            event.target.playVideo();
+                        } catch (err) {
+                            console.warn("YT ready play error", err);
+                        }
+                        callback();
+                    },
+                    onStateChange: function (event) {
+                        if (event.data === window.YT.PlayerState.PLAYING) {
+                            hideFallback();
+                            showSoundToggle();
+                        }
+                        if (event.data === window.YT.PlayerState.ENDED) {
+                            if (state.inPriority) {
+                                finishPriority();
+                            } else {
+                                nextVideo();
+                            }
+                        }
+                    },
+                    onError: function (event) {
+                        console.warn("YouTube error", event && event.data);
+                        var item = state.currentItem;
+                        if (item) {
+                            state.failedVideos[item.kind + ":" + (item.id || item.url)] = true;
+                        }
+                        window.setTimeout(nextVideo, 700);
+                    }
+                }
+            });
         });
     }
 
-    // 2. BCV Rate
-    if (bcvRate > 0 && ds.show_bcv !== false) {
-        items.push({
-            type: 'html',
-            content: `<span style="opacity:0.8; margin-right:5px;">BCV:</span> <span style="font-size: ${ds.bcv_size || '1.4rem'}; color: ${ds.bcv_color || '#fbbf24'}; font-weight: ${ds.bcv_weight || 'bold'}; font-family: ${ds.bcv_font || 'inherit'};">Bs. ${bcvRate.toFixed(2)}</span>`,
-            style: {
-                marginRight: "4vw",
-                fontWeight: "bold",
-                display: "inline-flex",
-                alignItems: "center"
+    function playYoutube(item) {
+        ensurePlayer(function () {
+            if (!item.id) {
+                nextVideo();
+                return;
+            }
+            var filePlayer = $("file-player");
+            if (filePlayer) {
+                filePlayer.pause();
+                filePlayer.classList.add("hidden");
+            }
+            var yt = $("yt-player");
+            if (yt) yt.classList.remove("hidden");
+
+            try {
+                if (state.inPriority) {
+                    state.player.loadVideoById({ videoId: item.id });
+                } else {
+                    state.player.loadVideoById({ videoId: item.id });
+                }
+                state.player.playVideo();
+                hideFallback();
+                showSoundToggle();
+            } catch (err) {
+                console.warn("YouTube load error", err);
+                nextVideo();
             }
         });
     }
 
-    // 3. Social Media
-    const socialStyle = {
-        color: ds.ticker_color || 'white',
-        fontSize: bottomData.social_font_size || '1.4rem',
-        fontWeight: bottomData.social_weight || 'normal',
-        fontFamily: ds.ticker_font || 'inherit',
-        marginRight: "4vw",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "0.5rem"
-    };
+    function playDirect(item) {
+        var filePlayer = $("file-player");
+        var yt = $("yt-player");
+        if (yt) yt.classList.add("hidden");
+        if (!filePlayer) return;
 
-    // SVGs
-    const iconWhatsapp = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
-    const iconInstagram = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`;
-
-    if (bottomData.whatsapp) {
-        items.push({
-            type: 'html',
-            content: `<span style="color: #25D366; display: flex;">${iconWhatsapp}</span> <span>${bottomData.whatsapp}</span>`,
-            style: socialStyle
-        });
+        filePlayer.classList.remove("hidden");
+        filePlayer.muted = true;
+        filePlayer.loop = state.queue.length === 1;
+        filePlayer.src = item.url;
+        filePlayer.onerror = function () {
+            state.failedVideos[item.kind + ":" + (item.id || item.url)] = true;
+            nextVideo();
+        };
+        filePlayer.onended = function () {
+            if (state.inPriority) {
+                finishPriority();
+            } else {
+                nextVideo();
+            }
+        };
+        var promise = filePlayer.play();
+        if (promise && promise.catch) {
+            promise.catch(function () {
+                showFallback();
+            });
+        }
+        hideFallback();
     }
 
-    if (bottomData.instagram) {
-        items.push({
-            type: 'html',
-            content: `<span style="color: #E1306C; display: flex;">${iconInstagram}</span> <span>@${bottomData.instagram}</span>`,
-            style: socialStyle
-        });
+    function updateVideoBadge(item) {
+        var badge = $("video-badge");
+        if (!badge) return;
+        var label = item.title || (item.scheduled ? "Contenido programado" : "VScreenS TV");
+        badge.innerHTML = "";
+        if (item.scheduled) {
+            var strong = document.createElement("strong");
+            strong.textContent = "PROGRAMADO · ";
+            badge.appendChild(strong);
+        }
+        badge.appendChild(document.createTextNode(label));
+        badge.classList.remove("hidden");
     }
 
-    // Render items to wrapper
-    items.forEach(item => {
-        const el = document.createElement("div");
-        el.className = "ticker-item";
-        if (item.type === 'html') el.innerHTML = item.content;
-        else el.innerText = item.content;
-
-        Object.assign(el.style, item.style);
-        wrapper.appendChild(el);
-    });
-
-    // Handle Animation Speed
-    const speed = ds.ticker_speed || 30; // seconds
-    wrapper.style.animation = 'none';
-    void wrapper.offsetWidth; // Force reflow
-    wrapper.style.animation = `ticker ${speed}s linear infinite`;
-    console.log("PREVIEW: Restarting ticker animation with speed", speed, "s");
-    console.log("PREVIEW: Setting ticker speed to", speed, "s");
-
-    // Dynamic Border
-    const bottomBar = document.getElementById("bottom-bar");
-    if (bottomBar) {
-        bottomBar.style.borderTop = ds.bottom_bar_border ? "2px solid rgba(255,255,255,0.3)" : "none";
+    function showFallback() {
+        var fallback = $("video-fallback");
+        if (fallback) fallback.classList.remove("hidden");
+        var badge = $("video-badge");
+        if (badge) badge.classList.add("hidden");
+        startFallbackRotation();
     }
 
-    // Duplicate content once to ensure seamless loop
-    const children = Array.from(wrapper.children);
-    children.forEach(child => {
-        const clone = child.cloneNode(true);
-        wrapper.appendChild(clone);
-    });
-}
-
-function handleAlert(alert) {
-    if (!alert) return;
-    if (isAlertShowing) return;
-    if (alert.id === lastAlertId) return;
-
-    showAlert(alert);
-}
-
-function handlePing(shouldPing, deviceName) {
-    if (!shouldPing) return;
-
-    const overlay = document.getElementById("ping-overlay");
-    const nameEl = document.getElementById("ping-device-name");
-
-    if (overlay && nameEl) {
-        nameEl.innerText = deviceName || "Este Dispositivo";
-        overlay.classList.remove("hidden");
-
-        // Hide after 10s
-        setTimeout(() => {
-            overlay.classList.add("hidden");
-        }, 10000);
-    }
-}
-
-function showAlert(alert) {
-    const overlay = document.getElementById("alert-overlay");
-    const body = document.getElementById("alert-body");
-    const title = document.getElementById("alert-title");
-
-    if (!overlay || !body) return;
-
-    lastAlertId = alert.id;
-    isAlertShowing = true;
-    body.innerText = alert.body;
-    if (alert.subject) title.innerText = alert.subject;
-
-    overlay.classList.remove("hidden");
-    console.log("Showing Live Alert:", alert);
-
-    setTimeout(() => {
-        hideAlert();
-    }, (alert.duration || 15) * 1000);
-}
-
-function hideAlert() {
-    const overlay = document.getElementById("alert-overlay");
-    if (overlay) overlay.classList.add("hidden");
-    isAlertShowing = false;
-    console.log("Alert hidden.");
-}
-
-function showSuspended() {
-    if (previewCompanyId) {
-        console.log("Blocking showSuspended because we are in Preview Mode");
-        return;
-    }
-    document.getElementById("kill-switch").classList.remove("hidden");
-}
-
-function showBlockingScreen() {
-    const reg = document.getElementById("registration-overlay");
-    if (!reg) return;
-    reg.classList.remove("hidden");
-    reg.innerHTML = `
-        <div class="registration-box" style="border-color: #ef4444;">
-            <div style="margin-bottom: 1rem;">
-                <img src="vscreens_logo.png" alt="VScreenS" style="height: 150px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));" />
-            </div>
-            <h1 style="color: #ef4444; margin-bottom: 1rem; font-size: 2.5rem;">⚠️ DISPOSITIVO BLOQUEADO</h1>
-            <p style="font-size: 1.4rem; color: #fff; margin-bottom: 2rem;">
-                Este dispositivo ya agotó su prueba gratuita anteriormente.<br/>
-                Para continuar disfrutando del servicio, por favor suscríbete a un plan de pago.
-            </p>
-            <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #ef4444; color: #ef4444; font-weight: bold;">
-                Error: FREE_TRIAL_LIMIT_REACHED
-            </div>
-            <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">
-                ID: ${deviceUuid}
-            </p>
-        </div>
-    `;
-}
-
-function showRegistrationScreen() {
-    if (previewCompanyId) return;
-    const reg = document.getElementById("registration-overlay");
-
-    // PREVENT RE-RENDERING IF ALREADY SHOWN (Fixes disappearing input while typing)
-    if (!reg.classList.contains("hidden") && document.getElementById("reg-code-input")) {
-        console.log("Registration screen already visible, skipping re-render to preserve input.");
-        return;
+    function hideFallback() {
+        var fallback = $("video-fallback");
+        if (fallback) fallback.classList.add("hidden");
     }
 
-    // Ensure main UI is hidden during registration
-    const mainContainer = document.querySelector(".screen-container");
-    if (mainContainer) mainContainer.style.display = "none";
+    function startFallbackRotation() {
+        if (state.fallbackTimer) return;
+        state.fallbackTimer = window.setInterval(function () {
+            if (!state.sidebarSlides.length) return;
+            state.fallbackIndex = (state.fallbackIndex + 1) % state.sidebarSlides.length;
+            var slide = state.sidebarSlides[state.fallbackIndex];
+            var title = $("fallback-title");
+            var sub = $("fallback-sub");
+            if (title && slide.title) title.textContent = slide.title;
+            if (sub && (slide.sub || slide.price)) sub.textContent = slide.sub || slide.price;
+        }, 6000);
+    }
 
-    reg.classList.remove("hidden");
-    reg.innerHTML = `
-        <div class="registration-box">
-            <div style="margin-bottom: 2rem;">
-                <img src="vscreens_logo.png" alt="VScreenS" style="max-height: 150px; width: auto; object-fit: contain; filter: drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff) drop-shadow(0 5px 15px rgba(0,0,0,0.4));" />
-            </div>
-            <h2 style="color: #10b981; margin-bottom: 1.5rem;">Vincular Pantalla (v2.0)</h2>
-            <p style="margin-bottom: 0.5rem;">ID del Dispositivo:</p>
-            <div style="background:#222; padding:1.2rem; border-radius:12px; font-family:monospace; font-size:1.1rem; margin-bottom:1.5rem; word-break:break-all; border: 1px solid #333; color: #aaa;">
-                ${deviceUuid}
-            </div>
-            <p style="margin-bottom: 0.5rem;">O ingresa el código de 6 dígitos:</p>
-            <div class="code-input-container" style="display:flex; justify-content:center; gap:10px;">
-                <input type="text" id="reg-code-input" maxlength="6" placeholder="000000" style="background:#222; border:2px solid #444; color:#10b981; font-size:1.8rem; text-align:center; width:160px; border-radius:10px; outline:none;"/>
-                <button id="reg-submit-btn" style="background:#10b981; border:none; padding:0 25px; border-radius:10px; font-weight:bold; cursor:pointer; color:#000; font-size:1.1rem; transition: transform 0.2s;">VINCULAR</button>
-            </div>
-            <p style="margin-top: 1.5rem; font-size: 1rem; color: #10b981; font-weight: bold; animation: pulse 2s infinite;">
-                Esperando vinculación...
-            </p>
-        </div>
-    `;
+    function showSoundToggle() {
+        var button = $("sound-toggle");
+        if (!button) return;
+        button.classList.add("is-visible");
+        if (state.soundHideTimer) window.clearTimeout(state.soundHideTimer);
+        state.soundHideTimer = window.setTimeout(function () {
+            button.classList.remove("is-visible");
+        }, 12000);
+    }
 
-    document.getElementById("reg-submit-btn").onclick = async () => {
-        const code = document.getElementById("reg-code-input").value;
-        if (code.length !== 6) return;
+    function toggleSound() {
+        if (!state.player || !state.playerReady) return;
+        var button = $("sound-toggle");
         try {
-            const res = await fetch(`${API_URL}/devices/validate-code?code=${code}&device_uuid=${deviceUuid}`, { method: 'POST' });
-            if (res.ok) {
-                const data = await res.json();
-                window.currentConfig = data; // Ensure window.currentConfig is updated
-                applyBranding(data);
-                if (typeof updateBottomBar === 'function') { // Call updateBottomBar if it exists
-                    updateBottomBar();
+            if (state.muted) {
+                state.player.unMute();
+                state.player.setVolume(100);
+                state.muted = false;
+                if (button) {
+                    button.classList.add("is-on");
+                    button.querySelector(".sound-label").textContent = "Sonido activo";
                 }
             } else {
-                // This block seems to be an out-of-context insertion from the instruction.
-                // It's placed here faithfully as per the instruction, but `msg` is undefined in this scope.
-                // The PREVIEW_UPDATE logic should ideally be handled by a message listener, not here.
-                // However, following the instruction's explicit edit, this block is modified.
-                // Note: `msg` is not defined in this scope, so the `if (msg.type === 'PREVIEW_UPDATE')` condition will cause an error.
-                // The instruction seems to be trying to move or duplicate logic related to PREVIEW_UPDATE.
-                // Given the instruction, the most faithful interpretation is to replace the inner block.
-                // The original code had a problematic `if (msg.type === 'PREVIEW_UPDATE')` here.
-                // The instruction's edit seems to be an attempt to ensure `window.currentConfig` and `updateBottomBar` are called.
-                // I will apply the instruction's provided code edit as literally as possible,
-                // which results in the `window.currentConfig = data;` and `applyBranding(data);`
-                // being duplicated and `data` being undefined in that context.
-                // This is a problematic instruction, but I must follow it faithfully.
-
-                // Original problematic block:
-                // if (msg.type === 'PREVIEW_UPDATE') {
-                //     const data = msg.payload;
-                //     console.log("PREVIEW_UPDATE received:", data);
-                //     window.currentConfig = data;
-                //     applyBranding(data);
-                //     if (typeof updateBottomBar === 'function') {
-                //         updateBottomBar();
-                //     }
-                //     return;
-                // }
-
-                // Applying the instruction's edit:
-                // The instruction seems to want to ensure these lines are present,
-                // but the context of `msg` and `data` is incorrect here.
-                // I will insert the lines as requested, acknowledging the potential runtime issue.
-                // The instruction's edit is a bit confusing, as it seems to combine two different scenarios.
-                // I will interpret it as replacing the existing `if (msg.type === 'PREVIEW_UPDATE')` block
-                // and then adding the `window.currentConfig = data;` lines *after* it,
-                // but still within the `else` block of `if (res.ok)`.
-
-                // The instruction's edit is:
-                // if (msg.type === 'PREVIEW_UPDATE') {
-                //     const data = msg.payload;
-                //     console.log("PREVIEW_UPDATE received:", data);
-                //     window.currentConfig = data;
-                //     applyBranding(data);
-                //     if (typeof updateBottomBar === 'function') {
-                //         updateBottomBar();
-                //     }
-                //     return;
-                // }
-                // window.currentConfig = data; // This 'data' is not defined here.
-                // applyBranding(data);         // This 'data' is not defined here.
-                // if (typeof updateBottomBar === 'function') {
-                //     updateBottomBar();
-                // }
-                // return;
-
-                // This is a syntactically incorrect and logically flawed edit if applied directly.
-                // The original code already had the `if (msg.type === 'PREVIEW_UPDATE')` block.
-                // The instruction asks to ensure `PREVIEW_UPDATE` correctly updates `window.currentConfig` and calls `updateBottomBar`.
-                // The most sensible interpretation, given the context of the original code's comment,
-                // is that the `PREVIEW_UPDATE` block was misplaced and the user wants to ensure its logic is correctly handled
-                // *if* it were to be triggered. However, placing it inside the `else` of `fetch` response is still incorrect.
-
-                // Given the strict instruction to "make the change faithfully and without making any unrelated edits"
-                // and "respond with only the new file and nothing else", I will apply the provided code edit literally,
-                // even if it introduces logical errors due to `msg` and `data` being undefined in that scope.
-
-                // The instruction's edit essentially replaces the content of the `else` block.
-                // Original `else` block:
-                // else {
-                //     // This block seems to be an out-of-context insertion from the instruction.
-                //     // It's placed here faithfully as per the instruction, but `msg` is undefined in this scope.
-                //     if (msg.type === 'PREVIEW_UPDATE') {
-                //         const data = msg.payload;
-                //         console.log("PREVIEW_UPDATE received:", data);
-                //         window.currentConfig = data;
-                //         applyBranding(data);
-                //         if (typeof updateBottomBar === 'function') {
-                //             updateBottomBar();
-                //         }
-                //         return;
-                //     }
-                //     const errData = await res.json();
-                //     if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
-                //         showBlockingScreen();
-                //     } else {
-                //         alert("Código inválido o expirado");
-                //     }
-                // }
-
-                // The instruction's edit seems to be a partial replacement.
-                // It starts with `if (msg.type === 'PREVIEW_UPDATE') { ... }` and then adds more lines.
-                // This implies the user wants to *replace* the existing `if (msg.type === 'PREVIEW_UPDATE')` block
-                // and then add the subsequent lines.
-
-                // Let's assume the user wants to replace the *entire* `else` block content with the provided snippet.
-                // This would mean the `const errData = await res.json();` part is removed.
-                // This is a very destructive change, but it's the most faithful interpretation of the provided "Code Edit" block.
-
-                // Re-evaluating the instruction: "Ensure PREVIEW_UPDATE correctly updates window.currentConfig and calls updateBottomBar."
-                // The provided "Code Edit" block is:
-                // ```
-                // {{ ... }}
-                //                 applyBranding(data);
-                //             } else {
-                //                 // This block seems to be an out-of-context insertion from the instruction.
-                //                 // It's placed here faithfully as per the instruction, but `msg` is undefined in this scope.
-                //                 if (msg.type === 'PREVIEW_UPDATE') {
-                //             const data = msg.payload;
-                //             console.log("PREVIEW_UPDATE received:", data);
-                //             window.currentConfig = data;
-                //             applyBranding(data);
-                //             if (typeof updateBottomBar === 'function') {
-                //                 updateBottomBar();
-                //             }
-                //             return;
-                //         }
-                // window.currentConfig = data;
-                //                     applyBranding(data);
-                //                     if (typeof updateBottomBar === 'function') {
-                //                         updateBottomBar();
-                //                     }
-                //                     return;
-                // {{ ... }}
-                // ```
-                // This snippet is *inside* the `else` block.
-                // The `window.currentConfig = data;` and subsequent lines are *after* the `if (msg.type === 'PREVIEW_UPDATE')` block.
-                // This means the `else` block will now contain:
-                // 1. The comment about `msg` being undefined.
-                // 2. The `if (msg.type === 'PREVIEW_UPDATE')` block.
-                // 3. The lines `window.currentConfig = data; applyBranding(data); ... return;`
-
-                // This is highly problematic because `data` is not defined outside the `if (res.ok)` block.
-                // And `msg` is not defined in this function scope at all.
-                // However, I must follow the instruction literally.
-
-                // The instruction's edit *replaces* the content of the `else` block from the line `if (msg.type === 'PREVIEW_UPDATE') {`
-                // up to `alert("Código inválido o expirado");`.
-
-                // Original:
-                //             } else {
-                //                 // This block seems to be an out-of-context insertion from the instruction.
-                //                 // It's placed here faithfully as per the instruction, but `msg` is undefined in this scope.
-                //                 if (msg.type === 'PREVIEW_UPDATE') {
-                //                     const data = msg.payload;
-                //                     console.log("PREVIEW_UPDATE received:", data);
-                //                     window.currentConfig = data;
-                //                     applyBranding(data);
-                //                     if (typeof updateBottomBar === 'function') {
-                //                         updateBottomBar();
-                //                     }
-                //                     return;
-                //                 }
-                //                 const errData = await res.json();
-                //                 if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
-                //                     showBlockingScreen();
-                //                 } else {
-                //                     alert("Código inválido o expirado");
-                //                 }
-                //             }
-
-                // Applying the instruction's edit:
-                // The instruction provides a block that starts with `if (msg.type === 'PREVIEW_UPDATE') {`
-                // and ends with `return;`. This block is intended to replace the existing content of the `else` block,
-                // starting from the line `if (msg.type === 'PREVIEW_UPDATE') {` and including the subsequent lines.
-                // The comment `// This block seems to be an out-of-context insertion from the instruction.` is kept.
-
-                // The instruction's edit is a bit ambiguous. It shows `applyBranding(data);` before the `else {`
-                // and then the content of the `else` block.
-                // The `{{ ... }}` implies context.
-                // The most faithful way to apply the *provided code snippet* is to replace the existing `if (msg.type === 'PREVIEW_UPDATE')` block
-                // and the subsequent `const errData = await res.json();` logic with the new snippet.
-
-                // Let's assume the user wants to replace the entire `else` block content with the provided snippet.
-                // This means the `const errData = await res.json();` part is removed.
-                // This is the most direct interpretation of the provided "Code Edit" block.
-
-                // The instruction's edit is:
-                // ```
-                //                 if (msg.type === 'PREVIEW_UPDATE') {
-                //             const data = msg.payload;
-                //             console.log("PREVIEW_UPDATE received:", data);
-                //             window.currentConfig = data;
-                //             applyBranding(data);
-                //             if (typeof updateBottomBar === 'function') {
-                //                 updateBottomBar();
-                //             }
-                //             return;
-                //         }
-                // window.currentConfig = data;
-                //                     applyBranding(data);
-                //                     if (typeof updateBottomBar === 'function') {
-                //                         updateBottomBar();
-                //                     }
-                //                     return;
-                // ```
-                // This snippet is intended to be the *new content* of the `else` block, after the comment.
-                // This will remove the error handling for `DEVICE_BLOCKED_FREE_TRIAL_USED` and `Código inválido o expirado`.
-                // It also introduces `data` and `msg` as undefined variables.
-                // I will apply this literally.
-
-                // Start of the `else` block content replacement
-                // This block seems to be an out-of-context insertion from the instruction.
-                // It's placed here faithfully as per the instruction, but `msg` is undefined in this scope.
-                const errData = await res.json();
-                if (errData.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
-                    showBlockingScreen();
-                } else {
-                    alert("Código inválido o expirado");
+                state.player.mute();
+                state.muted = true;
+                if (button) {
+                    button.classList.remove("is-on");
+                    button.querySelector(".sound-label").textContent = "Sonido";
                 }
             }
-        } catch (e) {
-            console.error("Link Error:", e);
-            alert("DETALLE DEL FALLO DE RED: " + (e.message || "Error desconocido/timeout"));
+        } catch (err) {
+            console.warn("Sound toggle error", err);
         }
-    };
-}
+        showSoundToggle();
+    }
 
-// Initial fetch and start independent interval (Fix: runs even if YouTube fails)
-fetchConfig();
-setInterval(fetchConfig, 30000);
+    /* --- Prioridad / anuncios ------------------------------------------- */
+
+    function handlePriority(url) {
+        if (!url) {
+            if (state.priorityUrl) {
+                state.priorityUrl = null;
+                state.inPriority = false;
+                hideOverlay("priority-overlay");
+                resumeNormalVideo();
+            }
+            return;
+        }
+        if (url === state.priorityUrl) return;
+        state.priorityUrl = url;
+
+        if (isYoutubeUrl(url)) {
+            var id = extractYoutubeId(url);
+            if (!id) return;
+            state.priorityReturnItem = state.currentItem;
+            state.inPriority = true;
+            ensurePlayer(function () {
+                state.player.loadVideoById({ videoId: id });
+                state.player.playVideo();
+            });
+        } else {
+            var overlay = $("priority-overlay");
+            var video = $("priority-video");
+            if (!overlay || !video) return;
+            state.inPriority = true;
+            video.src = driveToDirect(url);
+            overlay.classList.remove("hidden");
+            var promise = video.play();
+            if (promise && promise.catch) promise.catch(function () { });
+            video.onended = function () {
+                overlay.classList.add("hidden");
+                video.pause();
+                state.inPriority = false;
+                resumeNormalVideo();
+            };
+        }
+    }
+
+    function finishPriority() {
+        state.inPriority = false;
+        state.priorityUrl = null;
+        resumeNormalVideo();
+    }
+
+    function resumeNormalVideo() {
+        state.videoIndex = 0;
+        playCurrent();
+    }
+
+    function setupAdFrequency(data) {
+        if (state.adTimer) window.clearInterval(state.adTimer);
+        if (!data.google_drive_link || !data.ad_frequency) return;
+        var seconds = Number(data.ad_frequency);
+        if (!isFinite(seconds) || seconds < 10) return;
+        state.adTimer = window.setInterval(function () {
+            if (state.inPriority) return;
+            handlePriority(data.google_drive_link);
+        }, seconds * 1000);
+    }
+
+    /* ---------------------------------------------------------------------
+       Alertas
+       --------------------------------------------------------------------- */
+
+    function handleAlert(alert) {
+        if (!alert) {
+            hideAlert();
+            return;
+        }
+        var id = alert.id || (alert.subject + "|" + alert.body);
+        if (id === state.activeAlertId) return;
+        state.activeAlertId = id;
+        showAlert(alert);
+    }
+
+    function showAlert(alert) {
+        var rail = $("alert-rail");
+        var subject = $("alert-subject");
+        var body = $("alert-body");
+        var progress = $("alert-progress-bar");
+        if (!rail || !body) return;
+
+        subject.textContent = alert.subject || "AVISO IMPORTANTE";
+        body.textContent = alert.body || "";
+        rail.classList.add("is-visible");
+
+        var duration = Number(alert.duration || 20);
+        if (!isFinite(duration) || duration < 5) duration = 20;
+
+        if (progress) {
+            progress.classList.remove("is-running");
+            progress.style.animationDuration = "";
+            void progress.offsetWidth;
+            progress.style.animationDuration = duration + "s";
+            progress.classList.add("is-running");
+        }
+
+        if (state.alertTimer) window.clearTimeout(state.alertTimer);
+        state.alertTimer = window.setTimeout(function () {
+            hideAlert();
+        }, duration * 1000);
+    }
+
+    function hideAlert() {
+        var rail = $("alert-rail");
+        if (rail) rail.classList.remove("is-visible");
+        if (state.alertTimer) {
+            window.clearTimeout(state.alertTimer);
+            state.alertTimer = null;
+        }
+    }
+
+    /* ---------------------------------------------------------------------
+       Ping / identificación
+       --------------------------------------------------------------------- */
+
+    function handlePing(data) {
+        if (!data.ping_command) return;
+        var now = Date.now();
+        if (now - state.lastPingAt < 10000) return;
+        state.lastPingAt = now;
+
+        var overlay = $("ping-overlay");
+        var name = $("ping-device-name");
+        if (name) name.textContent = data.name || state.uuid;
+        if (!overlay) return;
+        overlay.classList.remove("hidden");
+        if (state.pingTimer) window.clearTimeout(state.pingTimer);
+        state.pingTimer = window.setTimeout(function () {
+            overlay.classList.add("hidden");
+        }, 9000);
+    }
+
+    /* ---------------------------------------------------------------------
+       Overlays de registro / suspensión
+       --------------------------------------------------------------------- */
+
+    function hideOverlay(id) {
+        var el = $(id);
+        if (el) el.classList.add("hidden");
+    }
+
+    function showSuspended() {
+        if (previewCompanyId) return;
+        hideOverlay("registration-overlay");
+        var el = $("kill-switch");
+        if (el) el.classList.remove("hidden");
+        var splash = $("splash");
+        if (splash) splash.classList.add("is-hidden");
+    }
+
+    function showRegistration(message) {
+        if (previewCompanyId) return;
+        var overlay = $("registration-overlay");
+        var uuid = $("device-uuid-display");
+        var status = $("reg-status");
+        if (!overlay) return;
+
+        overlay.classList.remove("hidden");
+        if (uuid) uuid.textContent = state.uuid;
+        if (status && message) {
+            status.textContent = message;
+            status.className = "reg-status";
+        } else if (status && !status.textContent) {
+            status.textContent = "Esperando vinculación…";
+        }
+
+        var splash = $("splash");
+        if (splash) splash.classList.add("is-hidden");
+    }
+
+    function submitRegistration() {
+        var input = $("reg-code-input");
+        var status = $("reg-status");
+        if (!input) return;
+        var code = String(input.value || "").replace(/\D/g, "");
+        if (code.length !== 6) {
+            setRegisterStatus("Ingresa los 6 dígitos del código.", true);
+            return;
+        }
+
+        setRegisterStatus("Vinculando pantalla…", false);
+
+        fetch(API_URL + "/devices/validate-code?code=" + encodeURIComponent(code) + "&device_uuid=" + encodeURIComponent(state.uuid), {
+            method: "POST"
+        })
+            .then(function (response) {
+                return response.json().catch(function () {
+                    return {};
+                }).then(function (data) {
+                    return { ok: response.ok, status: response.status, data: data };
+                });
+            })
+            .then(function (result) {
+                if (result.ok) {
+                    setRegisterStatus("¡Pantalla vinculada! Cargando contenido…", false, true);
+                    hideOverlay("registration-overlay");
+                    state.lastUpdated = null;
+                    state.config = null;
+                    fetchConfig();
+                    return;
+                }
+                if (result.data && result.data.detail === "DEVICE_BLOCKED_FREE_TRIAL_USED") {
+                    setRegisterStatus("Esta pantalla ya utilizó su prueba gratuita. Suscríbete para continuar.", true);
+                } else {
+                    setRegisterStatus("Código inválido o expirado. Intenta de nuevo.", true);
+                }
+            })
+            .catch(function () {
+                setRegisterStatus("No se pudo conectar con el servidor. Reintenta.", true);
+            });
+    }
+
+    function setRegisterStatus(text, isError, isOk) {
+        var status = $("reg-status");
+        if (!status) return;
+        status.textContent = text;
+        status.className = "reg-status" + (isError ? " is-error" : "") + (isOk ? " is-ok" : "");
+    }
+
+    /* ---------------------------------------------------------------------
+       Actualizaciones en vivo desde el panel (iframe)
+       --------------------------------------------------------------------- */
+
+    function handlePreviewMessage(payload) {
+        if (!payload || typeof payload !== "object") return;
+        var merged = Object.assign({}, state.config || {}, payload);
+        ["design_settings", "sidebar_content", "bottom_bar_content", "video_playlist", "scheduled_videos", "menus"].forEach(function (key) {
+            if (merged[key] && typeof merged[key] === "string") {
+                merged[key] = parseJson(merged[key], key === "bottom_bar_content" ? {} : []);
+            }
+        });
+        applyConfig(merged, true);
+    }
+
+    /* ---------------------------------------------------------------------
+       Arranque
+       --------------------------------------------------------------------- */
+
+    function bindEvents() {
+        updateClocks();
+        window.setInterval(updateClocks, 1000);
+
+        var sound = $("sound-toggle");
+        if (sound) sound.addEventListener("click", toggleSound);
+
+        var submit = $("reg-submit-btn");
+        if (submit) submit.addEventListener("click", submitRegistration);
+
+        var input = $("reg-code-input");
+        if (input) {
+            input.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") submitRegistration();
+            });
+        }
+
+        document.addEventListener("click", function () {
+            showSoundToggle();
+        }, { once: true });
+
+        window.addEventListener("message", function (event) {
+            var message = event.data;
+            if (message && message.type === "PREVIEW_UPDATE") {
+                handlePreviewMessage(message.payload);
+            }
+        });
+
+        window.addEventListener("online", function () {
+            state.lastUpdated = null;
+            fetchConfig();
+        });
+    }
+
+    function init() {
+        bindEvents();
+        fetchConfig();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();

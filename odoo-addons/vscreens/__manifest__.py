@@ -48,6 +48,7 @@ Incluye:
         "views/affiliate_views.xml",
         "views/calendar_activity_views.xml",
         "views/free_plan_usage_views.xml",
+        "views/website_views.xml",
         "data/cron_views.xml",
     ],
     "assets": {
@@ -57,6 +58,7 @@ Incluye:
             "vscreens/static/src/xml/vscreens_fields.xml",
         ],
         "web.assets_frontend": [
+            "vscreens/static/src/css/website.css",
             "vscreens/static/src/js/benry_widget.js",
         ],
     },

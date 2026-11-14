@@ -68,6 +68,11 @@ class VScreenSCompany(models.Model):
     google_drive_link = fields.Char(string="Enlace de Google Drive")
     priority_content_url = fields.Char(string="Contenido prioritario")
     video_playlist = fields.Json(string="Playlist de videos", default=list)
+    scheduled_videos = fields.Json(
+        string="Videos programados",
+        default=list,
+        help="Lista de objetos: {url, title, start, end, days}. start/end en formato YYYY-MM-DD HH:MM y days como lista de días (0=lunes … 6=domingo). Si se omiten, aplica siempre.",
+    )
     sidebar_content = fields.Json(string="Contenido de barra lateral", default=list)
     bottom_bar_content = fields.Json(string="Contenido de barra inferior", default=dict)
     design_settings = fields.Json(string="Ajustes de diseño", default=dict)
@@ -252,6 +257,45 @@ class VScreenSCompany(models.Model):
             config['logo_url'] = None
         return config
 
+    def _active_scheduled_videos(self):
+        """Devuelve los videos programados vigentes en este momento.
+
+        Cada elemento puede traer: url, title, start, end y days.
+        - start/end: 'YYYY-MM-DD HH:MM' o ISO 8601. Si faltan, no limitan.
+        - days: lista de enteros con 0=lunes … 6=domingo. Si falta, aplica todos.
+        """
+        self.ensure_one()
+        now = fields.Datetime.now()
+        active = []
+        for item in (self.scheduled_videos or []):
+            if isinstance(item, str):
+                item = {"url": item}
+            if not isinstance(item, dict):
+                continue
+            url = (item.get("url") or "").strip()
+            if not url:
+                continue
+            start = item.get("start")
+            end = item.get("end")
+            days = item.get("days")
+            try:
+                if start and now < fields.Datetime.to_datetime(start):
+                    continue
+                if end and now > fields.Datetime.to_datetime(end):
+                    continue
+                if days:
+                    normalized = {int(d) for d in days if str(d).lstrip("-").isdigit()}
+                    if normalized and now.weekday() not in normalized:
+                        continue
+            except (ValueError, TypeError):
+                # Si la programación viene mal formada, se ignora la ventana
+                # en lugar de bloquear el contenido del cliente.
+                pass
+            entry = dict(item)
+            entry["url"] = url
+            active.append(entry)
+        return active
+
     def _base_config(self):
         self.ensure_one()
         alert = self._get_active_alert()
@@ -277,6 +321,7 @@ class VScreenSCompany(models.Model):
             "video_source": self.video_source,
             "priority_content_url": self.priority_content_url,
             "video_playlist": self.video_playlist or [],
+            "scheduled_videos": self._active_scheduled_videos(),
             "sidebar_content": self.sidebar_content or [],
             "bottom_bar_content": self.bottom_bar_content or {},
             "design_settings": self.design_settings or {},
@@ -354,6 +399,7 @@ class VScreenSCompany(models.Model):
             "video_source": self.video_source,
             "priority_content_url": self.priority_content_url,
             "video_playlist": self.video_playlist or [],
+            "scheduled_videos": self._active_scheduled_videos(),
             "sidebar_content": self.sidebar_content or [],
             "bottom_bar_content": self.bottom_bar_content or {},
             "design_settings": self.design_settings or {},

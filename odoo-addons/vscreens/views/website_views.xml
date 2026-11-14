@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Cabecera VScreenS: isotipo, título y subtítulo en contenedores separados -->
+    <record id="vscreens_header_brand" model="ir.ui.view">
+        <field name="name">VScreenS — cabecera de marca</field>
+        <field name="inherit_id" ref="website.option_header_brand_logo"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//a[@data-name='Navbar Logo']" position="replace">
+                <a href="/" data-name="Navbar Logo" class="navbar-brand vs-brand" aria-label="VScreenS — Inicio">
+                    <span class="vs-brand-icon-box">
+                        <img class="vs-brand-icon"
+                             src="/vscreens/static/src/img/logo_icon.png"
+                             alt="VScreenS"/>
+                    </span>
+                    <span class="vs-brand-copy">
+                        <span class="vs-brand-title-box">
+                            <img class="vs-brand-title"
+                                 src="/vscreens/static/src/img/logo_title.png"
+                                 alt="VScreenS"/>
+                        </span>
+                        <span class="vs-brand-subtitle-box">
+                            <span class="vs-brand-subtitle">Pantallas Publi-Inteligentes</span>
+                        </span>
+                    </span>
+                </a>
+            </xpath>
+        </field>
+    </record>
+</odoo>

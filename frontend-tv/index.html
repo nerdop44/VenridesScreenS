@@ -3,145 +3,173 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#05080f">
     <title>VScreenS TV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:ital,wght@0,100..900;1,100..900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <style>
-        .logo-svg-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: #009DFF;
-        }
-
-        .logo-emblem {
-            width: 80px;
-            height: 80px;
-        }
-
-        .logo-text {
-            font-family: 'Great Vibes', cursive;
-            font-size: 2.5rem;
-            color: #009DFF;
-            line-height: 1;
-        }
-
-        .logo-slogan {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.5rem;
-            letter-spacing: 0.2em;
-            color: white;
-            text-transform: uppercase;
-            font-weight: 900;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css?v=3.0">
 </head>
 
 <body>
+    <!-- Aplicación principal -->
+    <div id="tv-app" class="tv-app layout-a" aria-live="polite">
+        <div class="tv-grid">
+            <!-- Barra lateral -->
+            <aside id="sidebar" class="tv-sidebar">
+                <div class="sidebar-sheen"></div>
 
-    <div class="screen-container">
-        <!-- Video -->
-        <div id="video-container">
-            <div id="main-video-player" style="width: 100%; height: 100%;"></div>
-            <video id="drive-player" class="hidden" autoplay muted loop playsinline
-                style="width: 100%; height: 100%; object-fit: cover;"></video>
-        </div>
+                <header class="side-brand">
+                    <div class="side-brand-logo-box">
+                        <img id="side-logo" class="side-brand-logo" src="vscreens_icon.png" alt="VScreenS">
+                    </div>
+                    <div class="side-brand-copy">
+                        <div id="company-name" class="side-brand-name">VScreenS</div>
+                        <div class="side-brand-sub">PANTALLAS PUBLI-INTELIGENTES</div>
+                    </div>
+                </header>
 
-        <!-- Sidebar -->
-        <div id="sidebar" style="display: flex; flex-direction: column; height: 100%;">
-            <h1 id="company-name"
-                style="text-align:center; font-size: 1.2rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; width: 100%;">
-                Cargando...</h1>
-            <div id="sidebar-content"
-                style="flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; width: 100%; overflow: hidden; padding: 1vh 0;">
-                <div id="sidebar-slot-1" class="sidebar-slot"
-                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+                <div class="side-divider"></div>
+
+                <div class="side-kicker-row">
+                    <span id="side-kicker" class="side-kicker">CONTENIDO DESTACADO</span>
+                    <span id="side-counter" class="side-counter">01 / 01</span>
                 </div>
-                <div id="sidebar-slot-2" class="sidebar-slot"
-                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+
+                <section id="side-stage" class="side-stage" aria-live="polite">
+                    <!-- Tarjetas generadas por JS -->
+                </section>
+
+                <section id="side-menu" class="side-menu">
+                    <!-- Menú / precios generado por JS -->
+                </section>
+
+                <footer class="side-footer">
+                    <span class="side-footer-dot"></span>
+                    <span class="side-footer-text">VScreenS · Señalización inteligente</span>
+                    <span id="side-clock" class="side-footer-clock">--:--</span>
+                </footer>
+            </aside>
+
+            <!-- Escenario de video -->
+            <main id="main-stage" class="tv-main">
+                <div class="video-layer">
+                    <div id="yt-player" class="yt-player"></div>
+                    <video id="file-player" class="file-player" playsinline muted loop></video>
+                    <div id="video-fallback" class="video-fallback">
+                        <div class="fallback-glow"></div>
+                        <img class="fallback-logo" src="vscreens_icon.png" alt="">
+                        <div id="fallback-title" class="fallback-title">VScreenS</div>
+                        <div id="fallback-sub" class="fallback-sub">Contenido en reproducción</div>
+                    </div>
                 </div>
-                <div id="sidebar-slot-3" class="sidebar-slot"
-                    style="width: 100%; flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: opacity 0.5s ease, transform 0.5s ease;">
+
+                <div class="main-vignette"></div>
+
+                <div class="main-topbar">
+                    <div class="live-badge"><span class="live-dot"></span> EN VIVO</div>
+                    <div id="topbar-date" class="topbar-date">—</div>
                 </div>
-            </div>
-            <div id="logo-container"
-                style="width: 100%; height: auto; padding: 10px; display: flex; justify-content: center; align-items: center; margin-top: auto;">
-                <img id="logo" src="vscreens_logo.png?v=2.0"
-                    style="width: 100%; max-height: 18vh; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));" />
-            </div>
-        </div>
 
-        <!-- Bottom Bar -->
-        <div id="bottom-bar" class="footer">
-            <div id="ticker-container"
-                style="display: flex; align-items: center; height: 100%; width: 100%; overflow: hidden;">
-                <div id="ticker-wrapper">
-                    <!-- Content injected via JS -->
+                <!-- Alerta: banner compacto, nunca tapa toda la pantalla -->
+                <div id="alert-rail" class="alert-rail" role="status">
+                    <div class="alert-icon">!</div>
+                    <div class="alert-copy">
+                        <div id="alert-subject" class="alert-subject">AVISO IMPORTANTE</div>
+                        <div id="alert-body" class="alert-body"></div>
+                    </div>
+                    <div class="alert-progress"><i id="alert-progress-bar"></i></div>
                 </div>
+
+                <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Activar sonido">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8.03v7.94A4.5 4.5 0 0 0 16.5 12z" />
+                        <path d="M14 3.23v2.06a6.5 6.5 0 0 1 0 13.42v2.06a8.5 8.5 0 0 0 0-17.54z" opacity=".55" />
+                    </svg>
+                    <span class="sound-label">Sonido</span>
+                </button>
+
+                <div id="video-badge" class="video-badge hidden"></div>
+            </main>
+
+            <!-- Barra inferior -->
+            <footer id="bottom-bar" class="tv-bottom">
+                <div class="bottom-left">
+                    <div id="bcv-pill" class="bcv-pill">
+                        <span class="bcv-label">BCV</span>
+                        <strong id="bcv-value" class="bcv-value">Bs. —</strong>
+                    </div>
+                    <div id="social-pill" class="social-pill"></div>
+                </div>
+
+                <div class="ticker-mask">
+                    <div id="ticker-track" class="ticker-track"></div>
+                </div>
+
+                <div class="bottom-clock">
+                    <span id="bottom-time" class="bottom-time">--:--</span>
+                    <span id="bottom-day" class="bottom-day">—</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Pantalla de carga -->
+    <div id="splash" class="splash">
+        <div class="splash-glow"></div>
+        <img class="splash-logo" src="vscreens_icon.png" alt="VScreenS">
+        <div class="splash-wordmark">VScreenS</div>
+        <div class="splash-sub">PANTALLAS PUBLI-INTELIGENTES</div>
+        <div class="splash-loader"><i></i></div>
+    </div>
+
+    <!-- Registro de pantalla -->
+    <div id="registration-overlay" class="vs-overlay hidden">
+        <div class="vs-modal">
+            <img class="modal-logo" src="vscreens_icon.png" alt="VScreenS">
+            <div class="modal-eyebrow">VINCULACIÓN DE PANTALLA</div>
+            <h1 class="modal-title">Activa tu pantalla</h1>
+            <p class="modal-text">Ingresa el código de 6 dígitos desde el panel de VScreenS o comparte este ID con
+                soporte.</p>
+            <div id="device-uuid-display" class="device-uuid">Calculando…</div>
+            <div class="code-row">
+                <input id="reg-code-input" class="code-input" type="text" inputmode="numeric" maxlength="6"
+                    placeholder="000000" autocomplete="off">
+                <button id="reg-submit-btn" class="btn-primary" type="button">VINCULAR</button>
             </div>
+            <div id="reg-status" class="reg-status">Esperando vinculación…</div>
+            <div class="modal-foot">Soporte: info.vscreens@inverpave.com · 0414-5694075</div>
         </div>
     </div>
 
-    <!-- Overlays (Outside container for full-screen fixed positioning) -->
-    <!-- Kill Switch Overlay -->
-    <div id="kill-switch" class="overlay hidden">
-        <div style="margin-bottom: 2rem; display: flex; justify-content: center; width: 100%;">
-            <img src="vscreens_logo.png?v=2.0" alt="VScreenS"
-                style="max-height: 35vh; max-width: 80%; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));" />
-        </div>
-        <div class="red-text">SERVICIO SUSPENDIDO</div>
-        <div class="info-text">Por favor, contacte al soporte técnico para reactivar su servicio.</div>
-        <div style="margin-top: 3rem; font-size: 0.9rem; color: #666;">info.vscreens@inverpave.com</div>
-    </div>
-
-    <!-- Registration Overlay -->
-    <div id="registration-overlay" class="overlay hidden">
-        <div style="margin-bottom: 20px;">
-            <img src="vscreens_logo.png?v=2.0"
-                style="height: 120px; width: auto; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,157,255,0.5));" />
-        </div>
-        <div class="info-text" style="font-weight: bold; font-size: 1.5em; color: #009DFF;">Dispositivo No Registrado
-        </div>
-        <div class="info-text" style="font-size: 1em; margin-top: 20px; opacity: 0.8;">ID DE VINCULACIÓN:</div>
-        <div id="device-uuid-display"
-            style="font-size: 1.8em; color: #fff; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 10px; border: 1px solid rgba(0,157,255,0.3); font-family: monospace;">
-            Calculando...</div>
-
-        <div class="info-text" style="max-width: 600px; line-height: 1.4;">Para activar esta pantalla, ingrese al Panel
-            Administrativo de VScreenS y use el ID mostrado arriba.</div>
-        <div style="margin-top: 40px; font-size: 0.9em; color: #009DFF; animation: pulse 2s infinite;">Esperando señal
-            del servidor...</div>
-    </div>
-
-    <div id="priority-player-container" class="overlay hidden" style="background: black; z-index: 1000;">
-        <video id="priority-video" style="width: 100%; height: 100%; object-fit: contain;"></video>
-    </div>
-
-    <!-- Live Alert Overlay -->
-    <div id="alert-overlay" class="overlay hidden">
-        <div class="alert-box">
-            <div id="alert-title" class="alert-title">¡AVISO IMPORTANTE!</div>
-            <div id="alert-body" class="alert-body"></div>
+    <!-- Servicio suspendido -->
+    <div id="kill-switch" class="vs-overlay hidden">
+        <div class="vs-modal suspended-modal">
+            <img class="modal-logo" src="vscreens_icon.png" alt="VScreenS">
+            <div class="modal-eyebrow danger">SERVICIO SUSPENDIDO</div>
+            <h1 class="modal-title">Pantalla fuera de servicio</h1>
+            <p class="modal-text">Contacta a soporte para reactivar tu suscripción y volver a transmitir.</p>
+            <div class="modal-foot">info.vscreens@inverpave.com · 0414-5694075</div>
         </div>
     </div>
 
-    <!-- Ping Overlay -->
-    <div id="ping-overlay" class="overlay hidden" style="background: rgba(0,0,0,0.85);">
-        <div style="text-align: center; animation: pulse 1s infinite alternate;">
-            <div style="font-size: 8rem;">👀</div>
-            <div style="font-size: 3.5rem; font-weight: bold; margin-top: 2rem; color: #fff;">AQUÍ ESTOY</div>
-            <div id="ping-device-name"
-                style="font-size: 2.2rem; color: #fbbf24; margin-top: 1rem; text-shadow: 0 0 10px rgba(251,191,36,0.5);">
-            </div>
+    <!-- Contenido prioritario / anuncio -->
+    <div id="priority-overlay" class="vs-overlay hidden priority-overlay">
+        <video id="priority-video" class="priority-video" playsinline></video>
+    </div>
+
+    <!-- Identificación remota -->
+    <div id="ping-overlay" class="vs-overlay hidden">
+        <div class="ping-box">
+            <div class="ping-eye">👀</div>
+            <div class="ping-title">AQUÍ ESTOY</div>
+            <div id="ping-device-name" class="ping-name"></div>
         </div>
     </div>
 
-    <link rel="stylesheet" href="styles.css?v=2.0">
-    <script src="client.js?v=2.0"></script>
+    <script src="client.js?v=3.0"></script>
 </body>
 
 </html>

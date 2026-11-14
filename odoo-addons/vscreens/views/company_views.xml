@@ -125,6 +125,7 @@
                         </page>
                         <page string="Contenido">
                             <field name="video_playlist" widget="json"/>
+                            <field name="scheduled_videos" widget="json"/>
                             <field name="sidebar_content" widget="json"/>
                             <field name="bottom_bar_content" widget="json"/>
                             <field name="design_settings" widget="json"/>
