@@ -28,13 +28,19 @@
         </field>
     </record>
 
-    <!-- Contacto real en la cabecera (el snippet base trae datos demo) -->
+    <!-- Contacto real en la cabecera: se desactiva el snippet demo y se
+         inserta el bloque propio en el mismo placeholder del header. -->
+    <function model="ir.ui.view" name="write">
+        <value eval="[ref('website.header_text_element')]"/>
+        <value eval="{'active': False}"/>
+    </function>
+
     <record id="vscreens_header_contact" model="ir.ui.view">
         <field name="name">VScreenS — contacto real en cabecera</field>
-        <field name="inherit_id" ref="website.header_text_element"/>
+        <field name="inherit_id" ref="website.placeholder_header_text_element"/>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <xpath expr="//data[@name='Header Text element']//li" position="replace">
+            <xpath expr="." position="inside">
                 <li t-attf-class="#{_item_class}">
                     <t t-if="_txt_elt_content == 'sentence'">
                         <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
