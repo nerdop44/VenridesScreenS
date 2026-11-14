@@ -375,7 +375,8 @@ function App() {
             try {
                 const res = await fetch(`${API_BASE}/finance/bcv`);
                 const data = await res.json();
-                if (data.rate) setBcvRate(data.rate);
+                const rate = data.rate !== undefined ? data.rate : data.usd_to_ves;
+                if (rate) setBcvRate(rate);
             } catch (err) { console.error("BCV Error:", err); }
         };
         fetchBCV();
@@ -576,7 +577,8 @@ function App() {
         fetch(`${API_BASE}/finance/bcv`)
             .then(res => res.json())
             .then(data => {
-                if (data.rate) setBcvRate(data.rate);
+                const rate = data.rate !== undefined ? data.rate : data.usd_to_ves;
+                if (rate) setBcvRate(rate);
             })
             .catch(err => console.error("BCV Error:", err));
     }, []);
@@ -1447,7 +1449,7 @@ function App() {
                         <div style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', opacity: 0.5, letterSpacing: '0.1rem' }}>
                             VScreenS / {adminTab.replace('_', ' ')}
                         </div>
-                        {bcvRate && (
+                        {Number(bcvRate) > 0 && (
                             <div className="glass-card" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--primary-color)' }}>
                                 <span style={{ opacity: 0.6 }}>BCV:</span> {bcvRate} Bs.
                             </div>
