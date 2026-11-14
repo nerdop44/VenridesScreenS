@@ -65,6 +65,7 @@ services:
       - vscreens-odoo
       - vscreens-admin
       - vscreens-tv
+      - vscreens-mobile
       - vscreens-landing
     networks:
       - vscreens-net
