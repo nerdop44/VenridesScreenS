@@ -182,6 +182,43 @@ header .vs-brand-subtitle {
     }
 }
 
+/* --- Botones y contacto de la cabecera ---------------------------------- */
+header .navbar .btn-primary,
+header .navbar .btn_cta {
+    background: var(--vs-navbar-accent) !important;
+    border-color: var(--vs-navbar-accent) !important;
+    color: #07101d !important;
+    font-weight: 800;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(200, 255, 0, 0.18);
+}
+
+header .navbar .btn-primary:hover,
+header .navbar .btn_cta:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+header .navbar .o_nav_link_btn {
+    border-color: rgba(234, 242, 251, 0.32) !important;
+    border-radius: 10px;
+    color: var(--vs-navbar-text) !important;
+    font-weight: 700;
+}
+
+header .navbar a.o_nav-link_secondary {
+    color: rgba(234, 242, 251, 0.86) !important;
+    font-weight: 600;
+}
+
+/* El carrito y la lista de deseos no forman parte de la landing */
+header .navbar a[href="/shop/cart"],
+header .navbar a[href="/shop/wishlist"],
+header .o_header_mobile a[href="/shop/cart"],
+header .o_header_mobile a[href="/shop/wishlist"] {
+    display: none !important;
+}
+
 /* --- Limpieza del carrito y copyright en la landing -------------------- */
 .o_wsale_my_cart,
 .o_wsale_my_cart_link {

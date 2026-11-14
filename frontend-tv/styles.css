@@ -338,12 +338,14 @@ input {
 .promo-title {
     position: relative;
     z-index: 1;
-    font-size: clamp(26px, 2.75vw, 52px);
+    font-size: clamp(24px, 2.4vw, 46px);
     font-weight: 850;
     line-height: 1.02;
     letter-spacing: -0.028em;
     color: #ffffff;
     overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: auto;
     text-shadow: 0 6px 30px rgba(0, 0, 0, 0.38);
 }
 

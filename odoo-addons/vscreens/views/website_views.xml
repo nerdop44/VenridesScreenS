@@ -27,4 +27,73 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Contacto real en la cabecera (el snippet base trae datos demo) -->
+    <record id="vscreens_header_contact" model="ir.ui.view">
+        <field name="name">VScreenS — contacto real en cabecera</field>
+        <field name="inherit_id" ref="website.header_text_element"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//data[@name='Header Text element']//li" position="replace">
+                <li t-attf-class="#{_item_class}">
+                    <t t-if="_txt_elt_content == 'sentence'">
+                        <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                            <small>Publicidad inteligente para tu negocio</small>
+                        </div>
+                    </t>
+                    <t t-elif="_txt_elt_content == 'list'">
+                        <div t-attf-class="s_text_block d-flex flex-column flex-lg-row gap-1 gap-lg-4 align-items-lg-center #{_div_class}" data-name="Text">
+                            <small class="d-flex align-items-center">
+                                <i class="oi oi-1x oi-fw oi-stack me-1" data-icon="check"/>
+                                Soporte local
+                            </small>
+                            <small class="d-flex align-items-center">
+                                <i class="oi oi-1x oi-fw oi-stack me-1" data-icon="check"/>
+                                Instalación guiada
+                            </small>
+                        </div>
+                    </t>
+                    <t t-elif="_txt_elt_content == 'phone_mail'">
+                        <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                            <a href="tel:+584145694075" class="nav-link o_nav-link_secondary">
+                                <small>
+                                    <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="phone"/>
+                                    <span class="o_force_ltr">0414-5694075</span>
+                                </small>
+                            </a>
+                            <a href="mailto:info.vscreens@inverpave.com" class="nav-link o_nav-link_secondary">
+                                <small>
+                                    <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="mail"/>
+                                    info.vscreens@inverpave.com
+                                </small>
+                            </a>
+                        </div>
+                    </t>
+                    <t t-elif="_txt_elt_content == 'mail'">
+                        <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                            <a href="mailto:info.vscreens@inverpave.com" class="nav-link o_nav-link_secondary">
+                                <small><i class="oi oi-1x oi-fw oi-filled me-1" data-icon="mail"/> info.vscreens@inverpave.com</small>
+                            </a>
+                        </div>
+                    </t>
+                    <t t-elif="_txt_elt_content == 'mail_stretched'">
+                        <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                            <a href="tel:+584145694075" class="nav-link o_nav-link_secondary p-2 o_navlink_background_hover d-flex align-items-center h-100 text-reset">
+                                <i class="oi oi-1x oi-fw i-filled me-1" data-icon="phone"/>
+                                <span class="o_force_ltr"><small>0414-5694075</small></span>
+                            </a>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                            <a href="tel:+584145694075" class="nav-link o_nav-link_secondary p-2">
+                                <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="phone"/>
+                                <span class="o_force_ltr"><small>0414-5694075</small></span>
+                            </a>
+                        </div>
+                    </t>
+                </li>
+            </xpath>
+        </field>
+    </record>
 </odoo>
