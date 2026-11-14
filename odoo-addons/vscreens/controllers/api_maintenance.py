@@ -129,8 +129,6 @@ class VScreenSMaintenanceController(http.Controller):
     # ------------------------------------------------------------------
     # Eliminar fila
     # ------------------------------------------------------------------
-    @http.route("/admin/maintenance/table/<string:model_name>/<int:row_id>", type="http",
-                auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def delete_table_row(self, model_name, row_id, **kwargs):
         user, failure = self._check_master()
         if failure:
@@ -153,8 +151,10 @@ class VScreenSMaintenanceController(http.Controller):
     # Actualizar fila
     # ------------------------------------------------------------------
     @http.route("/admin/maintenance/table/<string:model_name>/<int:row_id>", type="http",
-                auth="public", methods=["PUT", "PATCH", "OPTIONS"], csrf=False, cors="*", save_session=False)
+                auth="public", methods=["PUT", "PATCH", "DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def update_table_row(self, model_name, row_id, **kwargs):
+        if request.httprequest.method == "DELETE":
+            return self.delete_table_row(model_name, row_id, **kwargs)
         user, failure = self._check_master()
         if failure:
             return failure

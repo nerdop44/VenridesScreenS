@@ -197,8 +197,10 @@ class VScreenSAuthController(http.Controller):
         })
         return json_response(new_user.api_dict(), status=201)
 
-    @http.route("/admin/users/<int:user_id>", type="http", auth="public", methods=["PATCH", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    @http.route("/admin/users/<int:user_id>", type="http", auth="public", methods=["PATCH", "POST", "DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def update_user(self, user_id, **kwargs):
+        if request.httprequest.method == "DELETE":
+            return self.delete_user(user_id, **kwargs)
         actor = bearer_user()
         target = request.env["res.users"].sudo().browse(user_id).exists()
         if not actor or not target:
@@ -255,7 +257,6 @@ class VScreenSAuthController(http.Controller):
         target.sudo().write({"active": is_active})
         return json_response({"message": "Estado actualizado", "is_active": is_active})
 
-    @http.route("/admin/users/<int:user_id>", type="http", auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def delete_user(self, user_id, **kwargs):
         actor = bearer_user()
         target = request.env["res.users"].sudo().browse(user_id).exists()
