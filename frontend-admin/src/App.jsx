@@ -1309,8 +1309,8 @@ function App() {
                         <p style={{ opacity: 0.6, fontSize: '1.2rem', marginTop: '-20px' }}>Panel de Gestión</p>
                     </div>
                     <form onSubmit={handleLogin}>
-                        <label>Correo Electrónico (Email)</label>
-                        <input type="email" value={credentials.username} onChange={e => setCredentials({ ...credentials, username: e.target.value })} required placeholder="usuario@ejemplo.com" />
+                        <label>Usuario o correo electrónico</label>
+                        <input type="text" autoComplete="username" value={credentials.username} onChange={e => setCredentials({ ...credentials, username: e.target.value })} required placeholder="usuario o correo" />
                         <label>Contraseña</label>
                         <input type="password" value={credentials.password} onChange={e => setCredentials({ ...credentials, password: e.target.value })} required />
 
