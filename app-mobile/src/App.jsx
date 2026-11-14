@@ -5,6 +5,8 @@ import MobileApp from './MobileApp';
 
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "https://vscreens-api.inverpave.com";
 const API_BASE = localStorage.getItem('server_url') || DEFAULT_API_BASE;
+const LOGO_URL = import.meta.env.BASE_URL + 'vscreens_logo.png';
+const TV_BASE_URL = (import.meta.env.VITE_TV_URL || "https://vscreens-tv.inverpave.com").replace(/\/$/, "");
 
 // --- HELPERS ---
 const safeParse = (str, fallback = {}) => {
@@ -993,7 +995,6 @@ function App() {
                 throw new Error(data.detail || JSON.stringify(data) || 'Error desconocido del servidor');
             }
 
-            const tvUrl = window.location.origin.replace('8081', '8080'); // Ajuste temporal para dev
             const message = `¡CÓDIGO GENERADO CON ÉXITO!\n\nCÓDIGO: ${data.code}\nEXPIRA EN: ${data.expires_in_minutes} minutos\n\nInstrucciones:\n1. Ve a la TV\n2. Ingresa este código en la pantalla de registro`;
 
             // Reemplazado alert por modal visual
@@ -1042,7 +1043,7 @@ function App() {
                 />}
                 <div className="glass-card login-card">
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <img src="/vscreens_logo.png" alt="VScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
+                        <img src={LOGO_URL} alt="VScreenS" style={{ height: '360px', maxWidth: '100%', marginBottom: '0', filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.3))' }} />
                         <p style={{ opacity: 0.6, fontSize: '1.2rem', marginTop: '-20px' }}>Panel de Gestión</p>
                     </div>
                     <form onSubmit={handleLogin}>
@@ -1105,7 +1106,7 @@ function App() {
                 <GlobalStyles />
                 <header className="dash-header">
                     <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', fontSize: '1.2rem' }}>
-                        <img src="/vscreens_logo.png" alt="Admin" className="app-logo" style={{ maxHeight: '50px', width: 'auto' }} />
+                        <img src={LOGO_URL} alt="Admin" className="app-logo" style={{ maxHeight: '50px', width: 'auto' }} />
                         <span>Panel Master</span>
                     </h1>
                     <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1548,7 +1549,7 @@ function App() {
             <GlobalStyles />
             <header className="dash-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/vscreens_logo.png" alt="VScreenS" className="app-logo" style={{ height: '125px' }} />
+                    <img src={LOGO_URL} alt="VScreenS" className="app-logo" style={{ height: '125px' }} />
                     <div>
                         <h1 style={{ fontSize: '1.4rem', margin: 0 }}>VScreenS</h1>
                         <p style={{ opacity: 0.6, fontSize: '0.8rem', margin: 0 }}>{localCompany?.name} | Panel de Control</p>
@@ -1803,7 +1804,7 @@ function App() {
                     }}>
                         <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', position: 'relative' }}>
                             <iframe
-                                src={`${window.location.protocol}//${window.location.hostname}:8080/?preview=${localCompany?.id}`}
+                                src={`${TV_BASE_URL}/?preview=${localCompany?.id}`}
                                 style={{ width: '100%', height: '100%', border: 'none' }}
                                 title="TV Preview"
                             />
@@ -1813,7 +1814,7 @@ function App() {
                                 <strong>Tip:</strong> Sincronización 1:1 activa. Lo que ves aquí es exactamente lo que se muestra en las pantallas.
                             </div>
                             <button className="btn" style={{ width: '100%', fontSize: '0.75rem', justifyContent: 'center' }} onClick={() => {
-                                const tvUrl = `${window.location.protocol}//${window.location.hostname}:8080`;
+                                const tvUrl = TV_BASE_URL;
                                 window.open(tvUrl, '_blank');
                             }}><Eye size={14} /> Abrir en Pantalla Completa</button>
                         </div>
@@ -1908,7 +1909,7 @@ const OperatorView = ({ company, token, onLogout }) => {
                 <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
                     <h4>Previsualización TV</h4>
                     <iframe
-                        src={`${window.location.protocol}//${window.location.hostname}:8080/?preview=${company?.id}`}
+                        src={`${TV_BASE_URL}/?preview=${company?.id}`}
                         style={{ width: '100%', height: '400px', border: 'none', borderRadius: '12px', background: '#000' }}
                         title="TV Preview"
                     />

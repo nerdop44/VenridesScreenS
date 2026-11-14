@@ -90,6 +90,22 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  vscreens-mobile:
+    build:
+      context: ../../app-mobile
+      args:
+        VITE_API_BASE_URL: https://vscreens-api.inverpave.com
+        VITE_TV_URL: https://vscreens-tv.inverpave.com
+    container_name: vscreens-mobile
+    restart: unless-stopped
+    networks:
+      - vscreens-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   vscreens-tv:
     build: ../../frontend-tv
     container_name: vscreens-tv
