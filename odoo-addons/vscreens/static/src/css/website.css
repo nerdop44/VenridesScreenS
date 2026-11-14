@@ -17,7 +17,7 @@ header .o_header_mobile {
     background:
         radial-gradient(1200px 180px at 12% -40%, rgba(0, 157, 255, 0.28), transparent 70%),
         linear-gradient(95deg, var(--vs-navbar-bg) 0%, var(--vs-navbar-bg-2) 58%, #0a1527 100%) !important;
-    min-height: 96px !important;
+    min-height: 100px !important;
     padding-top: 8px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--vs-navbar-line) !important;
@@ -52,7 +52,7 @@ header .navbar-brand.vs-brand {
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
-    height: 80px !important;
+    height: 88px !important;
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
@@ -66,14 +66,14 @@ header .vs-brand-icon-box {
     align-items: center !important;
     justify-content: center !important;
     flex: 0 0 auto;
-    width: 64px;
-    height: 64px;
+    width: 68px;
+    height: 68px;
 }
 
 header .vs-brand-icon {
     display: block !important;
-    width: 64px !important;
-    height: 64px !important;
+    width: 68px !important;
+    height: 68px !important;
     max-width: none !important;
     max-height: none !important;
     object-fit: contain !important;
@@ -95,14 +95,14 @@ header .vs-brand-title-box {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    height: 44px;
+    height: 48px;
     overflow: visible !important;
     line-height: 1 !important;
 }
 
 header .vs-brand-title {
     display: block !important;
-    height: 44px !important;
+    height: 48px !important;
     width: auto !important;
     max-width: 100% !important;
     max-height: none !important;
@@ -121,7 +121,7 @@ header .vs-brand-subtitle-box {
 header .vs-brand-subtitle {
     display: block !important;
     font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
-    font-size: 11.5px;
+    font-size: 12.5px;
     font-weight: 900;
     line-height: 1.25;
     letter-spacing: 0.235em;
@@ -135,22 +135,42 @@ header .vs-brand-subtitle {
 @media (max-width: 991.98px) {
     header .navbar,
     header .o_header_mobile {
-        min-height: 72px !important;
+        min-height: 76px !important;
     }
 
     header .navbar-brand.vs-brand {
-        gap: 10px !important;
-        height: 58px !important;
+        gap: 11px !important;
+        height: 62px !important;
     }
 
     header .vs-brand-icon-box {
-        width: 46px;
-        height: 46px;
+        width: 50px;
+        height: 50px;
     }
 
     header .vs-brand-icon {
-        width: 46px !important;
-        height: 46px !important;
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    header .vs-brand-title-box {
+        height: 34px;
+    }
+
+    header .vs-brand-title {
+        height: 34px !important;
+    }
+
+    header .vs-brand-subtitle {
+        font-size: 9.5px;
+        letter-spacing: 0.18em;
+    }
+}
+
+@media (max-width: 575.98px) {
+    header .vs-brand-subtitle {
+        font-size: 8.5px;
+        letter-spacing: 0.14em;
     }
 
     header .vs-brand-title-box {
@@ -159,26 +179,6 @@ header .vs-brand-subtitle {
 
     header .vs-brand-title {
         height: 30px !important;
-    }
-
-    header .vs-brand-subtitle {
-        font-size: 8.5px;
-        letter-spacing: 0.18em;
-    }
-}
-
-@media (max-width: 575.98px) {
-    header .vs-brand-subtitle {
-        font-size: 7.5px;
-        letter-spacing: 0.14em;
-    }
-
-    header .vs-brand-title-box {
-        height: 26px;
-    }
-
-    header .vs-brand-title {
-        height: 26px !important;
     }
 }
 

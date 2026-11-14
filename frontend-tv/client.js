@@ -32,6 +32,7 @@
         player: null,
         playerReady: false,
         playerLoading: false,
+        playerFresh: false,
         currentItem: null,
         currentKind: null,
         muted: true,
@@ -815,6 +816,8 @@
             return;
         }
 
+        console.log("VScreenS play:", state.videoIndex, item.kind, item.id || item.url, item.scheduled ? "PROGRAMADO" : "");
+
         if (state.failedVideos[item.kind + ":" + (item.id || item.url)]) {
             nextVideo();
             return;
@@ -901,10 +904,13 @@
                 return;
             }
             state.playerLoading = true;
+            var initialId = (state.currentItem && state.currentItem.kind === "youtube") ? state.currentItem.id : undefined;
+            state.playerInitialId = initialId || null;
 
             state.player = new window.YT.Player("yt-player", {
                 width: "100%",
                 height: "100%",
+                videoId: initialId,
                 playerVars: {
                     autoplay: 1,
                     controls: 0,
@@ -921,6 +927,7 @@
                     onReady: function (event) {
                         state.playerReady = true;
                         state.playerLoading = false;
+                        state.playerFresh = true;
                         try {
                             event.target.setVolume(70);
                             event.target.mute();
@@ -962,26 +969,49 @@
                 nextVideo();
                 return;
             }
-            var filePlayer = $("file-player");
-            if (filePlayer) {
-                filePlayer.pause();
-                filePlayer.classList.add("hidden");
-            }
-            var yt = $("yt-player");
-            if (yt) yt.classList.remove("hidden");
 
-            try {
-                if (state.inPriority) {
-                    state.player.loadVideoById({ videoId: item.id });
-                } else {
-                    state.player.loadVideoById({ videoId: item.id });
+            var start = function () {
+                var filePlayer = $("file-player");
+                if (filePlayer) {
+                    filePlayer.pause();
+                    filePlayer.classList.add("hidden");
                 }
-                state.player.playVideo();
-                hideFallback();
-                showSoundToggle();
-            } catch (err) {
-                console.warn("YouTube load error", err);
-                nextVideo();
+                var yt = $("yt-player");
+                if (yt) yt.classList.remove("hidden");
+
+                // Si el reproductor nació con este mismo video, no hace falta
+                // volver a cargarlo: basta con reproducirlo.
+                if (state.playerFresh && state.playerInitialId && item.id === state.playerInitialId) {
+                    state.playerFresh = false;
+                    try {
+                        state.player.playVideo();
+                        hideFallback();
+                        showSoundToggle();
+                    } catch (err) {
+                        console.warn("YouTube initial play error", err);
+                    }
+                    return;
+                }
+
+                try {
+                    state.player.loadVideoById({ videoId: item.id });
+                    state.player.playVideo();
+                    hideFallback();
+                    showSoundToggle();
+                } catch (err) {
+                    console.warn("YouTube load error", err);
+                    nextVideo();
+                }
+            };
+
+            // El primer loadVideoById justo después de onReady falla en algunos
+            // navegadores de TV. Se le da un instante al reproductor para
+            // terminar de inicializarse.
+            if (state.playerFresh) {
+                state.playerFresh = false;
+                window.setTimeout(start, 800);
+            } else {
+                start();
             }
         });
     }
@@ -1370,6 +1400,7 @@
     }
 
     function init() {
+        window.__VScreenS = state;
         bindEvents();
         fetchConfig();
     }
