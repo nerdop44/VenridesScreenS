@@ -102,7 +102,10 @@ class VScreenSMaintenanceController(http.Controller):
                 for f in fields_list:
                     try:
                         val = rec[f]
-                        if hasattr(val, "id"):
+                        field = Model._fields.get(f)
+                        if field and field.type == "binary":
+                            row[f] = f"<binario {len(val) if val else 0} bytes>"
+                        elif hasattr(val, "id"):
                             row[f] = {"id": val.id, "display_name": val.display_name}
                         elif isinstance(val, (datetime, )):
                             row[f] = val.isoformat() if val else None

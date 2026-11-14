@@ -41,9 +41,13 @@ def bearer_user():
     token = request.env["vscreens.api.token"].sudo().search(
         [("token", "=", token_value), ("active", "=", True)], limit=1
     )
-    if not token or token.expires_at < fields.Datetime.now():
+    now = fields.Datetime.now()
+    if not token or token.expires_at < now:
         return request.env["res.users"]
-    token.sudo().write({"last_used_at": fields.Datetime.now()})
+    # Evitamos writes concurrentes sobre el mismo token en cada request.
+    # El dato es informativo; lo refrescamos como máximo cada 5 minutos.
+    if not token.last_used_at or (now - token.last_used_at).total_seconds() > 300:
+        token.sudo().write({"last_used_at": now})
     return token.user_id.sudo()
 
 
