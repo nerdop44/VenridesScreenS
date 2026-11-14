@@ -998,10 +998,44 @@ function App() {
             setImpersonatingCompanyId(targetCompany.id);
             setCompany(fullComp);
             setLocalCompany(fullComp);
+            const devRes = await fetch(`${API_BASE}/admin/companies/${targetCompany.id}/devices`, { headers });
+            if (devRes.ok) {
+                const devData = await devRes.json();
+                setCompanyDevices(Array.isArray(devData) ? devData : []);
+            }
             setView('client');
         } catch (err) {
             console.error("Impersonation error", err);
             alert("Error al cargar datos de empresa");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEditCompany = async (targetCompany) => {
+        if (!targetCompany || !targetCompany.id) {
+            setSelectedCompany(null);
+            setCompanyDevices([]);
+            setShowCompanyForm(true);
+            return;
+        }
+        setLoading(true);
+        try {
+            const headers = { 'Authorization': `Bearer ${token}` };
+            const res = await fetch(`${API_BASE}/companies/${targetCompany.id}`, { headers });
+            const fullComp = await res.json();
+            setSelectedCompany(fullComp);
+            const devRes = await fetch(`${API_BASE}/admin/companies/${targetCompany.id}/devices`, { headers });
+            if (devRes.ok) {
+                const devData = await devRes.json();
+                setCompanyDevices(Array.isArray(devData) ? devData : []);
+            } else {
+                setCompanyDevices([]);
+            }
+            setShowCompanyForm(true);
+        } catch (err) {
+            console.error("Company load error", err);
+            setAlertModalData({ title: "Error", message: "No se pudo cargar la empresa: " + err.message, type: "error" });
         } finally {
             setLoading(false);
         }
@@ -1466,7 +1500,7 @@ function App() {
                                     <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestione los clientes y sus planes activos</p>
                                 </div>
                                 {hasPermission('companies', 'create') && (
-                                    <button className="btn btn-primary" style={{ padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { setSelectedCompany(null); setShowCompanyForm(true); }}><Plus size={20} /> Nueva Empresa</button>
+                                    <button className="btn btn-primary" style={{ padding: '0.7rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => handleEditCompany(null)}><Plus size={20} /> Nueva Empresa</button>
                                 )}
                             </div>
                             <div className="table-responsive">
@@ -1487,7 +1521,7 @@ function App() {
                                                 <td style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                                     <div className="action-buttons">
                                                         <Tooltip text="Enviar Email"><button onClick={() => handleOpenEmailModal(c)} className="action-btn" style={{ color: '#a855f7' }}><Mail size={16} /></button></Tooltip>
-                                                        <Tooltip text="Editar Configuración"><button onClick={() => { setSelectedCompany(c); setShowCompanyForm(true); }} className="action-btn edit"><Edit size={16} /></button></Tooltip>
+                                                        <Tooltip text="Editar Configuración"><button onClick={() => handleEditCompany(c)} className="action-btn edit"><Edit size={16} /></button></Tooltip>
                                                         <Tooltip text="Gestionar Contenido TV"><button onClick={() => handleImpersonate(c)} className="action-btn impersonate"><Monitor size={16} /></button></Tooltip>
                                                         <Tooltip text={c.is_active ? "Suspender Servicio" : "Reactivar Servicio"}>
                                                             <button onClick={() => toggleCompanyStatus(c)} className={`action-btn ${c.is_active ? 'suspend' : 'activate'}`} style={{ color: c.is_active ? 'var(--error)' : 'var(--success)' }}>
