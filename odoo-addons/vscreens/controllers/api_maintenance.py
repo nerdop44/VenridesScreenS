@@ -71,13 +71,12 @@ class VScreenSMaintenanceController(http.Controller):
         if failure:
             return failure
         models = request.env["ir.model"].sudo().search([("transient", "=", False)], order="model")
-        tables = []
-        for m in models:
-            tables.append({
-                "model": m.model,
-                "name": m.name,
-                "transient": m.transient,
-            })
+        # El panel legado consume una lista de nombres de tabla/modelo.
+        # Solo exponemos los modelos habilitados para mantenimiento directo.
+        tables = sorted(
+            m.model for m in models
+            if self._allowed_table(m.model)
+        )
         return json_response({"tables": tables})
 
     # ------------------------------------------------------------------

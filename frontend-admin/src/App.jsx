@@ -2914,6 +2914,8 @@ const MaintenancePanel = ({ token }) => {
     const [rowLimit, setRowLimit] = useState(50);
     const [editingRow, setEditingRow] = useState(null);
 
+    const tableNameOf = (t) => (t && typeof t === 'object') ? (t.model || t.name || '') : String(t || '');
+
     const fetchTables = async () => {
         setLoading(true);
         try {
@@ -3061,16 +3063,19 @@ const MaintenancePanel = ({ token }) => {
                                 <button onClick={fetchTables} className="btn btn-primary" style={{ marginTop: '1rem', width: '100%' }}>Reintentar</button>
                             </div>
                         ) : (
-                            tables.filter(t => t.toLowerCase().includes(tableFilter.toLowerCase())).map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => fetchTableData(t)}
-                                    className={`btn ${selectedTable === t ? 'btn-primary' : ''}`}
-                                    style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem', justifyContent: 'flex-start' }}
-                                >
-                                    {t}
-                                </button>
-                            ))
+                            tables.filter(t => tableNameOf(t).toLowerCase().includes(tableFilter.toLowerCase())).map(t => {
+                                const name = tableNameOf(t);
+                                return (
+                                    <button
+                                        key={name}
+                                        onClick={() => fetchTableData(name)}
+                                        className={`btn ${selectedTable === name ? 'btn-primary' : ''}`}
+                                        style={{ textAlign: 'left', fontSize: '0.8rem', padding: '0.6rem', justifyContent: 'flex-start' }}
+                                    >
+                                        {name}
+                                    </button>
+                                );
+                            })
                         )}
                     </div>
                     <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
