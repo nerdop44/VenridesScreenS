@@ -5,7 +5,7 @@ import MobileApp from './MobileApp';
 
 const DEFAULT_API_BASE = import.meta.env.VITE_API_BASE_URL || "https://vscreens-api.inverpave.com";
 const API_BASE = localStorage.getItem('server_url') || DEFAULT_API_BASE;
-const LOGO_URL = import.meta.env.BASE_URL + 'vscreens_logo.png';
+const LOGO_URL = import.meta.env.BASE_URL + 'vscreens_logo.png?v=3.1';
 const TV_BASE_URL = (import.meta.env.VITE_TV_URL || "https://vscreens-tv.inverpave.com").replace(/\/$/, "");
 
 // --- HELPERS ---
@@ -2635,12 +2635,15 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
 };
 
 const VideoEditor = ({ company, onChange }) => {
-    const playlist = Array.isArray(company?.video_playlist) ? company.video_playlist : ['', '', ''];
+    const playlist = Array.isArray(company?.video_playlist) ? company.video_playlist : [];
+    const playlistUrl = (item) => (item && typeof item === 'object') ? (item.url || item.src || '') : (item || '');
     const updatePlaylist = (i, v) => {
-        const next = [...playlist];
-        while (next.length < 3) next.push('');
-        next[i] = v;
-        onChange({ video_playlist: next.slice(0, 3) });
+        const next = [0, 1, 2].map((idx) => {
+            const item = playlist[idx];
+            return (item && typeof item === 'object') ? { ...item } : { url: item || '', title: '' };
+        });
+        next[i] = { ...next[i], url: v };
+        onChange({ video_playlist: next });
     };
 
     return (
@@ -2650,7 +2653,7 @@ const VideoEditor = ({ company, onChange }) => {
                 {[0, 1, 2].map(i => (
                     <div key={i} style={{ marginBottom: '0.8rem' }}>
                         <label style={{ fontSize: '0.6rem' }}>VIDEO {i + 1}</label>
-                        <input value={playlist[i] || ''} onChange={e => updatePlaylist(i, e.target.value)} placeholder="https://youtube..." />
+                        <input value={playlistUrl(playlist[i])} onChange={e => updatePlaylist(i, e.target.value)} placeholder="https://youtube..." />
                     </div>
                 ))}
             </div>
