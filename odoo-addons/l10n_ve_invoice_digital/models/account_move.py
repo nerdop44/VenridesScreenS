@@ -8,6 +8,7 @@ import logging
 import requests
 import json
 import re
+import base64
 import time as time_mod
 
 _logger = logging.getLogger(__name__)
@@ -18,6 +19,8 @@ class EndPoints():
         "emision": "/Emision",
         "ultimo_documento": "/UltimoDocumento",
         "consulta_numeraciones": "/ConsultaNumeraciones",
+        "descarga_archivo": "/DescargaArchivo",
+        "correo_enviar": "/Correo/Enviar",
     }
 
 
@@ -29,6 +32,13 @@ class AccountMove(models.Model):
     show_digital_debit_note = fields.Boolean(string="Mostrar Nota de Débito Digital", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Mostrar Nota de Crédito Digital", compute="_compute_invisible_check", copy=False)
     ocultar_forma_libre_digital = fields.Boolean(related="company_id.ocultar_forma_libre_digital", string="Ocultar Forma Libre")
+    tfhka_pdf = fields.Binary("PDF fiscal TFHKA", attachment=False, copy=False)
+    tfhka_pdf_name = fields.Char("Nombre del PDF fiscal", copy=False)
+    tfhka_email_sent = fields.Char("Correo fiscal enviado a", copy=False)
+    tfhka_pending = fields.Boolean("Fiscal pendiente", copy=False, index=True,
+        help="La factura ya está registrada; la emisión TFHKA se procesa en segundo plano.")
+    tfhka_attempts = fields.Integer("Intentos fiscales", default=0, copy=False)
+    tfhka_last_error = fields.Text("Último error fiscal", copy=False)
 
     def action_open_void_control_wizard(self):
         if self.company_id.ocultar_forma_libre_digital:
@@ -159,7 +169,75 @@ class AccountMove(models.Model):
             num_control_tfhka = resultado.get("numeroControl") if isinstance(resultado, dict) else False
             if num_control_tfhka and hasattr(self, 'correlative'):
                 self.correlative = num_control_tfhka
+            # Después de emitir, asegurar documento: descargar PDF y enviar correo
+            self.tfhka_asegurar_documento(enviar_correo=True)
             return
+
+    def _tfhka_doc_ref(self):
+        self.ensure_one()
+        return {
+            "serie": self.correlative or "",
+            "tipoDocumento": "01",
+            "numeroDocumento": str(self.correlative or ""),
+        }
+
+    def tfhka_descargar_pdf(self, force=False):
+        """Descarga el PDF fiscal de TFHKA y lo cachea en la factura."""
+        self.ensure_one()
+        if self.tfhka_pdf and not force:
+            return base64.b64decode(self.tfhka_pdf)
+        ref = self._tfhka_doc_ref()
+        if not ref["numeroDocumento"]:
+            raise UserError(
+                _("La factura %s aún no tiene número de documento TFHKA.") % self.name)
+        data = self.call_tfhka_api("descarga_archivo", ref)
+        archivo = data.get("archivo") if isinstance(data, dict) else None
+        if not archivo:
+            raise UserError(
+                _("TFHKA no devolvió el archivo del documento %s.") % ref["numeroDocumento"])
+        pdf = base64.b64decode(archivo)
+        filename = "%s_fiscal.pdf" % self.name.replace("/", "-")
+        self.write({
+            "tfhka_pdf": base64.b64encode(pdf),
+            "tfhka_pdf_name": filename,
+        })
+        return pdf
+
+    def tfhka_enviar_correo(self, correos=None):
+        """Pide a TFHKA que envíe el PDF fiscal a los correos indicados."""
+        self.ensure_one()
+        correos = [c.strip() for c in (correos or []) if c and "@" in c]
+        if not correos:
+            correos = [self.partner_id.email] if self.partner_id.email else []
+        if not correos:
+            return False
+        ref = self._tfhka_doc_ref()
+        if not ref["numeroDocumento"]:
+            raise UserError(
+                _("La factura %s aún no tiene número de documento TFHKA.") % self.name)
+        payload = dict(ref, correos=correos)
+        data = self.call_tfhka_api("correo_enviar", payload)
+        self.write({"tfhka_email_sent": ",".join(correos)})
+        return data
+
+    def tfhka_asegurar_documento(self, enviar_correo=False):
+        """Emite si hace falta, guarda el PDF y (opcional) envía el correo."""
+        self.ensure_one()
+        if not self.is_digitalized:
+            return False
+        try:
+            self.tfhka_descargar_pdf()
+        except Exception:
+            _logger.exception(
+                _("No se pudo cachear el PDF fiscal de %s"), self.name)
+        email = self.partner_id.email if self.partner_id else False
+        if enviar_correo and email and self.tfhka_email_sent != email:
+            try:
+                self.tfhka_enviar_correo([email])
+            except Exception:
+                _logger.exception(
+                    _("No se pudo enviar el correo fiscal de %s"), self.name)
+        return True
 
     def get_last_document_number(self, document_type, series):
         payload = {
@@ -527,3 +605,44 @@ class AccountMove(models.Model):
                 record.show_digital_debit_note = False
             elif record.move_type == "out_invoice" and not getattr(record, 'debit_origin_id', False):
                 record.show_digital_invoice = False
+
+    @api.model
+    def _tfhka_process_fiscal_queue(self, limit=20):
+        """Emite en segundo plano las facturas pendientes de TFHKA."""
+        moves = self.sudo().search([
+            ("tfhka_pending", "=", True),
+            ("state", "=", "posted"),
+            ("is_digitalized", "=", False),
+            ("company_id.invoice_digital_tfhka", "=", True),
+        ], limit=limit)
+        for move in moves:
+            try:
+                with self.env.cr.savepoint():
+                    move.tfhka_asegurar_documento(enviar_correo=True)
+                move.write({
+                    "tfhka_pending": not move.is_digitalized,
+                    "tfhka_attempts": move.tfhka_attempts + 1,
+                    "tfhka_last_error": False if move.is_digitalized else move.tfhka_last_error,
+                })
+            except Exception as exc:
+                attempts = move.tfhka_attempts + 1
+                move.write({
+                    "tfhka_attempts": attempts,
+                    "tfhka_last_error": str(exc)[:2000],
+                    "tfhka_pending": attempts < 10,
+                })
+                _logger.exception(
+                    "Reintento fiscal %s falló (%s/%s)", move.name, attempts, 10)
+        return True
+
+    @api.model
+    def _tfhka_refresh_tokens(self):
+        """Renueva proactivamente el token TFHKA de las empresas con facturación digital activa."""
+        companies = self.env["res.company"].sudo().search([("invoice_digital_tfhka", "=", True)])
+        for company in companies:
+            try:
+                company.generate_token_tfhka()
+            except Exception:
+                _logger.exception(
+                    "No se pudo renovar el token TFHKA de %s", company.name)
+        return True

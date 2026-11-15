@@ -36,6 +36,7 @@ Adaptado para Odoo 20 con arquitectura unificada LocVe.
         "views/account_retention_islr.xml",
         "views/stock_picking.xml",
         "wizard/account_retention_alert_views.xml",
+        "data/cron.xml",
     ],
     "installable": True,
     'application': True,
