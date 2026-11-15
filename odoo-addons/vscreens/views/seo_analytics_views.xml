@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         SEO & ANALÍTICA DE LANDING - Vistas para Odoo
+         ============================================================================ -->
+
+    <!-- Modelo de visitas de la landing -->
+    <record id="model_vscreens_analytics_visit" model="ir.model">
+        <field name="name">Visita de Analítica VScreenS</field>
+        <field name="model">vscreens.analytics.visit</field>
+    </record>
+
+    <record id="view_vscreens_analytics_visit_tree" model="ir.ui.view">
+        <field name="name">vscreens.analytics.visit.tree</field>
+        <field name="model">vscreens.analytics.visit</field>
+        <field name="arch" type="xml">
+            <tree string="Visitas de Analítica">
+                <field name="page"/>
+                <field name="referrer"/>
+                <field name="device"/>
+                <field name="visit_date"/>
+                <field name="ip_hash"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_analytics_visit_search" model="ir.ui.view">
+        <field name="name">vscreens.analytics.visit.search</field>
+        <field name="model">vscreens.analytics.visit</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="page"/>
+                <field name="referrer"/>
+                <field name="device"/>
+                <filter name="device_desktop" string="Escritorio" domain="[('device','=','desktop')]"/>
+                <filter name="device_mobile" string="Móvil" domain="[('device','=','mobile')]"/>
+                <filter name="device_tablet" string="Tablet" domain="[('device','=','tablet')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vscreens_analytics_visit" model="ir.actions.act_window">
+        <field name="name">Visitas de Analítica</field>
+        <field name="res_model">vscreens.analytics.visit</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_vscreens_analytics_visit_search"/>
+    </record>
+
+    <!-- SEO Panel - Configuración de SEO para la landing -->
+    <record id="model_vscreens_seo_config" model="ir.model">
+        <field name="name">Configuración SEO VScreenS</field>
+        <field name="model">vscreens.seo.config</field>
+    </record>
+
+    <record id="view_vscreens_seo_config_form" model="ir.ui.view">
+        <field name="name">vscreens.seo.config.form</field>
+        <field name="model">vscreens.seo.config</field>
+        <field name="arch" type="xml">
+            <form string="Configuración SEO">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>SEO de la Landing</h1>
+                    </div>
+                    <group string="Configuración Básica">
+                        <group>
+                            <field name="meta_title"/>
+                            <field name="meta_description"/>
+                            <field name="meta_keywords"/>
+                            <field name="canonical_url"/>
+                            <field name="og_title"/>
+                            <field name="og_description"/>
+                            <field name="og_image" widget="image"/>
+                        </group>
+                    </group>
+                    <group string="Analytics">
+                        <group>
+                            <field name="google_analytics_id"/>
+                            <field name="google_search_console"/>
+                            <field name="facebook_pixel"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vscreens_seo_config" model="ir.actions.act_window">
+        <field name="name">SEO de la Landing</field>
+        <field name="res_model">vscreens.seo.config</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menús en el panel de administrador -->
+    <menuitem id="menu_vscreens_seo" name="SEO &amp; Analítica" parent="web.menu_root" sequence="30"/>
+    <menuitem id="menu_vscreens_analytics_visit" name="Visitas de Analítica" parent="menu_vscreens_seo" action="action_vscreens_analytics_visit" sequence="1"/>
+    <menuitem id="menu_vscreens_seo_config" name="Configuración SEO" parent="menu_vscreens_seo" action="action_vscreens_seo_config" sequence="2"/>
+</odoo>

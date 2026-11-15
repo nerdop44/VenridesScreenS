@@ -40,6 +40,7 @@ Incluye:
         "views/payment_views.xml",
         "views/content_views.xml",
         "views/content_visual_views.xml",
+        "views/seo_analytics_views.xml",
         "views/message_views.xml",
         "views/ticket_views.xml",
         "views/crm_views.xml",
