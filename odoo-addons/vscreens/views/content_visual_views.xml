@@ -9,13 +9,13 @@
         <field name="name">vscreens.playlist.item.tree</field>
         <field name="model">vscreens.playlist.item</field>
         <field name="arch" type="xml">
-            <tree string="Playlist de Videos">
+            <list string="Playlist de Videos">
                 <field name="sequence"/>
                 <field name="title"/>
                 <field name="url"/>
                 <field name="youtube_id" readonly="1"/>
                 <field name="is_active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -48,7 +48,7 @@
         <field name="name">vscreens.scheduled.video.item.tree</field>
         <field name="model">vscreens.scheduled.video.item</field>
         <field name="arch" type="xml">
-            <tree string="Videos Programados">
+            <list string="Videos Programados">
                 <field name="sequence"/>
                 <field name="title"/>
                 <field name="url"/>
@@ -56,7 +56,7 @@
                 <field name="end_datetime"/>
                 <field name="duration"/>
                 <field name="is_active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -92,14 +92,14 @@
         <field name="name">vscreens.sidebar.item.tree</field>
         <field name="model">vscreens.sidebar.item</field>
         <field name="arch" type="xml">
-            <tree string="Contenido de Barra Lateral">
+            <list string="Contenido de Barra Lateral">
                 <field name="sequence"/>
                 <field name="label"/>
                 <field name="value"/>
                 <field name="icon"/>
                 <field name="color"/>
                 <field name="is_active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -134,13 +134,13 @@
         <field name="name">vscreens.bottom.bar.item.tree</field>
         <field name="model">vscreens.bottom.bar.item</field>
         <field name="arch" type="xml">
-            <tree string="Contenido de Barra Inferior">
+            <list string="Contenido de Barra Inferior">
                 <field name="sequence"/>
                 <field name="label"/>
                 <field name="value"/>
                 <field name="color"/>
                 <field name="is_active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 

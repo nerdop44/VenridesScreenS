@@ -53,7 +53,7 @@
         <field name="name">vscreens.device.activation.tree</field>
         <field name="model">vscreens.device.activation</field>
         <field name="arch" type="xml">
-            <tree string="Dispositivos Activados">
+            <list string="Dispositivos Activados">
                 <field name="device_uuid"/>
                 <field name="device_name"/>
                 <field name="device_type"/>
@@ -61,7 +61,7 @@
                 <field name="is_active" widget="boolean_toggle"/>
                 <field name="activated_at"/>
                 <field name="last_ping_at"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -126,13 +126,13 @@
         <field name="name">vscreens.download.stat.tree</field>
         <field name="model">vscreens.download.stat</field>
         <field name="arch" type="xml">
-            <tree string="Estadísticas de Descarga">
+            <list string="Estadísticas de Descarga">
                 <field name="product_name"/>
                 <field name="downloaded_at"/>
                 <field name="ip_address"/>
                 <field name="is_authorized" widget="boolean_toggle"/>
                 <field name="company_id"/>
-            </tree>
+            </list>
         </field>
     </record>
 
