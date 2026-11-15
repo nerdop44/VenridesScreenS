@@ -40,7 +40,7 @@ services:
         condition: service_healthy
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/vscreens-entrypoint.sh:ro
-      - ../../odoo-addons:/mnt/extra-addons:ro
+      - ../../odoo-addons:/mnt/extra-addons:rw
       - vscreens_odoo_data:/var/lib/odoo
       - ../../releases:/opt/vscreens/releases:ro
     networks:
