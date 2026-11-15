@@ -55,8 +55,9 @@ class AccountMove(models.Model):
         series = ""
         if hasattr(self.company_id, 'group_sales_invoicing_series') and self.company_id.group_sales_invoicing_series:
             if hasattr(self.journal_id, 'series_correlative_sequence_id') and self.journal_id.series_correlative_sequence_id:
-                if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
-                    series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
+                seq = self.journal_id.series_correlative_sequence_id
+                if seq and seq.prefix:
+                    series = re.sub(r'[^a-zA-Z0-9]', '', seq.prefix)
                 else:
                     raise UserError(_("La serie seleccionada no está configurada."))
             
