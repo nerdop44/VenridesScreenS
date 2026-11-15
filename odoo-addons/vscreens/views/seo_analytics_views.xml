@@ -14,13 +14,13 @@
         <field name="name">vscreens.analytics.visit.tree</field>
         <field name="model">vscreens.analytics.visit</field>
         <field name="arch" type="xml">
-            <tree string="Visitas de Analítica">
+            <list string="Visitas de Analítica">
                 <field name="page"/>
                 <field name="referrer"/>
                 <field name="device"/>
                 <field name="visit_date"/>
                 <field name="ip_hash"/>
-            </tree>
+            </list>
         </field>
     </record>
 
