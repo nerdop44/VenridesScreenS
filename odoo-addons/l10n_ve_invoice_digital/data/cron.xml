@@ -9,8 +9,7 @@
             <field name="code">model._tfhka_process_fiscal_queue(20)</field>
             <field name="interval_number">3</field>
             <field name="interval_type">minutes</field>
-            <field name="numbercall">-1</field>
-            <field name="doall" eval="False"/>
+
             <field name="active" eval="True"/>
         </record>
 
@@ -22,8 +21,7 @@
             <field name="code">model._tfhka_refresh_tokens()</field>
             <field name="interval_number">6</field>
             <field name="interval_type">hours</field>
-            <field name="numbercall">-1</field>
-            <field name="doall" eval="False"/>
+
             <field name="active" eval="True"/>
         </record>
     </data>
