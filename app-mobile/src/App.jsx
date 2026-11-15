@@ -960,6 +960,9 @@ function App() {
             setSelectedCompany(null);
             fetchInitialData();
             setAlertModalData({ title: "Éxito", message: "Empresa guardada correctamente", type: "success" });
+
+            // Sincronizar al previsualizador de TV
+            try { sendToPreview(companyData); } catch (e) { console.error("Preview sync error:", e); }
         } catch (err) {
             setAlertModalData({ title: "Error", message: "Error al guardar empresa: " + err.message, type: "error" });
         }
