@@ -2351,9 +2351,14 @@ const OperatorView = ({ company, token, onLogout }) => {
             <div className="glass-card" style={{ maxWidth: '800px', margin: '2rem auto' }}>
                 <h3>Gestión de Contenido TV</h3>
                 <div style={{ margin: '1.5rem 0' }}>
-                    <label>URL de YouTube / Contenido Prioritario</label>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <input value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/..." style={{ flex: 1 }} />
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <YouTubeInput
+                            label="URL de YouTube / Contenido Prioritario"
+                            value={youtubeUrl}
+                            onChange={setYoutubeUrl}
+                            placeholder="https://youtube.com/..."
+                            style={{ flex: 1 }}
+                        />
                         <button onClick={handleSave} className="btn btn-primary" disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
                     </div>
                 </div>
@@ -3578,6 +3583,100 @@ const SalesPanel = ({ token }) => {
     );
 };
 
+// --- HELPER: extracción de ID de YouTube (misma lógica que client.tv y YouTubePlayer) ---
+const extractYoutubeId = (url) => {
+    if (!url) return null;
+    const value = String(url).trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
+    const match = value.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
+};
+
+// --- COMPONENTE REUTILIZABLE: entrada de URL de YouTube con validación y preview ---
+const YouTubeInput = ({ value, onChange, label, placeholder, disabled, style }) => {
+    const [videoId, setVideoId] = useState(null);
+    const [title, setTitle] = useState(null);
+    const [valid, setValid] = useState(false);
+
+    useEffect(() => {
+        const id = extractYoutubeId(value);
+        setVideoId(id);
+        setValid(!!id);
+    }, [value]);
+
+    // Título opcional vía oEmbed de YouTube (se ignora silenciosamente si falla/CORS)
+    useEffect(() => {
+        if (!videoId) {
+            setTitle(null);
+            return;
+        }
+        fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`, { mode: 'cors' })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => data && data.title ? setTitle(data.title) : null)
+            .catch(() => { });
+    }, [videoId]);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', ...style }}>
+            {label && (
+                <label style={{ fontSize: '0.65rem', opacity: 0.65, marginBottom: 0, fontWeight: '600' }}>{label}</label>
+            )}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                    disabled={disabled}
+                    placeholder={placeholder || 'https://youtube.com/...'}
+                    style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '0.7rem 0.7rem 0.7rem 2.7rem',
+                        border: `1px solid ${!disabled && value && !valid ? '#ef4444' : valid ? '#10b981' : 'var(--border-color)'}`,
+                        borderRadius: '6px',
+                        background: 'rgba(0,0,0,0.25)',
+                        color: '#fff',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                        boxShadow: !disabled && value && !valid ? '0 0 0 3px rgba(239,68,68,0.2)' : valid ? '0 0 0 3px rgba(16,185,129,0.2)' : 'none'
+                    }}
+                />
+                {valid && videoId && (
+                    <div style={{
+                        position: 'absolute',
+                        left: '0.55rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 22,
+                        height: 22,
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        background: '#000'
+                    }}>
+                        <img src={`https://img.youtube.com/vi/${videoId}/default.jpg`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                )}
+            </div>
+            {!disabled && value && !valid && (
+                <p style={{ margin: 0, fontSize: '0.7rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <AlertCircle size={12} strokeWidth={2} /> URL de YouTube inválida
+                </p>
+            )}
+            {valid && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: '#10b981' }}>
+                    <CheckCircle size={12} strokeWidth={2} /> URL válida{title && ` · ${title}`}
+                </div>
+            )}
+            {valid && videoId && (
+                <div style={{ marginTop: '0.5rem', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', background: '#000' }}>
+                    <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt="Vista previa del video" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                </div>
+            )}
+        </div>
+    );
+};
+
 const MasterAdManager = ({ token }) => {
     const [ad, setAd] = useState({ video_playlist: ['', '', ''], ticker_messages: [], ad_scripts: [] });
     const [loading, setLoading] = useState(false);
@@ -3639,8 +3738,12 @@ const MasterAdManager = ({ token }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                         {[0, 1, 2].map(idx => (
                             <div key={idx}>
-                                <label style={{ fontSize: '0.65rem', opacity: 0.6 }}>URL Video {idx + 1}</label>
-                                <input value={ad.video_playlist[idx] || ''} onChange={e => updateVideo(idx, e.target.value)} placeholder="https://youtube.com/..." />
+                                <YouTubeInput
+                                    label={`URL Video ${idx + 1}`}
+                                    value={ad.video_playlist[idx] || ''}
+                                    onChange={v => updateVideo(idx, v)}
+                                    placeholder="https://youtube.com/watch?v=..."
+                                />
                             </div>
                         ))}
                     </div>
@@ -3941,8 +4044,12 @@ const VideoEditor = ({ company, onChange }) => {
                 <div className="section-title"><PlaySquare size={18} /> Playlist (3 URLs)</div>
                 {[0, 1, 2].map(i => (
                     <div key={i} style={{ marginBottom: '0.8rem' }}>
-                        <label style={{ fontSize: '0.6rem' }}>VIDEO {i + 1}</label>
-                        <input value={playlist[i] || ''} onChange={e => updatePlaylist(i, e.target.value)} placeholder="https://youtube..." />
+                        <YouTubeInput
+                            label={`VIDEO ${i + 1}`}
+                            value={playlist[i] || ''}
+                            onChange={v => updatePlaylist(i, v)}
+                            placeholder="https://youtube.com/watch?v=..."
+                        />
                     </div>
                 ))}
             </div>
