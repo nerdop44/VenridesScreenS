@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         ENLACES DE SEGUIMIENTO (TRACKING LINKS) - Ventas y Marketing de Afiliados
+         ============================================================================ -->
+
+    <record id="model_vscreens_tracking_link" model="ir.model">
+        <field name="name">Enlace de Seguimiento VScreenS</field>
+        <field name="model">vscreens.tracking.link</field>
+    </record>
+
+    <record id="view_vscreens_tracking_link_tree" model="ir.ui.view">
+        <field name="name">vscreens.tracking.link.tree</field>
+        <field name="model">vscreens.tracking.link</field>
+        <field name="arch" type="xml">
+            <list string="Enlaces de Seguimiento">
+                <field name="name"/>
+                <field name="short_code"/>
+                <field name="url"/>
+                <field name="promotion_id"/>
+                <field name="affiliate_id"/>
+                <field name="clicks"/>
+                <field name="conversions"/>
+                <field name="is_active"/>
+                <field name="created_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vscreens_tracking_link_search" model="ir.ui.view">
+        <field name="name">vscreens.tracking.link.search</field>
+        <field name="model">vscreens.tracking.link</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="short_code"/>
+                <field name="url"/>
+                <field name="promotion_id"/>
+                <field name="affiliate_id"/>
+                <filter name="active" string="Activos" domain="[('is_active', '=', True)]"/>
+                <filter name="inactive" string="Inactivos" domain="[('is_active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_vscreens_tracking_link_form" model="ir.ui.view">
+        <field name="name">vscreens.tracking.link.form</field>
+        <field name="model">vscreens.tracking.link</field>
+        <field name="arch" type="xml">
+            <form string="Enlace de Seguimiento">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group string="Enlace">
+                        <group>
+                            <field name="short_code"/>
+                            <field name="url"/>
+                            <field name="is_active"/>
+                        </group>
+                        <group>
+                            <field name="promotion_id"/>
+                            <field name="affiliate_id"/>
+                            <field name="clicks" readonly="1"/>
+                            <field name="conversions" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Estadísticas">
+                        <group>
+                            <field name="clicks" readonly="1"/>
+                            <field name="conversions" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Información">
+                        <group>
+                            <field name="created_at" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vscreens_tracking_link" model="ir.actions.act_window">
+        <field name="name">Enlaces de Seguimiento</field>
+        <field name="res_model">vscreens.tracking.link</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vscreens_tracking_link_search"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_vscreens_tracking_links"
+        name="Enlaces de Seguimiento"
+        parent="vscreens.menu_vscreens_crm"
+        action="action_vscreens_tracking_link"
+        sequence="50"/>
+</odoo>

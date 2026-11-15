@@ -15,6 +15,7 @@ from . import res_config_settings
 from . import vscreens_benry
 from . import vscreens_email_template
 from . import vscreens_promotion
+from . import vscreens_tracking_link
 from . import vscreens_affiliate
 from . import vscreens_calendar_activity
 from . import vscreens_free_plan_usage

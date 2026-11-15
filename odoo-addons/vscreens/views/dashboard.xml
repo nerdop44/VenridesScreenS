@@ -1,9 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ============================================================================
+         DASHBOARD / ESTADÍSTICAS - Vistas analíticas de VScreenS
+         ============================================================================ -->
+
     <record id="action_vscreens_dashboard" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
         <field name="res_model">vscreens.company</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">kanban,list,form,graph,pivot</field>
         <field name="search_view_id" ref="view_vscreens_company_search"/>
         <field name="context">{'search_default_group_plan': 1}</field>
+    </record>
+
+    <record id="view_vscreens_company_graph_plan" model="ir.ui.view">
+        <field name="name">vscreens.company.graph.plan</field>
+        <field name="model">vscreens.company</field>
+        <field name="arch" type="xml">
+            <graph string="Empresas por Plan">
+                <field name="plan_code" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_vscreens_company_pivot" model="ir.ui.view">
+        <field name="name">vscreens.company.pivot</field>
+        <field name="model">vscreens.company</field>
+        <field name="arch" type="xml">
+            <pivot string="Empresas y Pantallas">
+                <field name="plan_code" type="row"/>
+                <field name="is_active" type="col"/>
+                <field name="total_screens" type="measure"/>
+                <field name="id" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_vscreens_payment_graph" model="ir.ui.view">
+        <field name="name">vscreens.payment.graph</field>
+        <field name="model">vscreens.payment</field>
+        <field name="arch" type="xml">
+            <graph string="Ingresos por Mes" type="line">
+                <field name="payment_date" interval="month" type="row"/>
+                <field name="amount" type="measure"/>
+            </graph>
+        </field>
     </record>
 </odoo>
