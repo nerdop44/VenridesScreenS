@@ -36,7 +36,7 @@
                                 <div class="o_kanban_card_subtitle">
                                     <span class="badge"><field name="plan_id"/></span>
                                     <span t-if="is_active" class="badge-status">ACTIVA</span>
-                                    <span t-if="not is_active" class="badge-status suspended">SUSPENDIDA</span>
+                                    <span t-if="!is_active" class="badge-status suspended">SUSPENDIDA</span>
                                 </div>
                                 <div class="o_kanban_card_stats">
                                     <span>Pantallas: <field name="active_screens"/>/<field name="total_screens"/></span>
