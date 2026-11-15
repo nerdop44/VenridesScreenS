@@ -92,7 +92,7 @@
     </record>
 
     <!-- Menús en el panel de administrador -->
-    <menuitem id="menu_vscreens_seo" name="SEO &amp; Analítica" parent="web.menu_root" sequence="30"/>
+    <menuitem id="menu_vscreens_seo" name="SEO &amp; Analítica" sequence="30"/>
     <menuitem id="menu_vscreens_analytics_visit" name="Visitas de Analítica" parent="menu_vscreens_seo" action="action_vscreens_analytics_visit" sequence="1"/>
     <menuitem id="menu_vscreens_seo_config" name="Configuración SEO" parent="menu_vscreens_seo" action="action_vscreens_seo_config" sequence="2"/>
 </odoo>
