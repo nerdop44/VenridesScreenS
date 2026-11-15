@@ -59,12 +59,14 @@
         <field name="model">vscreens.device.activation</field>
         <field name="arch" type="xml">
             <search>
-                <field name="device_uuid"/>
-                <field name="device_name"/>
-                <field name="company_id"/>
-                <field name="is_active"/>
-                <filter name="active" string="Activos" domain="[('is_active','=',True)]"/>
-                <filter name="inactive" string="Inactivos" domain="[('is_active','=',False)]"/>
+                <group name="group_filter">
+                    <field name="device_uuid"/>
+                    <field name="device_name"/>
+                    <field name="company_id"/>
+                    <field name="is_active"/>
+                    <filter name="active" string="Activos" domain="[('is_active','=',True)]"/>
+                    <filter name="inactive" string="Inactivos" domain="[('is_active','=',False)]"/>
+                </group>
                 <group name="group_by" string="Agrupar por">
                     <filter name="group_device_type" string="Tipo" domain="[]" context="{'group_by': 'device_type'}"/>
                     <filter name="group_active" string="Estado" domain="[]" context="{'group_by': 'is_active'}"/>
