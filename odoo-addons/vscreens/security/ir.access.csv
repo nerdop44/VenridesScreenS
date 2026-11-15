@@ -99,6 +99,6 @@ access_vscreens_design_settings_admin,access_vscreens_design_settings_admin,vscr
 access_vscreens_device_activation_admin,access_vscreens_device_activation_admin,vscreens.device.activation,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
 access_vscreens_download_stat_admin,access_vscreens_download_stat_admin,vscreens.download.stat,vscreens.group_vscreens_company_admin,r,"[('company_id','=',user.vscreens_company_id.id)]"
 access_vscreens_seo_config_master,access_vscreens_seo_config_master,vscreens.seo.config,vscreens.group_vscreens_master,crud,
-access_vscreens_seo_config_admin,access_vscreens_seo_config_admin,vscreens.seo.config,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_seo_config_admin,access_vscreens_seo_config_admin,vscreens.seo.config,vscreens.group_vscreens_company_admin,crud,
 access_vscreens_analytics_visit_master,access_vscreens_analytics_visit_master,vscreens.analytics.visit,vscreens.group_vscreens_master,r,
-access_vscreens_analytics_visit_admin,access_vscreens_analytics_visit_admin,vscreens.analytics.visit,vscreens.group_vscreens_company_admin,r,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_analytics_visit_admin,access_vscreens_analytics_visit_admin,vscreens.analytics.visit,vscreens.group_vscreens_company_admin,r,
