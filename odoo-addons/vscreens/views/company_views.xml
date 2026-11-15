@@ -21,7 +21,7 @@
         <field name="name">vscreens.company.kanban</field>
         <field name="model">vscreens.company</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="plan_id" class="o_kanban_small">
+            <kanban default_group_by="plan_id">
                 <field name="name"/>
                 <field name="plan_id"/>
                 <field name="total_screens"/>
@@ -34,12 +34,12 @@
                             <div class="o_kanban_card_content">
                                 <strong class="o_kanban_record_title"><field name="name"/></strong>
                                 <div class="o_kanban_card_subtitle">
-                                    <span class="badge"><t t-esc="plan_id and plan_id.name or 'Free'"/></span>
+                                    <span class="badge"><field name="plan_id"/></span>
                                     <span t-if="is_active" class="badge-status">ACTIVA</span>
                                     <span t-if="not is_active" class="badge-status suspended">SUSPENDIDA</span>
                                 </div>
                                 <div class="o_kanban_card_stats">
-                                    <span><i class="fa fa-tv"/> Pantallas: <field name="active_screens"/>/<field name="total_screens"/></span>
+                                    <span>Pantallas: <field name="active_screens"/>/<field name="total_screens"/></span>
                                     <span t-if="valid_until" class="valid-until">Vence: <field name="valid_until"/></span>
                                 </div>
                             </div>
