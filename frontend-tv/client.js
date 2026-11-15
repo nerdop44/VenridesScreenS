@@ -1397,6 +1397,39 @@
             state.lastUpdated = null;
             fetchConfig();
         });
+
+        // Control de YouTube por control remoto de TV (teclas de media)
+        // Permite al cliente cambiar video usando el control del TV/dispositivo
+        window.addEventListener("keydown", function (e) {
+            if (!state.player || !state.playerReady) return;
+            var code = e.code || "";
+            var key = e.key || "";
+            // Siguiente video
+            if (code === "MediaNextTrack" || key === "Next" || key === "ArrowRight") {
+                e.preventDefault();
+                nextVideo();
+                return;
+            }
+            // Video anterior
+            if (code === "MediaPreviousTrack" || key === "Previous" || key === "ArrowLeft") {
+                e.preventDefault();
+                if (state.queue.length) {
+                    state.videoIndex = (state.videoIndex - 1 + state.queue.length) % state.queue.length;
+                    playCurrent();
+                }
+                return;
+            }
+            // Play / Pausa
+            if (code === "MediaPlayPause" || key === "Play" || key === " ") {
+                e.preventDefault();
+                try {
+                    var ps = state.player.getPlayerState();
+                    if (ps === 1) { state.player.pauseVideo(); }
+                    else if (ps === 2) { state.player.playVideo(); }
+                } catch (err) { console.warn("YT play/pause error", err); }
+                return;
+            }
+        });
     }
 
     function init() {
