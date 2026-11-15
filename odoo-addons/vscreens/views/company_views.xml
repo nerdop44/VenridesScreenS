@@ -172,6 +172,30 @@
                         <page string="📜 Historial">
                             <field name="message_ids" readonly="1"/>
                         </page>
+                        <page string="📺 TV en Vivo">
+                            <group col="1">
+                                <div class="tv-preview-container" style="margin-top: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                        <h3 style="margin: 0; font-size: 1rem;">📺 Previsualización de TV en Tiempo Real</h3>
+                                        <button type="button" class="btn btn-sm btn-primary btn-sync-tv-preview" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                            🔄 Sincronizar Ahora
+                                        </button>
+                                    </div>
+                                    <div style="width: 100%; height: 420px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #333; position: relative;">
+                                        <iframe
+                                            id="tv-preview-iframe"
+                                            src="about:blank"
+                                            style="width: 100%; height: 100%; border: none; display: block;"
+                                            title="TV Preview"
+                                        ></iframe>
+                                    </div>
+                                    <p class="oe_form_helper_text" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                                        La previsualización se actualiza automáticamente al guardar cambios en la empresa.
+                                        Usa "Sincronizar Ahora" para forzar una actualización inmediata.
+                                    </p>
+                                </div>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
             </form>
