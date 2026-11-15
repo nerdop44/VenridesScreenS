@@ -15,7 +15,6 @@
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
         <field name="list_price">0.0</field>
-        <field name="detailed_type">consu</field>
         <field name="description">
 VScreenS App Móvil - Panel de Control para Clientes
 
@@ -40,7 +39,6 @@ Instrucciones:
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
         <field name="list_price">0.0</field>
-        <field name="detailed_type">consu</field>
         <field name="description">
 VScreenS App TV - Reproductor de Señalización Digital para Android TV
 
@@ -67,7 +65,7 @@ Control remoto: La app es compatible con controles remotos de TV
         <field name="purchase_ok">False</field>
         <field name="is_digital">False</field>
         <field name="list_price">0.0</field>
-        <field name="detailed_type">service</field>
+        
         <field name="description">
 Plan gratuito de VScreenS.
 Incluye: 2 pantallas, contenido publicitario básico, programación de publicidad, panel web completo, publicidad de terceros, soporte Helpdesk.
@@ -83,7 +81,7 @@ Duración de prueba: 7 días.
         <field name="purchase_ok">False</field>
         <field name="is_digital">False</field>
         <field name="list_price">30.0</field>
-        <field name="detailed_type">service</field>
+        
         <field name="description">
 Plan Básico de VScreenS.
 Incluye: 5 pantallas, contenido publicitario, sin publicidad de terceros, programación avanzada, panel web completo, multi-ubicación, soporte Helpdesk.
@@ -99,7 +97,7 @@ Precio: $30 USD/mes.
         <field name="purchase_ok">False</field>
         <field name="is_digital">False</field>
         <field name="list_price">50.0</field>
-        <field name="detailed_type">service</field>
+        
         <field name="description">
 Plan Plus de VScreenS.
 Incluye: 10 pantallas, contenido publicitario, sin publicidad de terceros, panel web y app móvil completo, multi-ubicación, capacitación personalizada, soporte dedicado.
@@ -115,7 +113,7 @@ Precio: $50 USD/mes.
         <field name="purchase_ok">False</field>
         <field name="is_digital">False</field>
         <field name="list_price">80.0</field>
-        <field name="detailed_type">service</field>
+        
         <field name="description">
 Plan Ultra de VScreenS.
 Incluye: 20 pantallas, contenido publicitario, sin publicidad de terceros, panel web y app móvil completo, multi-ubicación, capacitación personalizada, soporte dedicado.
