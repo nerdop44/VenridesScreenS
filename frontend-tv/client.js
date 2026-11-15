@@ -1398,20 +1398,191 @@
             fetchConfig();
         });
 
-        // Control de YouTube por control remoto de TV (teclas de media)
-        // Permite al cliente cambiar video usando el control del TV/dispositivo
+        /* ========================================================================
+           CONTROL REMOTO DE TV - TODAS LAS OPCIONES NATIVAS
+           Permite control completo desde el control remoto del TV/dispositivo
+           sin perder barras ni funcionalidades del sistema
+           ======================================================================== */
+        var navIndex = -1;
+        var navItems = [];
+
+        function refreshNavItems() {
+            navItems = Array.from(document.querySelectorAll(
+                "button, a, input, select, [role='button'], [tabindex='0'], .nav-item, .menu-item, .sidebar-item"
+            )).filter(function (el) {
+                var r = el.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+        }
+
+        function navigateNav(delta) {
+            if (navItems.length === 0) { refreshNavItems(); }
+            if (navItems.length === 0) return;
+            navIndex = (navIndex + delta + navItems.length) % navItems.length;
+            var el = navItems[navIndex];
+            if (el) {
+                el.focus();
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        }
+
+        function activateNav() {
+            if (navItems.length === 0 || navIndex < 0) return;
+            var el = navItems[navIndex];
+            if (el) {
+                var evt = new MouseEvent("click", { bubbles: true, cancelable: true, view: window });
+                el.dispatchEvent(evt);
+            }
+        }
+
         window.addEventListener("keydown", function (e) {
-            if (!state.player || !state.playerReady) return;
             var code = e.code || "";
-            var key = e.key || "";
+            var key = (e.key || "").toLowerCase();
+
+            /* ---------- Navegación con flechas ---------- */
+            if (code === "ArrowDown" || key === "arrowdown") {
+                e.preventDefault();
+                refreshNavItems();
+                navigateNav(1);
+                return;
+            }
+            if (code === "ArrowUp" || key === "arrowup") {
+                e.preventDefault();
+                refreshNavItems();
+                navigateNav(-1);
+                return;
+            }
+            if (code === "ArrowRight" || key === "arrowright") {
+                e.preventDefault();
+                // Si hay video de YouTube, siguiente
+                if (state.player && state.playerReady) {
+                    nextVideo();
+                } else {
+                    navigateNav(1);
+                }
+                return;
+            }
+            if (code === "ArrowLeft" || key === "arrowleft") {
+                e.preventDefault();
+                if (state.player && state.playerReady) {
+                    if (state.queue.length) {
+                        state.videoIndex = (state.videoIndex - 1 + state.queue.length) % state.queue.length;
+                        playCurrent();
+                    }
+                } else {
+                    navigateNav(-1);
+                }
+                return;
+            }
+
+            /* ---------- Selección / Enter ---------- */
+            if (code === "Enter" || key === "enter" || code === "NumpadEnter") {
+                e.preventDefault();
+                activateNav();
+                return;
+            }
+
+            /* ---------- Retroceso / Back ---------- */
+            if (code === "Backspace" || key === "backspace" || code === "Escape" || key === "escape" || key === "back") {
+                e.preventDefault();
+                var btnBack = Array.from(document.querySelectorAll("button, a")).find(function (el) {
+                    var t = (el.textContent || "").toLowerCase();
+                    return t.indexOf("atrás") !== -1 || t.indexOf("back") !== -1 || t.indexOf("volver") !== -1;
+                });
+                if (btnBack) { btnBack.click(); return; }
+                window.history.back();
+                return;
+            }
+
+            /* ---------- Inicio / Home ---------- */
+            if (code === "Home" || key === "home") {
+                e.preventDefault();
+                window.location.href = window.location.origin + "/?preview=" + (state.previewCompanyId || "");
+                return;
+            }
+
+            /* ---------- Búsqueda ---------- */
+            if (code === "Search" || key === "search" || (e.ctrlKey && key === "f")) {
+                e.preventDefault();
+                var btnSearch = Array.from(document.querySelectorAll("button, a")).find(function (el) {
+                    var t = (el.textContent || "").toLowerCase();
+                    return t.indexOf("buscar") !== -1 || t.indexOf("search") !== -1;
+                });
+                if (btnSearch) { btnSearch.click(); }
+                var inp = document.querySelector("input[type='search'], input[placeholder*='buscar' i], input[placeholder*='search' i]");
+                if (inp) { inp.focus(); }
+                return;
+            }
+
+            /* ---------- Búsqueda por voz ---------- */
+            if (key === "v" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (typeof webkitSpeechRecognition !== "undefined" || typeof SpeechRecognition !== "undefined") {
+                    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    var rec = new SpeechRecognition();
+                    rec.lang = "es-VE";
+                    rec.interimResults = false;
+                    rec.maxAlternatives = 1;
+                    rec.onresult = function (event) {
+                        var texto = event.results[0][0].transcript;
+                        console.log("Voz detectada:", texto);
+                        var inp = document.querySelector("input[type='search'], input[placeholder*='buscar' i]");
+                        if (inp) { inp.value = texto; inp.dispatchEvent(new Event("input", { bubbles: true })); }
+                        var btn = Array.from(document.querySelectorAll("button")).find(function (b) {
+                            return (b.textContent || "").toLowerCase().indexOf("buscar") !== -1;
+                        });
+                        if (btn) btn.click();
+                    };
+                    rec.onerror = function () { console.warn("Error de reconocimiento de voz"); };
+                    rec.start();
+                } else {
+                    console.warn("SpeechRecognition no disponible en este navegador");
+                }
+                return;
+            }
+
+            /* ---------- Control de volumen ---------- */
+            if (code === "VolumeUp" || key === "volumeup") {
+                e.preventDefault();
+                try {
+                    if (state.player && state.playerReady) {
+                        var vol = state.player.getVolume();
+                        state.player.setVolume(Math.min(100, vol + 10));
+                    }
+                } catch (err) { console.warn("Volumen error", err); }
+                return;
+            }
+            if (code === "VolumeDown" || key === "volumedown") {
+                e.preventDefault();
+                try {
+                    if (state.player && state.playerReady) {
+                        var vol = state.player.getVolume();
+                        state.player.setVolume(Math.max(0, vol - 10));
+                    }
+                } catch (err) { console.warn("Volumen error", err); }
+                return;
+            }
+            if (code === "VolumeMute" || key === "volumemute") {
+                e.preventDefault();
+                try {
+                    if (state.player && state.playerReady) {
+                        state.player.isMuted() ? state.player.unMute() : state.player.mute();
+                    }
+                } catch (err) { console.warn("Mute error", err); }
+                return;
+            }
+
+            /* ---------- Control de reproducción YouTube ---------- */
+            if (!state.player || !state.playerReady) return;
+
             // Siguiente video
-            if (code === "MediaNextTrack" || key === "Next" || key === "ArrowRight") {
+            if (code === "MediaNextTrack" || key === "next") {
                 e.preventDefault();
                 nextVideo();
                 return;
             }
             // Video anterior
-            if (code === "MediaPreviousTrack" || key === "Previous" || key === "ArrowLeft") {
+            if (code === "MediaPreviousTrack" || key === "previous") {
                 e.preventDefault();
                 if (state.queue.length) {
                     state.videoIndex = (state.videoIndex - 1 + state.queue.length) % state.queue.length;
@@ -1420,13 +1591,38 @@
                 return;
             }
             // Play / Pausa
-            if (code === "MediaPlayPause" || key === "Play" || key === " ") {
+            if (code === "MediaPlayPause" || key === "play" || key === " ") {
                 e.preventDefault();
                 try {
                     var ps = state.player.getPlayerState();
                     if (ps === 1) { state.player.pauseVideo(); }
                     else if (ps === 2) { state.player.playVideo(); }
+                    else if (ps === -1 || ps === 5) { state.player.playVideo(); }
                 } catch (err) { console.warn("YT play/pause error", err); }
+                return;
+            }
+            // Detener
+            if (code === "MediaStop" || key === "stop") {
+                e.preventDefault();
+                try { state.player.stopVideo(); } catch (err) { console.warn("YT stop error", err); }
+                return;
+            }
+            // Teclas numéricas 1-9 para ir a video de la cola
+            var num = parseInt(key);
+            if (!isNaN(num) && num >= 1 && num <= 9 && state.queue && state.queue.length) {
+                e.preventDefault();
+                var idx = num - 1;
+                if (idx < state.queue.length) {
+                    state.videoIndex = idx;
+                    playCurrent();
+                }
+                return;
+            }
+            // Tecla 0 para video al final
+            if (key === "0" && state.queue && state.queue.length) {
+                e.preventDefault();
+                state.videoIndex = state.queue.length - 1;
+                playCurrent();
                 return;
             }
         });
