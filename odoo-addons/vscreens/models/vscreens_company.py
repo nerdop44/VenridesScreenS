@@ -1,4 +1,5 @@
 from datetime import timedelta
+import json
 import logging
 
 from odoo import api, fields, models
@@ -414,7 +415,24 @@ class VScreenSCompany(models.Model):
             }
 
         if vals:
-            self.write(vals)
+            # Usar SQL directo para evitar recursión infinita con el método write sobreescrito
+            self.env.cr.execute(
+                """UPDATE vscreens_company SET
+                    video_playlist = %s,
+                    scheduled_videos = %s,
+                    sidebar_content = %s,
+                    bottom_bar_content = %s,
+                    design_settings = %s
+                WHERE id = %s""",
+                [
+                    json.dumps(vals.get('video_playlist', [])),
+                    json.dumps(vals.get('scheduled_videos', [])),
+                    json.dumps(vals.get('sidebar_content', [])),
+                    json.dumps(vals.get('bottom_bar_content', {'items': []})),
+                    json.dumps(vals.get('design_settings', {})),
+                    self.id,
+                ],
+            )
 
     @api.model
     def create(self, vals):
