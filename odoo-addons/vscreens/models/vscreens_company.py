@@ -113,6 +113,11 @@ class VScreenSCompany(models.Model):
         "company_id",
         string="Ajustes de Diseño",
     )
+    device_ids = fields.One2many(
+        "vscreens.device",
+        "company_id",
+        string="Dispositivos",
+    )
 
     auto_notification_settings = fields.Json(
         string="Notificaciones automáticas",
@@ -326,6 +331,102 @@ class VScreenSCompany(models.Model):
             entry["url"] = url
             active.append(entry)
         return active
+
+    def _sync_vsm_to_json(self):
+        """Sincroniza los One2many visuales a los campos JSON que lee la TV."""
+        self.ensure_one()
+        vals = {}
+
+        # Playlist
+        if self.playlist_items:
+            vals['video_playlist'] = [
+                {'url': item.url, 'title': item.title or ''}
+                for item in self.playlist_items if item.url
+            ]
+        else:
+            vals['video_playlist'] = []
+
+        # Scheduled videos
+        if self.scheduled_video_items:
+            vals['scheduled_videos'] = [
+                {
+                    'url': item.url,
+                    'title': item.title or '',
+                    'start': item.start_datetime and fields.Datetime.to_string(item.start_datetime),
+                    'end': item.end_datetime and fields.Datetime.to_string(item.end_datetime),
+                    'duration': item.duration or 300,
+                    'scheduled': True,
+                }
+                for item in self.scheduled_video_items if item.url
+            ]
+        else:
+            vals['scheduled_videos'] = []
+
+        # Sidebar
+        if self.sidebar_items:
+            vals['sidebar_content'] = [
+                {'text': item.value, 'color': item.color or '#ffffff'}
+                for item in self.sidebar_items if item.value
+            ]
+        else:
+            vals['sidebar_content'] = []
+
+        # Bottom bar
+        if self.bottom_bar_items:
+            vals['bottom_bar_content'] = {
+                'items': [
+                    {'text': item.value, 'color': item.color or '#ffffff'}
+                    for item in self.bottom_bar_items if item.value
+                ]
+            }
+        else:
+            vals['bottom_bar_content'] = {'items': []}
+
+        # Design settings
+        if self.design_settings_id:
+            ds = self.design_settings_id[0]
+            vals['design_settings'] = {
+                'sidebar_width': ds.sidebar_width or 22,
+                'sidebar_effect': ds.sidebar_effect or 'none',
+                'sidebar_bg': ds.sidebar_bg or '#1e293b',
+                'sidebar_text': ds.sidebar_text or '#ffffff',
+                'sidebar_header_type': self.sidebar_header_type or 'text',
+                'sidebar_header_value': self.sidebar_header_value or self.name,
+                'bottom_bar_bg': ds.bottom_bar_bg or '#0a0e1a',
+                'bottom_bar_text': ds.bottom_bar_text or '#ffffff',
+                'show_bcv': ds.show_bcv if ds.show_bcv is not None else True,
+                'bcv_color': ds.bcv_color or '#10b981',
+                'bcv_font': ds.bcv_font or 'inherit',
+            }
+        else:
+            vals['design_settings'] = {
+                'sidebar_width': 22,
+                'sidebar_effect': 'none',
+                'sidebar_bg': '#1e293b',
+                'sidebar_text': '#ffffff',
+                'sidebar_header_type': self.sidebar_header_type or 'text',
+                'sidebar_header_value': self.sidebar_header_value or self.name,
+                'bottom_bar_bg': '#0a0e1a',
+                'bottom_bar_text': '#ffffff',
+                'show_bcv': True,
+                'bcv_color': '#10b981',
+                'bcv_font': 'inherit',
+            }
+
+        if vals:
+            self.write(vals)
+
+    @api.model
+    def create(self, vals):
+        record = super().create(vals)
+        record._sync_vsm_to_json()
+        return record
+
+    def write(self, vals):
+        res = super().write(vals)
+        for rec in self:
+            rec._sync_vsm_to_json()
+        return res
 
     def _base_config(self):
         self.ensure_one()

@@ -1,180 +1,132 @@
-/**
- * VScreenS — Previsualizador de TV embebido en Odoo
- *
- * Detecta cuando el usuario está en el formulario de vscreens.company,
- * configura un <iframe> con la URL de la TV y envía postMessage
- * (type: 'PREVIEW_UPDATE') con la configuración de la empresa para que
- * el administrador vea los cambios en tiempo real sin salir de Odoo.
- *
- * El postMessage se envía:
- * - Al cargar la página / el iframe
- * - Cada 30 segundos (captura guardados automáticos)
- * - Al recuperar el foco de la pestaña (vuelve a Odoo)
- * - Al hacer clic en el botón "Sincronizar TV" (expuesto como window.syncTvPreview)
- */
+/* eslint-disable */
+// tv_preview.js - Previsualizador de TV en tiempo real para el panel de Odoo
+// Se encarga de cargar la configuración de la empresa y enviarla al iframe embebido
+// mediante postMessage, para que los cambios se vean inmediatamente en la TV.
 
-(function () {
+odoo.define('vscreens.tv_preview', function (require) {
     "use strict";
 
-    const TV_URL = "https://vscreens-tv.inverpave.com";
-    const POLL_INTERVAL = 30000; // 30 segundos
+    var core = require('web.core');
+    var rpc = require('web.rpc');
+    var session = require('web.session');
+    var time = require('web.time');
 
-    /* ------------------------------------------------------------------ */
-    /* Helpers                                                            */
-    /* ------------------------------------------------------------------ */
+    var _t = core._t;
 
-    function getHashParam(name) {
-        const hash = window.location.hash || "";
-        const regex = new RegExp("[?&]" + name + "=([^&]*)");
-        const match = hash.match(regex);
-        return match ? decodeURIComponent(match[1]) : null;
+    var TV_URL = 'https://vscreens-tv.inverpave.com';
+
+    // Función para obtener el ID de la empresa desde la URL de Odoo
+    function getCompanyIdFromUrl() {
+        var hash = window.location.hash || '';
+        var match = hash.match(/id=(\d+)/);
+        if (match) {
+            return parseInt(match[1], 10);
+        }
+        return null;
     }
 
-    function getCompanyId() {
-        const id = getHashParam("id");
-        return id ? parseInt(id, 10) : null;
-    }
-
-    function getModel() {
-        return getHashParam("model");
-    }
-
-    function isVscreensCompanyForm() {
-        return getModel() === "vscreens.company";
-    }
-
-    function sendPostMessage(iframe, config) {
-        if (!iframe || !iframe.contentWindow) {
-            return;
-        }
-        try {
-            iframe.contentWindow.postMessage(
-                {
-                    type: "PREVIEW_UPDATE",
-                    payload: config,
-                },
-                "*"
-            );
-            console.log(
-                "[VScreenS TV Preview] PREVIEW_UPDATE enviado:",
-                config && config.name ? config.name : config && config.id ? config.id : config
-            );
-        } catch (err) {
-            console.error("[VScreenS TV Preview] Error enviando postMessage:", err);
-        }
-    }
-
-    function fetchPreviewConfig(iframe, companyId) {
-        if (!companyId) {
-            return;
-        }
-        fetch("/companies/" + companyId + "/preview-config")
-            .then(function (res) {
-                if (!res.ok) {
-                    throw new Error("HTTP " + res.status);
-                }
-                return res.json();
-            })
-            .then(function (config) {
-                sendPostMessage(iframe, config);
-            })
-            .catch(function (err) {
-                console.error("[VScreenS TV Preview] Error obteniendo config:", err);
-                // Fallback: enviar al menos el ID para que la TV muestre algo
-                sendPostMessage(iframe, { id: companyId, is_active: true });
-            });
-    }
-
-    function setupIframe(companyId) {
-        const iframe = document.getElementById("tv-preview-iframe");
-        if (!iframe) {
-            return;
-        }
-
-        const src = TV_URL + "/?preview=" + companyId + "&t=" + Date.now();
-        if (iframe.src !== src && iframe.src.indexOf("about:blank") === -1) {
-            // Evitar recargar innecesariamente si ya tiene el src correcto
-            if (iframe.src.indexOf("preview=" + companyId) === -1) {
-                iframe.src = src;
-            }
-        }
-
-        iframe.onload = function () {
-            fetchPreviewConfig(iframe, companyId);
-        };
-
-        // Si el iframe ya cargó previamente, enviar config inmediatamente
-        if (iframe.contentWindow) {
-            fetchPreviewConfig(iframe, companyId);
-        }
-    }
-
-    function init() {
-        if (!isVscreensCompanyForm()) {
-            return;
-        }
-
-        const companyId = getCompanyId();
-        if (!companyId) {
-            return;
-        }
-
-        // Intento inmediato
-        setupIframe(companyId);
-
-        // Reintento tras corto retraso (Odoo renderiza la vista de forma asíncrona)
-        setTimeout(function () {
-            setupIframe(companyId);
-        }, 1000);
-
-        // Reenvío periódico para capturar guardados automáticos del formulario
-        setInterval(function () {
-            setupIframe(companyId);
-        }, POLL_INTERVAL);
-
-        // Reenvío al recuperar el foco de la pestaña (usuario vuelve a Odoo)
-        window.addEventListener("focus", function () {
-            setTimeout(function () {
-                setupIframe(companyId);
-            }, 500);
+    // Función para obtener la configuración de la empresa desde la API
+    function fetchCompanyConfig(companyId) {
+        return rpc.query({
+            model: 'vscreens.company',
+            method: 'preview_config',
+            args: [companyId],
+        }).then(function (config) {
+            return config;
+        }).catch(function (err) {
+            console.error('Error al obtener configuración de TV:', err);
+            return null;
         });
     }
 
-    /* ------------------------------------------------------------------ */
-    /* API pública                                                        */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Fuerza un re-envío inmediato del postMessage al iframe embebido.
-     * Puede llamarse desde un botón de la vista de Odoo.
-     */
-    window.syncTvPreview = function () {
-        const companyId = getCompanyId();
-        const iframe = document.getElementById("tv-preview-iframe");
-        if (companyId && iframe) {
-            fetchPreviewConfig(iframe, companyId);
+    // Función para enviar la configuración al iframe mediante postMessage
+    function sendConfigToIframe(iframe, config) {
+        if (!iframe || !iframe.contentWindow) {
+            console.warn('Iframe de TV no disponible');
+            return;
         }
+        try {
+            iframe.contentWindow.postMessage({
+                type: 'PREVIEW_UPDATE',
+                payload: config,
+            }, '*');
+            console.log('VScreenS: Configuración enviada al iframe de TV');
+        } catch (e) {
+            console.error('Error al enviar postMessage al iframe:', e);
+        }
+    }
+
+    // Función principal para inicializar el previsualizador
+    function initTVPreview() {
+        var iframe = document.getElementById('tv-preview-iframe');
+        if (!iframe) {
+            return; // No estamos en una vista de empresa con el iframe
+        }
+
+        var companyId = getCompanyIdFromUrl();
+        if (!companyId) {
+            console.warn('No se pudo obtener el ID de la empresa desde la URL');
+            return;
+        }
+
+        // Actualizar el src del iframe con el ID de la empresa
+        iframe.src = TV_URL + '/?preview=' + companyId + '&t=' + Date.now();
+
+        // Cargar y enviar la configuración
+        fetchCompanyConfig(companyId).then(function (config) {
+            if (config) {
+                sendConfigToIframe(iframe, config);
+            }
+        });
+
+        // Re-enviar cada 30 segundos para mantener sincronizado
+        setInterval(function () {
+            fetchCompanyConfig(companyId).then(function (config) {
+                if (config) {
+                    sendConfigToIframe(iframe, config);
+                }
+            });
+        }, 30000);
+
+        // Re-enviar al recuperar el foco de la pestaña
+        window.addEventListener('focus', function () {
+            fetchCompanyConfig(companyId).then(function (config) {
+                if (config) {
+                    sendConfigToIframe(iframe, config);
+                }
+            });
+        });
+    }
+
+    // Exponer función pública para sincronización manual desde el botón
+    window.syncTvPreview = function () {
+        var iframe = document.getElementById('tv-preview-iframe');
+        var companyId = getCompanyIdFromUrl();
+        if (!iframe || !companyId) {
+            console.warn('No se puede sincronizar: iframe o companyId no disponibles');
+            return;
+        }
+        fetchCompanyConfig(companyId).then(function (config) {
+            if (config) {
+                sendConfigToIframe(iframe, config);
+                // Mostrar notificación breve
+                var statusEl = document.getElementById('tv-sync-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Sincronizado';
+                    statusEl.style.color = '#10b981';
+                    setTimeout(function () {
+                        statusEl.textContent = 'Listo';
+                        statusEl.style.color = '#666';
+                    }, 2000);
+                }
+            }
+        });
     };
 
-    /* ------------------------------------------------------------------ */
-    /* Botón de sincronizar (delegación de eventos, evita onclick inline) */
-    /* ------------------------------------------------------------------ */
-
-    document.addEventListener("click", function (event) {
-        var btn = event.target.closest(".btn-sync-tv-preview");
-        if (btn) {
-            event.preventDefault();
-            window.syncTvPreview();
-        }
-    });
-
-    /* ------------------------------------------------------------------ */
-    /* Inicialización                                                     */
-    /* ------------------------------------------------------------------ */
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
+    // Inicializar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTVPreview);
     } else {
-        init();
+        initTVPreview();
     }
-})();
+});
