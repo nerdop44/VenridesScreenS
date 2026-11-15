@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Palette, Monitor, Power, CheckCircle2, AlertCircle, Lock, Layout, Info, LogOut, ShieldCheck, HardDrive, Building, DollarSign, Users, Trash2, Edit, Eye, Plus, X, CreditCard, Calendar, Key, PlaySquare, MessageSquare, Check, Sun, Moon, Bell, Shield, Image, Type, Mail, PlayCircle, Clock, LifeBuoy, XCircle, CheckCircle, Send, Settings, Wifi } from 'lucide-react';
 import ChatPanel from './components/ChatPanel';
 import MobileApp from './MobileApp';
@@ -185,7 +185,10 @@ function App() {
     const [clientTab, setClientTab] = useState('profile'); // profile, management, appearance, sidebar_tab, bottombar_tab, videos
     const [barSubTab, setBarSubTab] = useState('sidebar'); // sidebar, bottom
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+    const previewRef = useRef(null);
     const [company, setCompany] = useState(null);
+    const [showDashboardChoice, setShowDashboardChoice] = useState(false);
+    const [dashboardChoiceUser, setDashboardChoiceUser] = useState(null);
     const [companies, setCompanies] = useState([]);
     const [payments, setPayments] = useState([]);
     const [users, setUsers] = useState([]);
@@ -358,9 +361,18 @@ function App() {
                     setShowChangePassword(true);
                 }
 
+                // Si es admin_master, dejar que elija a qué dashboard acceder
+                if (data.user.role === 'admin_master') {
+                    setView('superadmin');
+                    setShowDashboardChoice(true);
+                    setDashboardChoiceUser(data.user);
+                    fetchInitialData('superadmin');
+                    setLoading(false);
+                    return;
+                }
+
                 let targetView = 'client';
-                if (data.user.role === 'admin_master') targetView = 'superadmin';
-                else if (data.user.role === 'operador_empresa') targetView = 'operator';
+                if (data.user.role === 'operador_empresa') targetView = 'operator';
                 else if (data.user.role === 'admin_empresa') {
                     targetView = 'client';
                     setClientTab('videos');
@@ -376,6 +388,22 @@ function App() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDashboardChoice = (choice) => {
+        if (!dashboardChoiceUser) return;
+        setLoading(true);
+        if (choice === 'odoo') {
+            // Redirigir a Odoo ERP
+            window.location.href = `${window.location.origin.replace(':8081', ':8069')}/odoo`;
+            return;
+        }
+        // choice === 'web' → dashboard web de VScreenS
+        setView('superadmin');
+        setDashboardChoiceUser(null);
+        setShowDashboardChoice(false);
+        fetchInitialData('superadmin');
+        setLoading(false);
     };
 
     const fetchInitialData = async (roleOverride = null) => {
@@ -716,10 +744,23 @@ function App() {
             setLocalCompany(data);
             setUnsavedChanges(false);
             setAlertModalData({ title: "Guardado", message: "Cambios guardados correctamente", type: "success" });
+
+            // Sincronizar al previsualizador de TV en tiempo real
+            try { sendToPreview(data); } catch (e) { console.error("Preview sync error:", e); }
         } catch (err) {
             console.error("Save Error:", err);
             setAlertModalData({ title: "Error", message: "Error al guardar: " + err.message, type: "error" });
         }
+    };
+
+    const sendToPreview = (companyData) => {
+        if (!previewRef.current) return;
+        try {
+            previewRef.current.contentWindow.postMessage({
+                type: 'PREVIEW_UPDATE',
+                payload: companyData || localCompany || {}
+            }, '*');
+        } catch (e) { console.error("postMessage preview error:", e); }
     };
 
     const handleLocalChange = (updates) => {
@@ -1101,6 +1142,29 @@ function App() {
     }
 
     if (view === 'superadmin') {
+        // Modal de elección de dashboard para Admin Master
+        if (showDashboardChoice) {
+            return (
+                <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-app)' }}>
+                    <GlobalStyles />
+                    <div className="glass-card" style={{ padding: '2.5rem', maxWidth: '480px', textAlign: 'center', margin: '2rem' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
+                        <h2 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>Seleccionar Panel de Control</h2>
+                        <p style={{ opacity: 0.7, marginBottom: '2rem' }}>Bienvenido, {dashboardChoiceUser?.name || dashboardChoiceUser?.username}. Elige a qué dashboard deseas acceder:</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <button onClick={() => handleDashboardChoice('web')} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', justifyContent: 'center' }}>
+                                <Building size={20} /> Dashboard Web VScreenS
+                            </button>
+                            <button onClick={() => handleDashboardChoice('odoo')} className="btn" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', justifyContent: 'center', border: '2px solid var(--primary-color)', color: 'var(--primary-color)', background: 'transparent' }}>
+                                <Layout size={20} /> Odoo ERP (Facturación y Contabilidad)
+                            </button>
+                        </div>
+                        <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', opacity: 0.6 }}>Puedes cambiar de panel en cualquier momento desde la configuración.</p>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="dashboard-container">
                 <GlobalStyles />
@@ -1804,6 +1868,7 @@ function App() {
                     }}>
                         <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', position: 'relative' }}>
                             <iframe
+                                ref={previewRef}
                                 src={`${TV_BASE_URL}/?preview=${localCompany?.id}`}
                                 style={{ width: '100%', height: '100%', border: 'none' }}
                                 title="TV Preview"
