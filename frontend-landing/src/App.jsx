@@ -9,9 +9,17 @@ import BenryChat from './components/BenryChat';
 import ContactModal from './components/ContactModal';
 import LegalPage from './components/LegalPage';
 import CookieConsent, { hasAnalyticsConsent } from './components/CookieConsent';
+import SEO from './components/SEO';
 import { site } from './config/site';
 
-const LEGAL_SLUGS = ['aviso-legal', 'terminos', 'privacidad', 'cookies', 'devoluciones', 'seguridad'];
+const LEGAL_SLUGS = [
+  'aviso-legal',
+  'terminos',
+  'privacidad',
+  'cookies',
+  'devoluciones',
+  'seguridad',
+];
 
 function getSlug() {
   const path = window.location.pathname.replace(/\/+$/, '');
@@ -19,15 +27,29 @@ function getSlug() {
   return LEGAL_SLUGS.includes(slug) ? slug : null;
 }
 
-function setMeta(name, content) {
-  let el = document.querySelector(`meta[name="${name}"]`);
-  if (!el) {
-    el = document.createElement('meta');
-    el.setAttribute('name', name);
-    document.head.appendChild(el);
-  }
-  el.setAttribute('content', content);
-}
+const LEGAL_TITLES = {
+  'aviso-legal': 'Aviso legal',
+  terminos: 'Términos y condiciones',
+  privacidad: 'Política de privacidad',
+  cookies: 'Política de cookies',
+  devoluciones: 'Devoluciones y cancelaciones',
+  seguridad: 'Seguridad',
+};
+
+const LEGAL_DESCRIPTIONS = {
+  'aviso-legal':
+    'Documento legal de VScreenS: aviso legal. Información sobre el titular, objeto, propiedad intelectual y legislación aplicable.',
+  terminos:
+    'Términos y condiciones de uso de la plataforma VScreenS. Planes, precios, pagos, uso aceptable y limitación de responsabilidad.',
+  privacidad:
+    'Política de privacidad de VScreenS. Datos que tratamos, finalidades, conservación, derechos del titular y seguridad.',
+  cookies:
+    'Política de cookies de VScreenS. Tipos de cookies, consentimiento y gestión de preferencias.',
+  devoluciones:
+    'Política de devoluciones y cancelaciones de VScreenS. Cancelación de suscripciones y solicitud de reembolsos.',
+  seguridad:
+    'Seguridad de la información de VScreenS. Medidas técnicas, responsabilidades del cliente y reporte de vulnerabilidades.',
+};
 
 function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -39,24 +61,18 @@ function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  useEffect(() => {
-    const isLegal = Boolean(legalSlug);
-    document.title = isLegal
-      ? `${legalSlug.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())} | ${site.brand}`
-      : `${site.brand} | Pantallas inteligentes para tu negocio`;
+  const isLegal = Boolean(legalSlug);
+  const pageTitle = isLegal ? LEGAL_TITLES[legalSlug] : null;
+  const pageDescription = isLegal ? LEGAL_DESCRIPTIONS[legalSlug] : null;
+  const pageUrl = isLegal ? `/${legalSlug}` : '/';
 
-    setMeta('description', isLegal
-      ? `Documento legal de ${site.brand}: ${legalSlug.replace('-', ' ')}.`
-      : 'Plataforma de señalización digital para gestionar pantallas, contenido, publicidad y alertas desde un solo panel.');
-
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', `${site.landingUrl}${isLegal ? `/${legalSlug}` : '/'}`);
-  }, [legalSlug]);
+  const breadcrumbs = isLegal
+    ? [
+        { label: 'Inicio', href: '/' },
+        { label: 'Legal', href: '#' },
+        { label: LEGAL_TITLES[legalSlug], href: pageUrl },
+      ]
+    : null;
 
   useEffect(() => {
     if (legalSlug) return;
@@ -82,6 +98,12 @@ function App() {
   if (legalSlug) {
     return (
       <div className="relative min-h-screen">
+        <SEO
+          title={pageTitle}
+          description={pageDescription}
+          url={pageUrl}
+          breadcrumbs={breadcrumbs}
+        />
         <Navbar />
         <LegalPage slug={legalSlug} />
         <Footer />
@@ -92,6 +114,7 @@ function App() {
 
   return (
     <div className="relative min-h-screen">
+      <SEO title={null} description={null} url="/" />
       <Navbar />
       <Hero onOpenContact={() => setIsContactOpen(true)} />
       <Comparison />

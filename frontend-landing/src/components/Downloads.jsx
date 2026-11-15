@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { site } from '../config/site';
 
 const APPS = [
@@ -20,7 +20,40 @@ const APPS = [
     },
 ];
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || site.apiUrl;
+
 const Downloads = () => {
+    const [shortUrls, setShortUrls] = useState({
+        mobile: null,
+        tv: null,
+    });
+    const [loading, setLoading] = useState({ mobile: true, tv: true });
+
+    useEffect(() => {
+        const fetchShortUrl = async (type) => {
+            try {
+                const res = await fetch(`${API_BASE}/api/downloads/${type}/short-url`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data && data.url) {
+                    setShortUrls((prev) => ({ ...prev, [type]: data.url }));
+                }
+            } catch (err) {
+                console.warn(`No se pudo obtener URL corta para ${type}:`, err);
+            } finally {
+                setLoading((prev) => ({ ...prev, [type]: false }));
+            }
+        };
+
+        fetchShortUrl('mobile');
+        fetchShortUrl('tv');
+    }, []);
+
+    const getHref = (app) => {
+        const short = shortUrls[app.id];
+        return short || app.href;
+    };
+
     return (
         <section id="descargas" className="relative py-24 border-t border-white/10 bg-black">
             <div className="max-w-6xl mx-auto px-6">
@@ -56,7 +89,7 @@ const Downloads = () => {
                                 {app.meta}
                             </p>
                             <a
-                                href={app.href}
+                                href={getHref(app)}
                                 className="bg-[#00CCFF] text-black font-black text-center px-6 py-3 rounded-xl hover:shadow-[0_0_30px_rgba(0,204,255,0.7)] transition-all inline-flex items-center justify-center gap-2"
                                 download
                             >
