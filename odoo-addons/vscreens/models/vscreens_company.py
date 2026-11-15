@@ -83,6 +83,37 @@ class VScreenSCompany(models.Model):
     )
     sidebar_header_value = fields.Char(string="Valor del encabezado")
 
+    # ============================================================================
+    # CONTROLES VISUALES (One2many hacia modelos auxiliares)
+    # Estos campos reemplazan la edición directa de JSON en la UI.
+    # Los campos JSON originales se mantienen para compatibilidad con la API.
+    # ============================================================================
+    playlist_items = fields.One2many(
+        "vscreens.playlist.item",
+        "company_id",
+        string="Ítems de Playlist",
+    )
+    scheduled_video_items = fields.One2many(
+        "vscreens.scheduled.video.item",
+        "company_id",
+        string="Videos Programados",
+    )
+    sidebar_items = fields.One2many(
+        "vscreens.sidebar.item",
+        "company_id",
+        string="Ítems de Barra Lateral",
+    )
+    bottom_bar_items = fields.One2many(
+        "vscreens.bottom.bar.item",
+        "company_id",
+        string="Ítems de Barra Inferior",
+    )
+    design_settings_id = fields.One2many(
+        "vscreens.design.settings",
+        "company_id",
+        string="Ajustes de Diseño",
+    )
+
     auto_notification_settings = fields.Json(
         string="Notificaciones automáticas",
         default=lambda self: {

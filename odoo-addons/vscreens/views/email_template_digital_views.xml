@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         PLANTILLAS DE CORREO - Descargas Digitales y Activaciones
+         ============================================================================ -->
+
+    <!-- Correo de confirmación de descarga de APK -->
+    <record id="email_template_digital_download" model="mail.template">
+        <field name="name">VScreenS - Confirmación de Descarga de APK</field>
+        <field name="model_id" ref="model_res_partner"/>
+        <field name="subject">Tu descarga de VScreenS está lista 📦</field>
+        <field name="email_from">info.vscreens@inverpave.com</field>
+        <field name="email_to">${object.email or ''}</field>
+        <field name="auto_delete">True</field>
+        <field name="body_html"><![CDATA[
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0e1a; color: #ffffff; padding: 20px; border-radius: 10px;">
+                <h2 style="color: #c8ff00;">VScreenS - Descarga de APK</h2>
+                <p>Hola <strong>${object.name or 'Cliente'}</strong>,</p>
+                <p>Tu descarga de <strong>${object.product_name or 'VScreenS'}</strong> está lista.</p>
+                <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #c8ff00;">
+                    <p style="margin: 0;"><strong>Producto:</strong> ${object.product_name or 'VScreenS'}</p>
+                    <p style="margin: 0;"><strong>Fecha de descarga:</strong> ${object.downloaded_at or fields.Datetime.now()}</p>
+                    <p style="margin: 0;"><strong>Estado:</strong> <span style="color: #c8ff00;">Descargado</span></p>
+                </div>
+                <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; color: #c8ff00;">⚠️ IMPORTANTE - Activación Requerida:</p>
+                    <p style="margin: 5px 0;">La aplicación se puede descargar libremente, pero <strong>solo es operativa si tu dispositivo está activado</strong> en el panel de clientes de VScreenS.</p>
+                    <p style="margin: 5px 0;">Para activar tu dispositivo:</p>
+                    <ol style="margin: 5px 0; padding-left: 20px;">
+                        <li>Regístrate como empresa en <a href="https://vscreens-app.inverpave.com" style="color: #c8ff00;">vscreens-app.inverpave.com</a></li>
+                        <li>Vincula tu dispositivo desde el panel de cliente</li>
+                        <li>La app se desbloqueará automáticamente</li>
+                    </ol>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://vscreens-app.inverpave.com" style="background: #c8ff00; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ir al Panel de Clientes</a>
+                </div>
+                <p style="font-size: 12px; opacity: 0.6; margin-top: 30px;">
+                    VScreenS - Inversiones Pulido Aguirre INVERPA<br>
+                    RIF: V-14304044-1 | Urb. La Cardenera, Olivos 719, Barinas<br>
+                    info.vscreens@inverpave.com | 0414-5694075
+                </p>
+            </div>
+        ]]></field>
+    </record>
+
+    <!-- Correo de activación de dispositivo -->
+    <record id="email_template_device_activation" model="mail.template">
+        <field name="name">VScreenS - Dispositivo Activado</field>
+        <field name="model_id" ref="model_res_partner"/>
+        <field name="subject">✅ Tu dispositivo VScreenS está activado</field>
+        <field name="email_from">info.vscreens@inverpave.com</field>
+        <field name="email_to">${object.email or ''}</field>
+        <field name="auto_delete">True</field>
+        <field name="body_html"><![CDATA[
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0e1a; color: #ffffff; padding: 20px; border-radius: 10px;">
+                <h2 style="color: #c8ff00;">✅ Dispositivo Activado</h2>
+                <p>Hola <strong>${object.name or 'Cliente'}</strong>,</p>
+                <p>Tu dispositivo <strong>${object.device_name or 'TV/Móvil'}</strong> ha sido activado correctamente en VScreenS.</p>
+                <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #c8ff00;">
+                    <p style="margin: 0;"><strong>Dispositivo:</strong> ${object.device_name or 'TV/Móvil'}</p>
+                    <p style="margin: 0;"><strong>Tipo:</strong> ${object.device_type or 'TV'}</p>
+                    <p style="margin: 0;"><strong>UUID:</strong> ${object.device_uuid}</p>
+                    <p style="margin: 0;"><strong>Empresa:</strong> ${object.company_name or 'Empresa'}</p>
+                    <p style="margin: 0;"><strong>Estado:</strong> <span style="color: #c8ff00;">ACTIVADO</span></p>
+                    <p style="margin: 0;"><strong>Fecha de activación:</strong> ${object.activated_at or fields.Datetime.now()}</p>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://vscreens-app.inverpave.com" style="background: #c8ff00; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ir al Panel de Control</a>
+                </div>
+                <p style="font-size: 12px; opacity: 0.6; margin-top: 30px;">
+                    VScreenS - Inversiones Pulido Aguirre INVERPA<br>
+                    RIF: V-14304044-1 | Urb. La Cardenera, Olivos 719, Barinas<br>
+                    info.vscreens@inverpave.com | 0414-5694075
+                </p>
+            </div>
+        ]]></field>
+    </record>
+
+    <!-- Correo de bienvenida para empresa nueva -->
+    <record id="email_template_company_welcome" model="mail.template">
+        <field name="name">VScreenS - Bienvenida a la Empresa</field>
+        <field name="model_id" ref="model_res_partner"/>
+        <field name="subject">¡Bienvenido a VScreenS! 📺</field>
+        <field name="email_from">info.vscreens@inverpave.com</field>
+        <field name="email_to">${object.email or ''}</field>
+        <field name="auto_delete">True</field>
+        <field name="body_html"><![CDATA[
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0e1a; color: #ffffff; padding: 20px; border-radius: 10px;">
+                <h2 style="color: #c8ff00;">¡Bienvenido a VScreenS!</h2>
+                <p>Hola <strong>${object.name or 'Cliente'}</strong>,</p>
+                <p>Tu empresa <strong>${object.company_name or 'Empresa'}</strong> se ha registrado exitosamente en VScreenS.</p>
+                <div style="background: #1a1f2e; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #c8ff00;">
+                    <p style="margin: 0;"><strong>Plan:</strong> ${object.plan_name or 'Free'}</p>
+                    <p style="margin: 0;"><strong>Pantallas:</strong> ${object.max_screens or 2}</p>
+                    <p style="margin: 0;"><strong>Estado:</strong> <span style="color: #c8ff00;">ACTIVO</span></p>
+                    <p style="margin: 0;"><strong>Válido hasta:</strong> ${object.valid_until or 'Indefinido'}</p>
+                </div>
+                <h3 style="color: #c8ff00;">Próximos pasos:</h3>
+                <ol style="margin: 5px 0; padding-left: 20px;">
+                    <li>Descarga la app TV o móvil desde <a href="https://vscreens.inverpave.com/downloads" style="color: #c8ff00;">nuestra página de descargas</a></li>
+                    <li>Instala la app en tu dispositivo</li>
+                    <li>Activa tu dispositivo desde este panel de cliente</li>
+                    <li>Configura tu contenido (videos, playlist, alertas)</li>
+                </ol>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://vscreens-app.inverpave.com" style="background: #c8ff00; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ir al Panel de Control</a>
+                </div>
+                <p style="font-size: 12px; opacity: 0.6; margin-top: 30px;">
+                    VScreenS - Inversiones Pulido Aguirre INVERPA<br>
+                    RIF: V-14304044-1 | Urb. La Cardenera, Olivos 719, Barinas<br>
+                    info.vscreens@inverpave.com | 0414-5694075
+                </p>
+            </div>
+        ]]></field>
+    </record>
+</odoo>

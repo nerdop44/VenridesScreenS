@@ -41,6 +41,7 @@ class ResUsers(models.Model):
     vscreens_legacy_hash = fields.Char(string="Hash legado (argon2)", copy=False)
     vscreens_is_master = fields.Boolean(string="¿Es maestro?", compute="_compute_vscreens_is_master")
     vscreens_company_name = fields.Char(related="vscreens_company_id.name", string="Empresa", store=True)
+    vscreens_api_token = fields.Char(string="Token API VScreenS", copy=False, help="Token para autenticación en APIs de VScreenS.")
 
     @api.depends("group_ids")
     def _compute_vscreens_is_master(self):

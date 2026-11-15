@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         PRODUCTO DIGITAL - Extender product.template para mostrar campos digitales
+         ============================================================================ -->
+    <record id="view_product_template_form_inherit_digital" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.digital</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="oe_title">
+                    <h1>
+                        <field name="name"/>
+                        <span t-if="is_digital" class="badge badge-success">📦 Digital</span>
+                    </h1>
+                </div>
+                <group name="digital_group" string="Producto Digital" invisible="not is_digital">
+                    <group>
+                        <field name="is_digital" widget="boolean_toggle"/>
+                        <field name="is_operational_only_when_activated" widget="boolean_toggle"/>
+                        <field name="digital_file" widget="binary" filename="digital_filename"/>
+                        <field name="digital_filename"/>
+                        <field name="download_count" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//field[name='categ_id']" position="after">
+                <field name="is_digital" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================================
+         VISUALIZACIÓN DE PRODUCTOS DIGITALES EN LISTA
+         ============================================================================ -->
+    <record id="view_product_template_tree_digital" model="ir.ui.view">
+        <field name="name">product.template.tree.digital</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[name='name']" position="after">
+                <field name="is_digital" widget="boolean_toggle"/>
+                <field name="download_count"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================================
+         ACTIVACIÓN DE DISPOSITIVOS
+         ============================================================================ -->
+    <record id="view_vscreens_device_activation_tree" model="ir.ui.view">
+        <field name="name">vscreens.device.activation.tree</field>
+        <field name="model">vscreens.device.activation</field>
+        <field name="arch" type="xml">
+            <tree string="Dispositivos Activados">
+                <field name="device_uuid"/>
+                <field name="device_name"/>
+                <field name="device_type"/>
+                <field name="company_id"/>
+                <field name="is_active" widget="boolean_toggle"/>
+                <field name="activated_at"/>
+                <field name="last_ping_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_device_activation_form" model="ir.ui.view">
+        <field name="name">vscreens.device.activation.form</field>
+        <field name="model">vscreens.device.activation</field>
+        <field name="arch" type="xml">
+            <form string="Activación de Dispositivo">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="device_name"/></h1>
+                    </div>
+                    <group string="Información del Dispositivo">
+                        <group>
+                            <field name="device_uuid"/>
+                            <field name="device_type"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="activated_at" readonly="1"/>
+                            <field name="last_ping_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Producto Descargado">
+                        <field name="download_product_id"/>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+                <header>
+                    <button name="action_activate" type="object" string="Activar" class="oe_highlight" invisible="is_active"/>
+                    <button name="action_deactivate" type="object" string="Desactivar" invisible="not is_active"/>
+                    <button name="action_deactivate" type="object" string="Cerrar" class="oe_link"/>
+                </header>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vscreens_device_activation_search" model="ir.ui.view">
+        <field name="name">vscreens.device.activation.search</field>
+        <field name="model">vscreens.device.activation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="device_uuid"/>
+                <field name="device_name"/>
+                <field name="company_id"/>
+                <field name="is_active"/>
+                <filter name="active" string="Activos" domain="[('is_active','=',True)]"/>
+                <filter name="inactive" string="Inactivos" domain="[('is_active','=',False)]"/>
+                <group name="group_by" string="Agrupar por">
+                    <filter name="group_device_type" string="Tipo" domain="[]" context="{'group_by': 'device_type'}"/>
+                    <filter name="group_active" string="Estado" domain="[]" context="{'group_by': 'is_active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================================
+         ESTADÍSTICAS DE DESCARGA
+         ============================================================================ -->
+    <record id="view_vscreens_download_stat_tree" model="ir.ui.view">
+        <field name="name">vscreens.download.stat.tree</field>
+        <field name="model">vscreens.download.stat</field>
+        <field name="arch" type="xml">
+            <tree string="Estadísticas de Descarga">
+                <field name="product_name"/>
+                <field name="downloaded_at"/>
+                <field name="ip_address"/>
+                <field name="is_authorized" widget="boolean_toggle"/>
+                <field name="company_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ============================================================================
+         ACCIONES Y MENÚS
+         ============================================================================ -->
+    <record id="action_vscreens_device_activation" model="ir.actions.act_window">
+        <field name="name">Activación de Dispositivos</field>
+        <field name="res_model">vscreens.device.activation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_vscreens_device_activation_search"/>
+    </record>
+
+    <record id="action_vscreens_download_stats" model="ir.actions.act_window">
+        <field name="name">Estadísticas de Descarga</field>
+        <field name="res_model">vscreens.download.stat</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <menuitem id="menu_vscreens_digital_download" name="Descargas Digitales" parent="vscreens.menu_root" sequence="20"/>
+    <menuitem id="menu_vscreens_device_activation" name="Dispositivos Activados" parent="menu_vscreens_digital_download" action="action_vscreens_device_activation" sequence="1"/>
+    <menuitem id="menu_vscreens_download_stats" name="Estadísticas de Descarga" parent="menu_vscreens_digital_download" action="action_vscreens_download_stats" sequence="2"/>
+
+</odoo>

@@ -84,3 +84,17 @@ access_vscreens_plan_basic_read,access_vscreens_plan_basic_read,vscreens.plan,vs
 access_vscreens_global_ad_basic_read,access_vscreens_global_ad_basic_read,vscreens.global.ad,vscreens.group_vscreens_basic,r,
 access_vscreens_email_template_basic_read,access_vscreens_email_template_basic_read,vscreens.email.template,vscreens.group_vscreens_basic,r,
 access_vscreens_calendar_activity_basic_read,access_vscreens_calendar_activity_basic_read,vscreens.calendar.activity,vscreens.group_vscreens_basic,r,
+access_vscreens_playlist_item_master,access_vscreens_playlist_item_master,vscreens.playlist.item,vscreens.group_vscreens_master,crud,
+access_vscreens_scheduled_video_item_master,access_vscreens_scheduled_video_item_master,vscreens.scheduled.video.item,vscreens.group_vscreens_master,crud,
+access_vscreens_sidebar_item_master,access_vscreens_sidebar_item_master,vscreens.sidebar.item,vscreens.group_vscreens_master,crud,
+access_vscreens_bottom_bar_item_master,access_vscreens_bottom_bar_item_master,vscreens.bottom.bar.item,vscreens.group_vscreens_master,crud,
+access_vscreens_design_settings_master,access_vscreens_design_settings_master,vscreens.design.settings,vscreens.group_vscreens_master,crud,
+access_vscreens_device_activation_master,access_vscreens_device_activation_master,vscreens.device.activation,vscreens.group_vscreens_master,crud,
+access_vscreens_download_stat_master,access_vscreens_download_stat_master,vscreens.download.stat,vscreens.group_vscreens_master,r,
+access_vscreens_playlist_item_admin,access_vscreens_playlist_item_admin,vscreens.playlist.item,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_scheduled_video_item_admin,access_vscreens_scheduled_video_item_admin,vscreens.scheduled.video.item,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_sidebar_item_admin,access_vscreens_sidebar_item_admin,vscreens.sidebar.item,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_bottom_bar_item_admin,access_vscreens_bottom_bar_item_admin,vscreens.bottom.bar.item,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_design_settings_admin,access_vscreens_design_settings_admin,vscreens.design.settings,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_device_activation_admin,access_vscreens_device_activation_admin,vscreens.device.activation,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"
+access_vscreens_download_stat_admin,access_vscreens_download_stat_admin,vscreens.download.stat,vscreens.group_vscreens_company_admin,r,"[('company_id','=',user.vscreens_company_id.id)]"

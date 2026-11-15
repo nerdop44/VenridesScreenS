@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         VISUALES DE PLAYLIST, VIDEOS PROGRAMADOS, BARRA LATERAL, BARRA INFERIOR, DISEÑO
+         ============================================================================ -->
+
+    <!-- Playlist Items -->
+    <record id="view_vscreens_playlist_item_tree" model="ir.ui.view">
+        <field name="name">vscreens.playlist.item.tree</field>
+        <field name="model">vscreens.playlist.item</field>
+        <field name="arch" type="xml">
+            <tree string="Playlist de Videos">
+                <field name="sequence"/>
+                <field name="title"/>
+                <field name="url"/>
+                <field name="youtube_id" readonly="1"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_playlist_item_form" model="ir.ui.view">
+        <field name="name">vscreens.playlist.item.form</field>
+        <field name="model">vscreens.playlist.item</field>
+        <field name="arch" type="xml">
+            <form string="Ítem de Playlist">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="title"/></h1>
+                    </div>
+                    <group string="Video de YouTube">
+                        <group>
+                            <field name="url" placeholder="https://www.youtube.com/watch?v=LXb3EKWsInQ"/>
+                            <field name="youtube_id" readonly="1"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Orden">
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Scheduled Video Items -->
+    <record id="view_vscreens_scheduled_video_item_tree" model="ir.ui.view">
+        <field name="name">vscreens.scheduled.video.item.tree</field>
+        <field name="model">vscreens.scheduled.video.item</field>
+        <field name="arch" type="xml">
+            <tree string="Videos Programados">
+                <field name="sequence"/>
+                <field name="title"/>
+                <field name="url"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="duration"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_scheduled_video_item_form" model="ir.ui.view">
+        <field name="name">vscreens.scheduled.video.item.form</field>
+        <field name="model">vscreens.scheduled.video.item</field>
+        <field name="arch" type="xml">
+            <form string="Video Programado">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="title"/></h1>
+                    </div>
+                    <group string="Video de YouTube">
+                        <group>
+                            <field name="url" placeholder="https://www.youtube.com/watch?v=LXb3EKWsInQ"/>
+                            <field name="youtube_id" readonly="1"/>
+                            <field name="start_datetime" widget="datetime"/>
+                            <field name="end_datetime" widget="datetime"/>
+                            <field name="duration"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Orden">
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Sidebar Items -->
+    <record id="view_vscreens_sidebar_item_tree" model="ir.ui.view">
+        <field name="name">vscreens.sidebar.item.tree</field>
+        <field name="model">vscreens.sidebar.item</field>
+        <field name="arch" type="xml">
+            <tree string="Contenido de Barra Lateral">
+                <field name="sequence"/>
+                <field name="label"/>
+                <field name="value"/>
+                <field name="icon"/>
+                <field name="color"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_sidebar_item_form" model="ir.ui.view">
+        <field name="name">vscreens.sidebar.item.form</field>
+        <field name="model">vscreens.sidebar.item</field>
+        <field name="arch" type="xml">
+            <form string="Ítem de Barra Lateral">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="label"/></h1>
+                    </div>
+                    <group string="Contenido">
+                        <group>
+                            <field name="label"/>
+                            <field name="value"/>
+                            <field name="icon" placeholder="fa-tv"/>
+                            <field name="color" widget="color"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Orden">
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Bottom Bar Items -->
+    <record id="view_vscreens_bottom_bar_item_tree" model="ir.ui.view">
+        <field name="name">vscreens.bottom.bar.item.tree</field>
+        <field name="model">vscreens.bottom.bar.item</field>
+        <field name="arch" type="xml">
+            <tree string="Contenido de Barra Inferior">
+                <field name="sequence"/>
+                <field name="label"/>
+                <field name="value"/>
+                <field name="color"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_vscreens_bottom_bar_item_form" model="ir.ui.view">
+        <field name="name">vscreens.bottom.bar.item.form</field>
+        <field name="model">vscreens.bottom.bar.item</field>
+        <field name="arch" type="xml">
+            <form string="Ítem de Barra Inferior">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="label"/></h1>
+                    </div>
+                    <group string="Contenido">
+                        <group>
+                            <field name="label"/>
+                            <field name="value"/>
+                            <field name="color" widget="color"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Orden">
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Design Settings -->
+    <record id="view_vscreens_design_settings_form" model="ir.ui.view">
+        <field name="name">vscreens.design.settings.form</field>
+        <field name="model">vscreens.design.settings</field>
+        <field name="arch" type="xml">
+            <form string="Ajustes de Diseño">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Ajustes de Diseño</h1>
+                    </div>
+                    <group string="Título">
+                        <group>
+                            <field name="title_font"/>
+                            <field name="title_color" widget="color"/>
+                            <field name="title_size"/>
+                            <field name="title_weight"/>
+                        </group>
+                    </group>
+                    <group string="Barra Lateral">
+                        <group>
+                            <field name="sidebar_width"/>
+                            <field name="sidebar_effect"/>
+                            <field name="sidebar_bg" widget="color"/>
+                            <field name="sidebar_text" widget="color"/>
+                        </group>
+                    </group>
+                    <group string="Barra Inferior">
+                        <group>
+                            <field name="bottom_bar_bg" widget="color"/>
+                            <field name="bottom_bar_text" widget="color"/>
+                        </group>
+                    </group>
+                    <group string="BCV">
+                        <group>
+                            <field name="show_bcv" widget="boolean_toggle"/>
+                            <field name="bcv_color" widget="color"/>
+                            <field name="bcv_font"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acciones y Menús -->
+    <record id="action_vscreens_playlist_item" model="ir.actions.act_window">
+        <field name="name">Playlist de Videos</field>
+        <field name="res_model">vscreens.playlist.item</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_vscreens_scheduled_video_item" model="ir.actions.act_window">
+        <field name="name">Videos Programados</field>
+        <field name="res_model">vscreens.scheduled.video.item</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_vscreens_sidebar_item" model="ir.actions.act_window">
+        <field name="name">Contenido de Barra Lateral</field>
+        <field name="res_model">vscreens.sidebar.item</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_vscreens_bottom_bar_item" model="ir.actions.act_window">
+        <field name="name">Contenido de Barra Inferior</field>
+        <field name="res_model">vscreens.bottom.bar.item</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_vscreens_design_settings" model="ir.actions.act_window">
+        <field name="name">Ajustes de Diseño</field>
+        <field name="res_model">vscreens.design.settings</field>
+        <field name="view_mode">form</field>
+    </record>
+
+</odoo>
