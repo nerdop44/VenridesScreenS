@@ -708,6 +708,7 @@ class VScreenSCompany(models.Model):
 
         for company in self:
             if "video_playlist" in field_names:
+                titles = {item.url: item.title for item in company.playlist_items if item.url}
                 company.playlist_items.sudo().unlink()
                 sequence = 10
                 for entry in company.video_playlist or []:
@@ -722,7 +723,7 @@ class VScreenSCompany(models.Model):
                         safe_create(Playlist, {
                             "company_id": company.id,
                             "sequence": sequence,
-                            "title": title,
+                            "title": title or titles.get(url) or url,
                             "url": url,
                         })
                     sequence += 10
