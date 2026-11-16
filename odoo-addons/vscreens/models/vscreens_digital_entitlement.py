@@ -157,7 +157,6 @@ class SaleOrder(models.Model):
             "plan_id": fallback_plan.id,
             "email": self.partner_id.email or False,
             "phone": self.partner_id.phone or False,
-            "whatsapp": self.partner_id.mobile or False,
             "rif": self.partner_id.vat or False,
             "address": self.partner_id.contact_address or False,
             "is_active": True,
