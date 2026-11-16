@@ -411,11 +411,7 @@ class VScreenSCompany(models.Model):
         self.ensure_one()
         if field_name == "playlist_items":
             # La TV reproduce una lista de URLs (formato histórico del panel web).
-            return [
-                item.url
-                for item in self.playlist_items
-                if item.is_active and item.url
-            ]
+            return [item.url for item in self.playlist_items if item.url]
         if field_name == "scheduled_video_items":
             return [
                 {
@@ -427,7 +423,7 @@ class VScreenSCompany(models.Model):
                     "scheduled": True,
                 }
                 for item in self.scheduled_video_items
-                if item.is_active and item.url
+                if item.url
             ]
         if field_name == "sidebar_items":
             return [
@@ -439,14 +435,14 @@ class VScreenSCompany(models.Model):
                     "color": item.color or "#ffffff",
                 }
                 for item in self.sidebar_items
-                if item.is_active and (item.value or item.label)
+                if (item.value or item.label)
             ]
         if field_name == "bottom_bar_items":
             content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
             content["messages"] = [
                 item.value or item.label
                 for item in self.bottom_bar_items
-                if item.is_active and (item.value or item.label)
+                if (item.value or item.label)
             ]
             return content
         if field_name == "design_settings_id":
@@ -676,6 +672,21 @@ class VScreenSCompany(models.Model):
             if vals:
                 # super() evita recursión sobre este mismo write().
                 super(VScreenSCompany, record).write(vals)
+
+    def _migrate_legacy_socials(self):
+        """Pasa WhatsApp/Instagram del JSON viejo a los campos editables de la empresa."""
+        migrated = 0
+        for company in self:
+            content = company.bottom_bar_content if isinstance(company.bottom_bar_content, dict) else {}
+            vals = {}
+            if not company.whatsapp and content.get("whatsapp"):
+                vals["whatsapp"] = content["whatsapp"]
+            if not company.instagram and content.get("instagram"):
+                vals["instagram"] = content["instagram"]
+            if vals:
+                company.write(vals)
+                migrated += 1
+        return migrated
 
     def _replace_visuals_from_json(self, field_names):
         """Reconstruye los controles visuales cuando el panel web escribe el JSON.
