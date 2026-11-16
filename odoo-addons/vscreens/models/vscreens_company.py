@@ -439,6 +439,35 @@ class VScreenSCompany(models.Model):
             return settings
         return None
 
+    @api.model
+    def _youtube_key(self, url):
+        """Identificador estable del video (ID de YouTube) a partir de la URL."""
+        import re
+
+        if not url:
+            return False
+        match = re.search(
+            r'(?:youtube\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts|live)/|.*[?&]v=)|youtu\.be/)'
+            r'([^"&?/\s]{11})',
+            url,
+        )
+        return match.group(1) if match else url
+
+    def _cleanup_playlist_duplicates(self):
+        """Elimina videos repetidos (misma URL o mismo ID de YouTube)."""
+        removed = 0
+        Playlist = self.env["vscreens.playlist.item"]
+        for company in self:
+            seen = set()
+            for item in Playlist.search([("company_id", "=", company.id)], order="id"):
+                key = item.youtube_id or self._youtube_key(item.url)
+                if key in seen:
+                    item.unlink()
+                    removed += 1
+                else:
+                    seen.add(key)
+        return removed
+
     def _hydrate_visuals_from_json(self):
         """Completa los controles visuales con la configuración JSON histórica.
 
@@ -467,8 +496,7 @@ class VScreenSCompany(models.Model):
                 if not url:
                     sequence += 10
                     continue
-                temp = Playlist.new({"url": url})
-                key = temp.youtube_id or url
+                key = self._youtube_key(url)
                 if key in known:
                     sequence += 10
                     continue
@@ -487,13 +515,7 @@ class VScreenSCompany(models.Model):
                 sequence += 10
 
             # Elimina duplicados históricos del mismo video
-            seen_ids = set()
-            for item in company.playlist_items.sorted("id"):
-                key = item.youtube_id or item.url
-                if key in seen_ids:
-                    item.unlink()
-                else:
-                    seen_ids.add(key)
+            company._cleanup_playlist_duplicates()
 
             # Videos programados
             known_scheduled = {
