@@ -203,7 +203,7 @@
 /* Panel de vista previa: más ancho para que el video se distinga */
 .vs_tv_preview {
     width: 600px;
-    max-width: min(620px, 55vw);
+    max-width: 620px;
 }
 
 .vs_tv_preview_online {
@@ -221,7 +221,7 @@
 
 .vs_tv_preview_expanded .vs_tv_preview_screen {
     aspect-ratio: auto;
-    height: min(62vh, 660px);
+    height: 62vh;
 }
 
 .vs_tv_preview_expanded .vs_tv_preview_devices {
