@@ -1,5 +1,6 @@
 import mimetypes
 import os
+import requests
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -227,9 +228,33 @@ class VScreenSPublicController(http.Controller):
             ("Content-Disposition", 'attachment; filename="VScreenS_TV.apk"'),
         ])
 
+
+    def _tiny_url(self, cache_key, target):
+        """Devuelve un enlace corto de TinyURL con caché para evitar llamadas repetidas."""
+        params = request.env["ir.config_parameter"].sudo()
+        cached = params.get_str(cache_key, "")
+        cached_target = params.get_str(f"{cache_key}_target", "")
+        if cached and cached_target == target:
+            return cached
+        try:
+            response = requests.get(
+                "https://tinyurl.com/api-create.php",
+                params={"url": target},
+                timeout=5,
+            )
+            if response.ok and response.text.strip().startswith("http"):
+                short = response.text.strip()
+                params.set_param(cache_key, short)
+                params.set_param(f"{cache_key}_target", target)
+                return short
+        except Exception:
+            pass
+        return target
+
     @http.route("/api/downloads/tv/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def short_url(self, **kwargs):
-        return json_response({"url": f"{public_url()}/downloads/tv"})
+        target = f"{public_url()}/downloads/tv"
+        return json_response({"url": self._tiny_url("vscreens.short_url_tv", target)})
 
     @http.route("/downloads/mobile", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def download_mobile(self, **kwargs):
@@ -247,7 +272,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/downloads/mobile/short-url", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def short_url_mobile(self, **kwargs):
-        return json_response({"url": f"{public_url()}/downloads/mobile"})
+        target = f"{public_url()}/downloads/mobile"
+        return json_response({"url": self._tiny_url("vscreens.short_url_mobile", target)})
 
     @http.route("/website/logo/<string:filename>", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def website_logo(self, filename, **kwargs):
