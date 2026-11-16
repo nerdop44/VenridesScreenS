@@ -686,6 +686,28 @@ class VScreenSCompany(models.Model):
                 )
         return res
 
+    def _active_scheduled_from_visual(self):
+        """Videos programados activos según la ventana de fecha/hora configurada."""
+        self.ensure_one()
+        now = fields.Datetime.now()
+        active = []
+        for item in self.scheduled_video_items:
+            if not item.is_active or not item.url:
+                continue
+            if item.start_datetime and now < item.start_datetime:
+                continue
+            if item.end_datetime and now > item.end_datetime:
+                continue
+            active.append({
+                "url": item.url,
+                "title": item.title or "",
+                "start": fields.Datetime.to_string(item.start_datetime) if item.start_datetime else False,
+                "end": fields.Datetime.to_string(item.end_datetime) if item.end_datetime else False,
+                "duration": item.duration or 300,
+                "scheduled": True,
+            })
+        return active
+
     def _merged_bottom_bar(self, extra=None):
         """Barra inferior con los mensajes configurados y las redes sociales del cliente."""
         self.ensure_one()
@@ -724,11 +746,25 @@ class VScreenSCompany(models.Model):
             "google_drive_link": self.google_drive_link,
             "video_source": self.video_source,
             "priority_content_url": self.priority_content_url,
-            "video_playlist": self.video_playlist or [],
-            "scheduled_videos": self._active_scheduled_videos(),
-            "sidebar_content": self.sidebar_content or [],
-            "bottom_bar_content": self._merged_bottom_bar(),
-            "design_settings": self.design_settings or {},
+            "video_playlist": (
+                self._dump_visual_field("playlist_items")
+                if self.playlist_items else (self.video_playlist or [])
+            ),
+            "scheduled_videos": (
+                self._active_scheduled_from_visual()
+                if self.scheduled_video_items else self._active_scheduled_videos()
+            ),
+            "sidebar_content": (
+                self._dump_visual_field("sidebar_items")
+                if self.sidebar_items else (self.sidebar_content or [])
+            ),
+            "bottom_bar_content": self._merged_bottom_bar(
+                self._dump_visual_field("bottom_bar_items") if self.bottom_bar_items else None
+            ),
+            "design_settings": (
+                self._dump_visual_field("design_settings_id")
+                if self.design_settings_id else (self.design_settings or {})
+            ),
             "pause_duration": self.pause_duration,
             "bcv_rate": get_bcv_rate(self.env),
             "plan": self.plan_code or "free",
