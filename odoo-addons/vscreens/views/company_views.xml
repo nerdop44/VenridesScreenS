@@ -175,7 +175,6 @@
                                     <field name="title"/>
                                     <field name="url" widget="url" placeholder="https://www.youtube.com/watch?v=..."/>
                                     <field name="youtube_id" readonly="1" optional="hide"/>
-                                    <field name="is_active" string="Activo"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -192,7 +191,6 @@
                                     <field name="start_datetime"/>
                                     <field name="end_datetime"/>
                                     <field name="duration"/>
-                                    <field name="is_active" string="Activo"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -208,7 +206,6 @@
                                     <field name="value"/>
                                     <field name="icon"/>
                                     <field name="color" widget="color"/>
-                                    <field name="is_active" string="Activo"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -223,7 +220,6 @@
                                     <field name="label"/>
                                     <field name="value"/>
                                     <field name="color" widget="color"/>
-                                    <field name="is_active" string="Activo"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
