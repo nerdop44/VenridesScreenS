@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Lista visual de empresas -->
+    <!-- ============================================================================
+         LISTA VISUAL DE EMPRESAS
+         ============================================================================ -->
     <record id="view_vscreens_company_list" model="ir.ui.view">
         <field name="name">vscreens.company.list</field>
         <field name="model">vscreens.company</field>
@@ -16,7 +18,9 @@
         </field>
     </record>
 
-    <!-- Kanban visual y atractivo -->
+    <!-- ============================================================================
+         KANBAN VISUAL Y ATRACTIVO
+         ============================================================================ -->
     <record id="view_vscreens_company_kanban" model="ir.ui.view">
         <field name="name">vscreens.company.kanban</field>
         <field name="model">vscreens.company</field>
@@ -54,7 +58,9 @@
         </field>
     </record>
 
-    <!-- Formulario visual y atractivo - SIN código expuesto -->
+    <!-- ============================================================================
+         FORMULARIO VISUAL Y ATRACTIVO - SIN CÓDIGO EXPUESTO
+         ============================================================================ -->
     <record id="view_vscreens_company_form" model="ir.ui.view">
         <field name="name">vscreens.company.form</field>
         <field name="model">vscreens.company</field>
@@ -166,8 +172,7 @@
                         </page>
                         <page string="📺 TV en Vivo">
                             <group col="1">
-                                <field name="device_ids" widget="one2many_list" options="{'open': true}"/>
-                                <div style="margin-top: 1rem;">
+                                <div style="margin-bottom: 1rem;">
                                     <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Previsualización Real Time</h3>
                                     <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
                                         <button type="button" class="btn btn-primary" id="btn-sync-tv" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
@@ -193,7 +198,37 @@
                         </page>
                         <page string="📧 Notificaciones">
                             <group col="4">
-                                <field name="notes"/>
+                                <!-- Notificaciones como toggle switches en lugar de JSON crudo -->
+                                <group string="Tipos de Notificación">
+                                    <group>
+                                        <field name="auto_notification_settings" widget="boolean_toggle" invisible="1"/>
+                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" id="notif_welcome" style="accent-color: #c8ff00;"/>
+                                                <label for="notif_welcome" style="cursor: pointer; font-size: 0.85rem;">👋 Bienvenida</label>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" id="notif_billing" style="accent-color: #c8ff00;"/>
+                                                <label for="notif_billing" style="cursor: pointer; font-size: 0.85rem;">💰 Cobranza</label>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" id="notif_expiry" style="accent-color: #c8ff00;"/>
+                                                <label for="notif_expiry" style="cursor: pointer; font-size: 0.85rem;">⚠️ Vencimiento</label>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" id="notif_birthday" style="accent-color: #c8ff00;"/>
+                                                <label for="notif_birthday" style="cursor: pointer; font-size: 0.85rem;">🎂 Cumpleaños</label>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <input type="checkbox" id="notif_holiday" style="accent-color: #c8ff00;"/>
+                                                <label for="notif_holiday" style="cursor: pointer; font-size: 0.85rem;">🎄 Festividades</label>
+                                            </div>
+                                        </div>
+                                        <p class="oe_form_helper_text" style="font-size: 0.75rem; opacity: 0.7;">
+                                            Activa/desactiva los tipos de notificación automática para esta empresa.
+                                        </p>
+                                    </group>
+                                </group>
                             </group>
                         </page>
                         <page string="📜 Historial">

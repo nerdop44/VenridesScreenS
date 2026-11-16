@@ -119,6 +119,27 @@ class VScreenSCompany(models.Model):
         "company_id",
         string="Dispositivos",
     )
+    # Campos booleanos para notificaciones (sincronizados con auto_notification_settings JSON)
+    notification_welcome = fields.Boolean(
+        string="Bienvenida",
+        default=True,
+    )
+    notification_billing = fields.Boolean(
+        string="Cobranza",
+        default=True,
+    )
+    notification_expiry_reminders = fields.Boolean(
+        string="Vencimiento",
+        default=True,
+    )
+    notification_birthday_greetings = fields.Boolean(
+        string="Cumpleaños",
+        default=True,
+    )
+    notification_holiday_greetings = fields.Boolean(
+        string="Festividades",
+        default=True,
+    )
 
     auto_notification_settings = fields.Json(
         string="Notificaciones automáticas",
@@ -383,6 +404,15 @@ class VScreenSCompany(models.Model):
         else:
             vals['bottom_bar_content'] = {'items': []}
 
+        # Notificaciones automáticas (campos booleanos)
+        vals['auto_notification_settings'] = {
+            'welcome': bool(self.notification_welcome),
+            'billing': bool(self.notification_billing),
+            'expiry_reminders': bool(self.notification_expiry_reminders),
+            'birthday_greetings': bool(self.notification_birthday_greetings),
+            'holiday_greetings': bool(self.notification_holiday_greetings),
+        }
+
         # Design settings
         if self.design_settings_id:
             ds = self.design_settings_id[0]
@@ -444,6 +474,18 @@ class VScreenSCompany(models.Model):
         res = super().write(vals)
         for rec in self:
             rec._sync_vsm_to_json()
+        return res
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        # Si hay auto_notification_settings en JSON, poblar los campos booleanos
+        if res.get('auto_notification_settings') and isinstance(res.get('auto_notification_settings'), dict):
+            ann = res['auto_notification_settings']
+            for field in ['notification_welcome', 'notification_billing', 'notification_expiry_reminders',
+                          'notification_birthday_greetings', 'notification_holiday_greetings']:
+                if field in fields_list and res.get(field) in (None, False, ''):
+                    res[field] = bool(ann.get(field.replace('notification_', ''), False))
         return res
 
     def _base_config(self):
