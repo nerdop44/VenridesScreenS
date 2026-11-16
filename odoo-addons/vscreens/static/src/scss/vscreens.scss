@@ -252,3 +252,28 @@
     padding: 5px 8px;
     margin-bottom: 0.45rem;
 }
+
+/* Pantalla completa real del panel de previsualización (incluye cambios sin guardar) */
+.vs_tv_preview:fullscreen {
+    float: none;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    margin: 0;
+    padding: 14px;
+    border-radius: 0;
+    border: 0;
+    background: #000000;
+    display: flex;
+    flex-direction: column;
+}
+
+.vs_tv_preview:fullscreen .vs_tv_preview_screen {
+    aspect-ratio: auto;
+    flex: 1 1 auto;
+    height: auto;
+}
+
+.vs_tv_preview:fullscreen .vs_tv_preview_devices {
+    max-height: 120px;
+}

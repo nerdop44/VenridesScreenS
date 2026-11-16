@@ -211,7 +211,7 @@
                 </button>
                 <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.toggleExpanded">
                     <i class="fa" t-att-class="this.expanded ? 'fa-compress' : 'fa-expand'"/>
-                    <t t-esc="this.expanded ? 'Reducir' : 'Ampliar'"/>
+                    <t t-esc="this.expanded ? 'Salir' : 'Pantalla completa'"/>
                 </button>
                 <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.openFullscreen" title="Abrir en una pestaña nueva">
                     <i class="fa fa-external-link"/>

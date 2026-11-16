@@ -51,6 +51,7 @@ export class VscreensTvPreviewField extends Component {
         this.notification = useService("notification");
         this.companyId = this.props.record.resId;
         this.baseConfig = {};
+        this.logoStamp = Date.now();
         this.previewUrl = `https://vscreens-tv.inverpave.com/?preview=${this.companyId}`;
 
         this._devices = signal([]);
@@ -218,6 +219,13 @@ export class VscreensTvPreviewField extends Component {
             };
         }
 
+        const logoImg = document.querySelector('.o_field_widget[name="logo"] img');
+        if (logoImg && logoImg.src && logoImg.src.startsWith("data:")) {
+            draft.logo_url = logoImg.src;
+        } else if (data.logo) {
+            draft.logo_url = `${window.location.origin}/web/image/vscreens.company/${this.companyId}/logo?unique=${this.logoStamp}`;
+        }
+
         const design = this.rowData("design_settings_id")[0];
         if (design) {
             draft.design_settings = {
@@ -326,11 +334,30 @@ export class VscreensTvPreviewField extends Component {
         }
     }
 
-    toggleExpanded() {
-        this._expanded.set(!this._expanded());
+    async toggleExpanded() {
+        const expanding = !this._expanded();
+        this._expanded.set(expanding);
+        const panel = document.querySelector(".vs_tv_preview");
+        if (!panel) {
+            return;
+        }
+        try {
+            if (expanding && panel.requestFullscreen) {
+                await panel.requestFullscreen();
+            } else if (!expanding && document.fullscreenElement) {
+                await document.exitFullscreen();
+            }
+        } catch (error) {
+            console.warn("VScreenS: no se pudo activar pantalla completa", error);
+        }
     }
 
-    openFullscreen() {
+    async openFullscreen() {
+        try {
+            await this.props.record.save();
+        } catch (error) {
+            return;
+        }
         window.open(this.previewUrl, "_blank", "noopener");
     }
 }

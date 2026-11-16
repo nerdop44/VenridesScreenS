@@ -712,6 +712,17 @@ class VScreenSCompany(models.Model):
             })
         return active
 
+    def _logo_url(self):
+        """URL pública del logo: la configurada o el archivo subido en Odoo."""
+        self.ensure_one()
+        if self.logo_url:
+            return self.logo_url
+        if not self.logo:
+            return False
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
+        stamp = int(self.write_date.timestamp()) if self.write_date else 0
+        return f"{base}/web/image/vscreens.company/{self.id}/logo?unique={stamp}"
+
     def _merged_bottom_bar(self, extra=None):
         """Barra inferior con los mensajes configurados y las redes sociales del cliente."""
         self.ensure_one()
@@ -745,7 +756,7 @@ class VScreenSCompany(models.Model):
             "primary_color": self.primary_color,
             "secondary_color": self.secondary_color,
             "accent_color": self.accent_color,
-            "logo_url": self.logo_url,
+            "logo_url": self._logo_url(),
             "filler_keywords": self.filler_keywords,
             "google_drive_link": self.google_drive_link,
             "video_source": self.video_source,
