@@ -18,6 +18,11 @@ class VScreenSDevice(models.Model):
     ping_requested_at = fields.Datetime(string="Ping solicitado")
 
     is_online = fields.Boolean(string="En línea", compute="_compute_is_online")
+    is_effective = fields.Boolean(
+        string="Operativa",
+        compute="_compute_is_effective",
+        help="La pantalla está habilitada y la empresa tiene el servicio activo y vigente.",
+    )
 
     _uuid_uniq = models.Constraint("UNIQUE(uuid)", "El UUID de la pantalla debe ser único.")
 
@@ -26,6 +31,17 @@ class VScreenSDevice(models.Model):
         now = fields.Datetime.now()
         for device in self:
             device.is_online = bool(device.last_ping and (now - device.last_ping) < timedelta(minutes=5))
+
+    @api.depends("is_active", "company_id.is_active", "company_id.valid_until")
+    def _compute_is_effective(self):
+        for device in self:
+            company = device.company_id
+            device.is_effective = bool(
+                device.is_active
+                and company
+                and company.is_active
+                and not company._is_expired()
+            )
 
     def register_ping(self, ip=None):
         self.ensure_one()

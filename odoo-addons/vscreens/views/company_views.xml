@@ -40,8 +40,8 @@
                         <div class="oe_kanban_global_click">
                             <div class="d-flex justify-content-between align-items-start">
                                 <strong class="o_kanban_record_title"><field name="name"/></strong>
-                                <span t-if="is_active" class="vs_kanban_badge_on">ACTIVA</span>
-                                <span t-if="!is_active" class="vs_kanban_badge_off">SUSPENDIDA</span>
+                                <span t-if="record.is_active.value" class="vs_kanban_badge_on">ACTIVA</span>
+                                <span t-if="!record.is_active.value" class="vs_kanban_badge_off">SUSPENDIDA</span>
                             </div>
                             <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">
                                 <field name="plan_id"/>
@@ -53,7 +53,7 @@
                             <div class="text-muted" style="font-size: 0.72rem;">
                                 <field name="active_screens"/>/<field name="total_screens"/> pantallas habilitadas
                             </div>
-                            <div class="text-muted" style="font-size: 0.72rem;" t-if="valid_until">
+                            <div class="text-muted" style="font-size: 0.72rem;" t-if="record.valid_until.value">
                                 Vence: <field name="valid_until"/>
                             </div>
                             <div class="oe_kanban_bottom_right mt-2">
@@ -103,6 +103,11 @@
                         <button name="action_view_tickets" type="object" class="oe_stat_button" icon="fa-life-ring">
                             <span class="o_stat_text">Tickets</span>
                         </button>
+                    </div>
+                    <div class="alert alert-warning" role="status" invisible="is_active">
+                        <strong>Servicio suspendido.</strong>
+                        Las pantallas de esta empresa no están mostrando contenido.
+                        Activa la empresa en «Información de la Empresa» para reanudar el servicio.
                     </div>
                     <div class="oe_title">
                         <label for="name" string="Nombre Comercial"/>
@@ -250,13 +255,15 @@
                                     <field name="name"/>
                                     <field name="uuid" optional="hide"/>
                                     <field name="is_online" string="Transmitiendo"/>
+                                    <field name="is_effective" string="Operativa"/>
                                     <field name="is_active" string="Habilitada" widget="boolean_toggle"/>
                                     <field name="last_ping" string="Última conexión"/>
                                     <field name="last_ip" optional="hide"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                "Transmitiendo" significa que la pantalla se conectó en los últimos 5 minutos.
+                                «Transmitiendo»: la pantalla se conectó en los últimos 5 minutos.
+                                «Operativa»: la pantalla está habilitada y la empresa tiene el servicio activo y vigente.
                                 Usa el panel de vista previa para enviar cambios a todas o sólo a algunas pantallas.
                             </p>
                         </page>
