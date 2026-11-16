@@ -226,7 +226,7 @@ export class VscreensTvPreviewField extends Component {
         }
         this.state.sending = true;
         try {
-            await this.props.record.save({ stayInEdition: true });
+            await this.props.record.save();
             const ids = this.selectedIds;
             await this.orm.call(
                 "vscreens.company",
