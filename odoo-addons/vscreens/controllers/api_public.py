@@ -244,8 +244,8 @@ class VScreenSPublicController(http.Controller):
             )
             if response.ok and response.text.strip().startswith("http"):
                 short = response.text.strip()
-                params.set_param(cache_key, short)
-                params.set_param(f"{cache_key}_target", target)
+                params.set_str(cache_key, short)
+                params.set_str(f"{cache_key}_target", target)
                 return short
         except Exception:
             pass
