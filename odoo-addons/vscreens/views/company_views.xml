@@ -1,55 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ============================================================================
-         LISTA VISUAL DE EMPRESAS
+         LISTA DE EMPRESAS
          ============================================================================ -->
     <record id="view_vscreens_company_list" model="ir.ui.view">
         <field name="name">vscreens.company.list</field>
         <field name="model">vscreens.company</field>
         <field name="arch" type="xml">
-            <list string="Empresas Registradas">
+            <list string="Empresas Registradas" decoration-danger="not is_active">
                 <field name="name"/>
                 <field name="plan_id"/>
-                <field name="total_screens"/>
-                <field name="active_screens"/>
+                <field name="total_screens" string="Pantallas"/>
+                <field name="online_screens" string="Transmitiendo"/>
+                <field name="offline_screens" string="Sin señal"/>
                 <field name="valid_until"/>
-                <field name="is_active" widget="boolean_toggle"/>
+                <field name="is_active" widget="boolean_toggle" string="Activa"/>
             </list>
         </field>
     </record>
 
     <!-- ============================================================================
-         KANBAN VISUAL Y ATRACTIVO
+         KANBAN: estado real de las pantallas por empresa
          ============================================================================ -->
     <record id="view_vscreens_company_kanban" model="ir.ui.view">
         <field name="name">vscreens.company.kanban</field>
         <field name="model">vscreens.company</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="plan_id">
+            <kanban default_group_by="plan_id" class="o_kanban_mobile">
                 <field name="name"/>
                 <field name="plan_id"/>
                 <field name="total_screens"/>
                 <field name="active_screens"/>
+                <field name="online_screens"/>
+                <field name="offline_screens"/>
                 <field name="is_active"/>
                 <field name="valid_until"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click">
-                            <div class="o_kanban_card_content">
+                            <div class="d-flex justify-content-between align-items-start">
                                 <strong class="o_kanban_record_title"><field name="name"/></strong>
-                                <div class="o_kanban_card_subtitle">
-                                    <span class="badge"><field name="plan_id"/></span>
-                                    <span t-if="is_active" class="badge-status">ACTIVA</span>
-                                    <span t-if="!is_active" class="badge-status suspended">SUSPENDIDA</span>
-                                </div>
-                                <div class="o_kanban_card_stats">
-                                    <span>Pantallas: <field name="active_screens"/>/<field name="total_screens"/></span>
-                                    <span t-if="valid_until" class="valid-until">Vence: <field name="valid_until"/></span>
-                                </div>
+                                <span t-if="is_active" class="vs_kanban_badge_on">ACTIVA</span>
+                                <span t-if="!is_active" class="vs_kanban_badge_off">SUSPENDIDA</span>
                             </div>
-                            <div class="oe_kanban_footer">
-                                <button name="action_preview_tv" type="object" class="oe_kanban_button_small" string="TV"/>
-                                <button name="action_view_devices" type="object" class="oe_kanban_button_small" string="Pantallas"/>
+                            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">
+                                <field name="plan_id"/>
+                            </div>
+                            <div class="vs_kanban_screens">
+                                <span class="vs_on">● <field name="online_screens"/> transmitiendo</span>
+                                <span class="vs_off">● <field name="offline_screens"/> sin señal</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;">
+                                <field name="active_screens"/>/<field name="total_screens"/> pantallas habilitadas
+                            </div>
+                            <div class="text-muted" style="font-size: 0.72rem;" t-if="valid_until">
+                                Vence: <field name="valid_until"/>
+                            </div>
+                            <div class="oe_kanban_bottom_right mt-2">
+                                <button name="action_view_devices" type="object"
+                                        class="btn btn-sm btn-link" string="Ver pantallas"/>
                             </div>
                         </div>
                     </t>
@@ -59,7 +68,9 @@
     </record>
 
     <!-- ============================================================================
-         FORMULARIO VISUAL Y ATRACTIVO - SIN CÓDIGO EXPUESTO
+         FORMULARIO DE EMPRESA
+         - Panel de vista previa en vivo, arriba a la derecha sobre las pestañas.
+         - Sin JSON ni código expuesto: todos los ajustes son controles visuales.
          ============================================================================ -->
     <record id="view_vscreens_company_form" model="ir.ui.view">
         <field name="name">vscreens.company.form</field>
@@ -67,17 +78,24 @@
         <field name="arch" type="xml">
             <form string="Empresa">
                 <header>
-                    <button name="action_preview_tv" type="object" string="📺 Previsualizar TV" class="oe_highlight"/>
-                    <button name="action_generate_registration_code" type="object" string="🔗 Generar Código de Vinculación"/>
-                    <button name="action_view_devices" type="object" string="📺 Gestionar Dispositivos"/>
+                    <button name="action_push_config" type="object"
+                            string="📡 Enviar a Pantallas" class="oe_highlight"
+                            help="Publica la configuración actual en todas las pantallas o en las seleccionadas."/>
+                    <button name="action_generate_registration_code" type="object"
+                            string="🔗 Código de Vinculación"/>
+                    <button name="action_view_devices" type="object"
+                            string="🖥 Gestionar Pantallas"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_devices" type="object" class="oe_stat_button" icon="fa-tv">
-                            <field name="total_screens" widget="statinfo" string="Pantallas Totales"/>
+                            <field name="total_screens" widget="statinfo" string="Pantallas"/>
+                        </button>
+                        <button name="action_view_devices" type="object" class="oe_stat_button" icon="fa-signal">
+                            <field name="online_screens" widget="statinfo" string="Transmitiendo"/>
                         </button>
                         <button name="action_view_users" type="object" class="oe_stat_button" icon="fa-users">
-                            <field name="active_screens" widget="statinfo" string="Pantallas Activas"/>
+                            <field name="active_screens" widget="statinfo" string="Habilitadas"/>
                         </button>
                         <button name="action_view_payments" type="object" class="oe_stat_button" icon="fa-money">
                             <span class="o_stat_text">Pagos</span>
@@ -90,6 +108,12 @@
                         <label for="name" string="Nombre Comercial"/>
                         <h1><field name="name" placeholder="Nombre de la empresa"/></h1>
                     </div>
+
+                    <!-- Vista previa en vivo: flota arriba a la derecha, sobre las pestañas -->
+                    <div class="vs_tv_preview_anchor">
+                        <field name="config_version" widget="vscreens_tv_preview"/>
+                    </div>
+
                     <group string="Información de la Empresa" col="4">
                         <field name="partner_id"/>
                         <field name="plan_id"/>
@@ -97,20 +121,23 @@
                         <field name="email"/>
                         <field name="phone"/>
                         <field name="whatsapp"/>
-                        <field name="is_active" widget="boolean_toggle"/>
                         <field name="valid_until"/>
+                        <field name="is_active" widget="boolean_toggle"/>
                     </group>
+
                     <notebook>
-                        <page string="📋 Perfil de Negocio">
+                        <page string="📋 Perfil de Negocio" name="profile">
                             <group col="4">
                                 <field name="address"/>
                                 <field name="instagram"/>
                                 <field name="facebook"/>
                                 <field name="tiktok"/>
                                 <field name="contact_person"/>
+                                <field name="birthday"/>
                             </group>
                         </page>
-                        <page string="🎨 Diseño y Branding">
+
+                        <page string="🎨 Diseño y Branding" name="branding">
                             <group col="4">
                                 <field name="layout_type"/>
                                 <field name="primary_color" widget="color"/>
@@ -119,8 +146,13 @@
                                 <field name="logo" widget="image" options="{'size': [0, 120]}"/>
                                 <field name="logo_url"/>
                             </group>
+                            <group string="Encabezado de la barra lateral" col="4">
+                                <field name="sidebar_header_type"/>
+                                <field name="sidebar_header_value"/>
+                            </group>
                         </page>
-                        <page string="📺 Contenido TV">
+
+                        <page string="📺 Contenido TV" name="content">
                             <group col="4">
                                 <field name="video_source"/>
                                 <field name="filler_keywords"/>
@@ -130,108 +162,122 @@
                                 <field name="ad_frequency"/>
                             </group>
                         </page>
-                        <page string="🎵 Playlist de Videos">
-                            <group col="1">
-                                <field name="playlist_items" widget="one2many_list" options="{'open': true}"/>
-                                <p class="oe_form_helper_text" style="font-size: 12px; opacity: 0.7;">
-                                    Agrega videos de YouTube a la playlist. Cada video se reproduce en secuencia en la TV.
-                                </p>
-                            </group>
+
+                        <page string="🎵 Playlist de Videos" name="playlist">
+                            <field name="playlist_items">
+                                <list editable="bottom" string="Playlist">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="title"/>
+                                    <field name="url" widget="url" placeholder="https://www.youtube.com/watch?v=..."/>
+                                    <field name="youtube_id" readonly="1" optional="hide"/>
+                                    <field name="is_active" string="Activo"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                Los videos se reproducen en secuencia en la TV. Pega la URL completa de YouTube.
+                            </p>
                         </page>
-                        <page string="📅 Videos Programados">
-                            <group col="1">
-                                <field name="scheduled_video_items" widget="one2many_list" options="{'open': true}"/>
-                                <p class="oe_form_helper_text" style="font-size: 12px; opacity: 0.7;">
-                                    Programa videos para reproducirse en fechas y horas específicas. Tienen prioridad sobre la playlist normal.
-                                </p>
-                            </group>
+
+                        <page string="📅 Videos Programados" name="scheduled">
+                            <field name="scheduled_video_items">
+                                <list editable="bottom" string="Videos programados">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="title"/>
+                                    <field name="url" widget="url" placeholder="https://www.youtube.com/watch?v=..."/>
+                                    <field name="start_datetime"/>
+                                    <field name="end_datetime"/>
+                                    <field name="duration"/>
+                                    <field name="is_active" string="Activo"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                Tienen prioridad sobre la playlist durante su ventana de fecha y hora.
+                            </p>
                         </page>
-                        <page string="📊 Barra Lateral">
-                            <group col="1">
-                                <field name="sidebar_items" widget="one2many_list" options="{'open': true}"/>
-                                <p class="oe_form_helper_text" style="font-size: 12px; opacity: 0.7;">
-                                    Agrega ítems a la barra lateral de la TV (etiquetas, valores, iconos, colores).
-                                </p>
-                            </group>
+
+                        <page string="📊 Barra Lateral" name="sidebar">
+                            <field name="sidebar_items">
+                                <list editable="bottom" string="Ítems de barra lateral">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="label"/>
+                                    <field name="value"/>
+                                    <field name="icon"/>
+                                    <field name="color" widget="color"/>
+                                    <field name="is_active" string="Activo"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                Rotan automáticamente según la pausa configurada. El valor es el texto que se muestra en la TV.
+                            </p>
                         </page>
-                        <page string="🔻 Barra Inferior">
-                            <group col="1">
-                                <field name="bottom_bar_items" widget="one2many_list" options="{'open': true}"/>
-                                <p class="oe_form_helper_text" style="font-size: 12px; opacity: 0.7;">
-                                    Agrega ítems a la barra inferior de la TV (ticker, anuncios, información).
-                                </p>
-                            </group>
+
+                        <page string="🔻 Barra Inferior" name="bottom_bar">
+                            <field name="bottom_bar_items">
+                                <list editable="bottom" string="Mensajes del ticker">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="label"/>
+                                    <field name="value"/>
+                                    <field name="color" widget="color"/>
+                                    <field name="is_active" string="Activo"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                Cada ítem es un mensaje del ticker inferior. El orden se puede arrastrar.
+                            </p>
                         </page>
-                        <page string="⚙️ Ajustes de Diseño">
-                            <group col="4">
-                                <field name="design_settings_id" widget="one2many_list" options="{'open': true}"/>
-                                <p class="oe_form_helper_text" style="font-size: 12px; opacity: 0.7;">
-                                    Configura fuentes, colores, tamaños y efectos visuales de la TV.
-                                </p>
-                            </group>
+
+                        <page string="⚙️ Ajustes de Diseño" name="design">
+                            <field name="design_settings_id">
+                                <list string="Ajustes de diseño" editable="bottom">
+                                    <field name="title_font"/>
+                                    <field name="title_color" widget="color"/>
+                                    <field name="title_size"/>
+                                    <field name="sidebar_width"/>
+                                    <field name="sidebar_bg" widget="color"/>
+                                    <field name="sidebar_text" widget="color"/>
+                                    <field name="bottom_bar_bg" widget="color"/>
+                                    <field name="show_bcv" string="BCV"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                Fuentes, colores, efectos y tasa BCV de la pantalla. Se aplica a todas las pantallas de la empresa.
+                            </p>
                         </page>
-                        <page string="📺 TV en Vivo">
-                            <group col="1">
-                                <div style="margin-bottom: 1rem;">
-                                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Previsualización Real Time</h3>
-                                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
-                                        <button type="button" class="btn btn-primary" id="btn-sync-tv" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                                            <i class="fa fa-sync"/> Aplicar en Vivo
-                                        </button>
-                                        <button type="button" class="btn" id="btn-fullscreen-tv" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                                            <i class="fa fa-expand"/> Pantalla Completa
-                                        </button>
-                                        <span id="tv-sync-status" style="font-size: 0.8rem; color: #666;">Listo</span>
-                                    </div>
-                                    <div style="background: #0a0e1a; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); height: 400px; display: flex; align-items: center; justify-content: center;">
-                                        <iframe id="tv-preview-iframe"
-                                            style="width: 100%; height: 100%; border: none;"
-                                            title="TV Preview">
-                                        </iframe>
-                                    </div>
-                                    <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #888;">
-                                        Los cambios se reflejan inmediatamente en la previsualización.
-                                        Las pantallas físicas se actualizan automáticamente cada pocos segundos.
-                                    </div>
-                                </div>
-                            </group>
+
+                        <page string="🖥 Pantallas" name="devices">
+                            <field name="device_ids" readonly="1">
+                                <list string="Pantallas" create="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="uuid" optional="hide"/>
+                                    <field name="is_online" string="Transmitiendo"/>
+                                    <field name="is_active" string="Habilitada" widget="boolean_toggle"/>
+                                    <field name="last_ping" string="Última conexión"/>
+                                    <field name="last_ip" optional="hide"/>
+                                </list>
+                            </field>
+                            <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+                                "Transmitiendo" significa que la pantalla se conectó en los últimos 5 minutos.
+                                Usa el panel de vista previa para enviar cambios a todas o sólo a algunas pantallas.
+                            </p>
                         </page>
-                        <page string="📧 Notificaciones">
-                            <group col="4">
-                                <!-- Notificaciones como toggle switches en lugar de JSON crudo -->
-                                <group string="Tipos de Notificación">
-                                    <group>
-                                        <field name="auto_notification_settings" widget="boolean_toggle" invisible="1"/>
-                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" id="notif_welcome" style="accent-color: #c8ff00;"/>
-                                                <label for="notif_welcome" style="cursor: pointer; font-size: 0.85rem;">👋 Bienvenida</label>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" id="notif_billing" style="accent-color: #c8ff00;"/>
-                                                <label for="notif_billing" style="cursor: pointer; font-size: 0.85rem;">💰 Cobranza</label>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" id="notif_expiry" style="accent-color: #c8ff00;"/>
-                                                <label for="notif_expiry" style="cursor: pointer; font-size: 0.85rem;">⚠️ Vencimiento</label>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" id="notif_birthday" style="accent-color: #c8ff00;"/>
-                                                <label for="notif_birthday" style="cursor: pointer; font-size: 0.85rem;">🎂 Cumpleaños</label>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                <input type="checkbox" id="notif_holiday" style="accent-color: #c8ff00;"/>
-                                                <label for="notif_holiday" style="cursor: pointer; font-size: 0.85rem;">🎄 Festividades</label>
-                                            </div>
-                                        </div>
-                                        <p class="oe_form_helper_text" style="font-size: 0.75rem; opacity: 0.7;">
-                                            Activa/desactiva los tipos de notificación automática para esta empresa.
-                                        </p>
-                                    </group>
+
+                        <page string="📧 Notificaciones" name="notifications">
+                            <group string="Avisos automáticos" col="2">
+                                <group>
+                                    <field name="notification_welcome" widget="boolean_toggle"/>
+                                    <field name="notification_billing" widget="boolean_toggle"/>
+                                    <field name="notification_expiry_reminders" widget="boolean_toggle"/>
+                                </group>
+                                <group>
+                                    <field name="notification_birthday_greetings" widget="boolean_toggle"/>
+                                    <field name="notification_holiday_greetings" widget="boolean_toggle"/>
                                 </group>
                             </group>
+                            <separator string="Notas internas"/>
+                            <field name="notes" placeholder="Notas visibles sólo para el equipo de VScreenS"/>
                         </page>
-                        <page string="📜 Historial">
+
+                        <page string="📜 Historial" name="history">
                             <field name="message_ids" readonly="1"/>
                         </page>
                     </notebook>
@@ -240,6 +286,9 @@
         </field>
     </record>
 
+    <!-- ============================================================================
+         BÚSQUEDA
+         ============================================================================ -->
     <record id="view_vscreens_company_search" model="ir.ui.view">
         <field name="name">vscreens.company.search</field>
         <field name="model">vscreens.company</field>

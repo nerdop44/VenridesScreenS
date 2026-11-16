@@ -114,12 +114,7 @@ class VScreenSCompany(models.Model):
         "company_id",
         string="Ajustes de Diseño",
     )
-    device_ids = fields.One2many(
-        "vscreens.device",
-        "company_id",
-        string="Dispositivos",
-    )
-    # Campos booleanos para notificaciones (sincronizados con auto_notification_settings JSON)
+    # Campos booleanos para notificaciones (se guardan en auto_notification_settings)
     notification_welcome = fields.Boolean(
         string="Bienvenida",
         default=True,
@@ -162,13 +157,29 @@ class VScreenSCompany(models.Model):
 
     total_screens = fields.Integer(string="Pantallas totales", compute="_compute_screen_counts")
     active_screens = fields.Integer(string="Pantallas activas", compute="_compute_screen_counts")
+    online_screens = fields.Integer(string="Pantallas transmitiendo", compute="_compute_screen_counts")
+    offline_screens = fields.Integer(string="Pantallas sin señal", compute="_compute_screen_counts")
     max_screens_effective = fields.Integer(string="Límite efectivo", compute="_compute_max_screens")
 
-    @api.depends("device_ids", "device_ids.is_active")
+    # Versión de configuración: se incrementa al enviar cambios a las pantallas.
+    config_version = fields.Integer(string="Versión de configuración", default=1, copy=False)
+    # Pantallas seleccionadas para el envío manual desde el panel de previsualización.
+    push_device_ids = fields.Many2many(
+        "vscreens.device",
+        "vscreens_company_push_device_rel",
+        "company_id",
+        "device_id",
+        string="Pantallas destino",
+    )
+
+    @api.depends("device_ids", "device_ids.is_active", "device_ids.last_ping")
     def _compute_screen_counts(self):
         for company in self:
-            company.total_screens = len(company.device_ids)
-            company.active_screens = len(company.device_ids.filtered("is_active"))
+            devices = company.device_ids
+            company.total_screens = len(devices)
+            company.active_screens = len(devices.filtered("is_active"))
+            company.online_screens = len(devices.filtered("is_online"))
+            company.offline_screens = company.total_screens - company.online_screens
 
     @api.depends("max_screens", "plan_id.max_screens")
     def _compute_max_screens(self):
@@ -354,138 +365,115 @@ class VScreenSCompany(models.Model):
             active.append(entry)
         return active
 
-    def _sync_vsm_to_json(self):
-        """Sincroniza los One2many visuales a los campos JSON que lee la TV."""
+    # ------------------------------------------------------------------
+    # Sincronización controles visuales -> JSON que consume la TV
+    # ------------------------------------------------------------------
+    _VISUAL_JSON_MAP = {
+        "playlist_items": "video_playlist",
+        "scheduled_video_items": "scheduled_videos",
+        "sidebar_items": "sidebar_content",
+        "bottom_bar_items": "bottom_bar_content",
+        "design_settings_id": "design_settings",
+    }
+    _NOTIFICATION_FIELDS = {
+        "notification_welcome": "welcome",
+        "notification_billing": "billing",
+        "notification_expiry_reminders": "expiry_reminders",
+        "notification_birthday_greetings": "birthday_greetings",
+        "notification_holiday_greetings": "holiday_greetings",
+    }
+
+    def _dump_visual_field(self, field_name):
+        """Convierte un campo visual (One2many) al JSON que consume la TV."""
         self.ensure_one()
-        vals = {}
-
-        # Playlist
-        if self.playlist_items:
-            vals['video_playlist'] = [
-                {'url': item.url, 'title': item.title or ''}
-                for item in self.playlist_items if item.url
-            ]
-        else:
-            vals['video_playlist'] = []
-
-        # Scheduled videos
-        if self.scheduled_video_items:
-            vals['scheduled_videos'] = [
+        if field_name == "playlist_items":
+            return [
                 {
-                    'url': item.url,
-                    'title': item.title or '',
-                    'start': item.start_datetime and fields.Datetime.to_string(item.start_datetime),
-                    'end': item.end_datetime and fields.Datetime.to_string(item.end_datetime),
-                    'duration': item.duration or 300,
-                    'scheduled': True,
+                    "url": item.url,
+                    "title": item.title or "",
+                    "youtube_id": item.youtube_id or False,
                 }
-                for item in self.scheduled_video_items if item.url
+                for item in self.playlist_items
+                if item.is_active and item.url
             ]
-        else:
-            vals['scheduled_videos'] = []
-
-        # Sidebar
-        if self.sidebar_items:
-            vals['sidebar_content'] = [
-                {'text': item.value, 'color': item.color or '#ffffff'}
-                for item in self.sidebar_items if item.value
+        if field_name == "scheduled_video_items":
+            return [
+                {
+                    "url": item.url,
+                    "title": item.title or "",
+                    "start": fields.Datetime.to_string(item.start_datetime) if item.start_datetime else False,
+                    "end": fields.Datetime.to_string(item.end_datetime) if item.end_datetime else False,
+                    "duration": item.duration or 300,
+                    "scheduled": True,
+                }
+                for item in self.scheduled_video_items
+                if item.is_active and item.url
             ]
-        else:
-            vals['sidebar_content'] = []
+        if field_name == "sidebar_items":
+            return [
+                {
+                    "type": "text",
+                    "label": item.label or "",
+                    "value": item.value or item.label or "",
+                    "icon": item.icon or False,
+                    "color": item.color or "#ffffff",
+                }
+                for item in self.sidebar_items
+                if item.is_active and (item.value or item.label)
+            ]
+        if field_name == "bottom_bar_items":
+            content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
+            content["messages"] = [
+                item.value or item.label
+                for item in self.bottom_bar_items
+                if item.is_active and (item.value or item.label)
+            ]
+            return content
+        if field_name == "design_settings_id":
+            settings = dict(self.design_settings) if isinstance(self.design_settings, dict) else {}
+            design = self.design_settings_id[:1]
+            if design:
+                settings.update(design.get_design_dict())
+            settings.setdefault("sidebar_header_type", self.sidebar_header_type or "text")
+            settings.setdefault("sidebar_header_value", self.sidebar_header_value or self.name)
+            return settings
+        return None
 
-        # Bottom bar
-        if self.bottom_bar_items:
-            vals['bottom_bar_content'] = {
-                'items': [
-                    {'text': item.value, 'color': item.color or '#ffffff'}
-                    for item in self.bottom_bar_items if item.value
-                ]
-            }
-        else:
-            vals['bottom_bar_content'] = {'items': []}
+    def _sync_visual_to_json(self, field_names):
+        """Vuelca sólo los One2many editados a los JSON de configuración."""
+        for record in self:
+            vals = {}
+            for field_name in field_names:
+                json_field = self._VISUAL_JSON_MAP.get(field_name)
+                if json_field:
+                    vals[json_field] = record._dump_visual_field(field_name)
+            if vals:
+                # super() evita recursión sobre este mismo write().
+                super(VScreenSCompany, record).write(vals)
 
-        # Notificaciones automáticas (campos booleanos)
-        vals['auto_notification_settings'] = {
-            'welcome': bool(self.notification_welcome),
-            'billing': bool(self.notification_billing),
-            'expiry_reminders': bool(self.notification_expiry_reminders),
-            'birthday_greetings': bool(self.notification_birthday_greetings),
-            'holiday_greetings': bool(self.notification_holiday_greetings),
-        }
+    def _notification_settings_dict(self):
+        self.ensure_one()
+        return {key: bool(self[field]) for field, key in self._NOTIFICATION_FIELDS.items()}
 
-        # Design settings
-        if self.design_settings_id:
-            ds = self.design_settings_id[0]
-            vals['design_settings'] = {
-                'sidebar_width': ds.sidebar_width or 22,
-                'sidebar_effect': ds.sidebar_effect or 'none',
-                'sidebar_bg': ds.sidebar_bg or '#1e293b',
-                'sidebar_text': ds.sidebar_text or '#ffffff',
-                'sidebar_header_type': self.sidebar_header_type or 'text',
-                'sidebar_header_value': self.sidebar_header_value or self.name,
-                'bottom_bar_bg': ds.bottom_bar_bg or '#0a0e1a',
-                'bottom_bar_text': ds.bottom_bar_text or '#ffffff',
-                'show_bcv': ds.show_bcv if ds.show_bcv is not None else True,
-                'bcv_color': ds.bcv_color or '#10b981',
-                'bcv_font': ds.bcv_font or 'inherit',
-            }
-        else:
-            vals['design_settings'] = {
-                'sidebar_width': 22,
-                'sidebar_effect': 'none',
-                'sidebar_bg': '#1e293b',
-                'sidebar_text': '#ffffff',
-                'sidebar_header_type': self.sidebar_header_type or 'text',
-                'sidebar_header_value': self.sidebar_header_value or self.name,
-                'bottom_bar_bg': '#0a0e1a',
-                'bottom_bar_text': '#ffffff',
-                'show_bcv': True,
-                'bcv_color': '#10b981',
-                'bcv_font': 'inherit',
-            }
-
-        if vals:
-            # Usar SQL directo para evitar recursión infinita con el método write sobreescrito
-            self.env.cr.execute(
-                """UPDATE vscreens_company SET
-                    video_playlist = %s,
-                    scheduled_videos = %s,
-                    sidebar_content = %s,
-                    bottom_bar_content = %s,
-                    design_settings = %s
-                WHERE id = %s""",
-                [
-                    json.dumps(vals.get('video_playlist', [])),
-                    json.dumps(vals.get('scheduled_videos', [])),
-                    json.dumps(vals.get('sidebar_content', [])),
-                    json.dumps(vals.get('bottom_bar_content', {'items': []})),
-                    json.dumps(vals.get('design_settings', {})),
-                    self.id,
-                ],
-            )
-
-    @api.model
-    def create(self, vals):
-        record = super().create(vals)
-        record._sync_vsm_to_json()
-        return record
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for record, vals in zip(records, vals_list):
+            touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
+            if touched:
+                record._sync_visual_to_json(touched)
+        return records
 
     def write(self, vals):
         res = super().write(vals)
-        for rec in self:
-            rec._sync_vsm_to_json()
-        return res
-
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        # Si hay auto_notification_settings en JSON, poblar los campos booleanos
-        if res.get('auto_notification_settings') and isinstance(res.get('auto_notification_settings'), dict):
-            ann = res['auto_notification_settings']
-            for field in ['notification_welcome', 'notification_billing', 'notification_expiry_reminders',
-                          'notification_birthday_greetings', 'notification_holiday_greetings']:
-                if field in fields_list and res.get(field) in (None, False, ''):
-                    res[field] = bool(ann.get(field.replace('notification_', ''), False))
+        touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
+        if touched:
+            self._sync_visual_to_json(touched)
+        if any(field in vals for field in self._NOTIFICATION_FIELDS):
+            for record in self:
+                super(VScreenSCompany, record).write(
+                    {"auto_notification_settings": record._notification_settings_dict()}
+                )
         return res
 
     def _base_config(self):
@@ -527,6 +515,8 @@ class VScreenSCompany(models.Model):
                 for item in menus
             ],
             "ping_command": False,
+            "config_version": self.config_version or 1,
+            "notification_settings": self._notification_settings_dict(),
             "last_updated": self._iso(self.write_date or self.create_date),
         }
         config = self._free_plan_overrides(config)
@@ -565,6 +555,44 @@ class VScreenSCompany(models.Model):
     def preview_config(self):
         self.ensure_one()
         return self._base_config()
+
+    @api.model
+    def preview_config_draft(self, company_id, draft=None):
+        """Configuración para la vista previa en vivo con los cambios sin guardar.
+
+        El panel de previsualización envía los valores que el usuario tiene en
+        pantalla; aquí se fusionan con la configuración guardada para que la TV
+        muestre exactamente lo que se está editando.
+        """
+        company = self.browse(company_id).exists()
+        if not company:
+            return {}
+        config = company._base_config()
+        if isinstance(draft, dict):
+            for key in (
+                "name",
+                "layout_type",
+                "primary_color",
+                "secondary_color",
+                "accent_color",
+                "logo_url",
+                "video_source",
+                "filler_keywords",
+                "google_drive_link",
+                "priority_content_url",
+                "pause_duration",
+                "ad_frequency",
+                "sidebar_header_type",
+                "sidebar_header_value",
+                "video_playlist",
+                "scheduled_videos",
+                "sidebar_content",
+                "bottom_bar_content",
+                "design_settings",
+            ):
+                if key in draft:
+                    config[key] = draft[key]
+        return company._apply_plan_locks(config)
 
     def api_dict(self, full=True):
         self.ensure_one()
@@ -691,5 +719,44 @@ class VScreenSCompany(models.Model):
             "type": "ir.actions.act_url",
             "url": f"{base}?preview={self.id}",
             "target": "new",
+        }
+
+    def action_push_config(self, device_ids=None):
+        """Publica la configuración actual en las pantallas seleccionadas.
+
+        Si no se seleccionó ninguna pantalla se envía a todas las de la empresa.
+        Las pantallas consultan su configuración cada 30 s y aplican la versión
+        nueva sin necesidad de reiniciarse.
+        """
+        self.ensure_one()
+        if device_ids:
+            devices = self.env["vscreens.device"].browse(device_ids).filtered(
+                lambda device: device.company_id == self
+            )
+        else:
+            devices = self.push_device_ids or self.device_ids
+        now = fields.Datetime.now()
+        if devices:
+            devices.sudo().write({"ping_requested_at": now})
+        super(VScreenSCompany, self).write({"config_version": (self.config_version or 1) + 1})
+        self.message_post(
+            body=(
+                f"Configuración publicada en {len(devices)} pantalla(s). "
+                f"Versión {self.config_version}."
+            )
+        )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Configuración enviada",
+                "message": (
+                    f"Se envió la configuración a {len(devices)} pantalla(s)."
+                    if devices
+                    else "La empresa no tiene pantallas registradas todavía."
+                ),
+                "type": "success" if devices else "warning",
+                "sticky": False,
+            },
         }
 

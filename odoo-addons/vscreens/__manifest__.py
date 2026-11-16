@@ -1,6 +1,6 @@
 {
     "name": "VScreenS — Señalización digital",
-    "version": "20.0.1.0.0",
+    "version": "20.0.1.1.0",
     "category": "Services/Digital Signage",
     "summary": "Gestión de empresas, pantallas, contenido, planes y suscripciones de VScreenS",
     "description": """
