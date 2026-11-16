@@ -202,8 +202,8 @@
 
 /* Panel de vista previa: más ancho para que el video se distinga */
 .vs_tv_preview {
-    width: 600px;
-    max-width: 620px;
+    width: 680px;
+    max-width: 48vw;
 }
 
 .vs_tv_preview_online {
@@ -230,7 +230,7 @@
 
 @media (max-width: 1500px) {
     .vs_tv_preview {
-        width: 520px;
+        width: 560px;
         max-width: 50vw;
     }
 }
