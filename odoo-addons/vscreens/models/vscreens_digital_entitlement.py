@@ -74,7 +74,7 @@ class VscreensDigitalEntitlement(models.Model):
 
     def download_url(self):
         self.ensure_one()
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url", "").rstrip("/")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
         return f"{base}/shop/download/{self.token}"
 
     def register_download(self):
