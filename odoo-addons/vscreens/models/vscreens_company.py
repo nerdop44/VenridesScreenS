@@ -233,16 +233,26 @@ class VScreenSCompany(models.Model):
         self.ensure_one()
         if (self.plan_code or "").lower() != "free":
             return config
+        socials = {
+            key: config["bottom_bar_content"][key]
+            for key in ("whatsapp", "instagram", "phone")
+            if config.get("bottom_bar_content", {}).get(key)
+        }
         gad = self._get_global_ad()
         if not gad:
-            config["bottom_bar_content"] = {"static": "VScreenS Pantallas Inteligentes"}
+            config["bottom_bar_content"] = {
+                "static": "VScreenS Pantallas Inteligentes",
+                **socials,
+            }
             return config
 
         playlist = [v for v in (gad.video_playlist or []) if v and str(v).strip()]
         if not playlist and gad.video_url:
             playlist = [gad.video_url]
         if playlist:
-            config["priority_content_url"] = playlist[0]
+            # La publicidad global no reemplaza el contenido prioritario del cliente.
+            if not config.get("priority_content_url"):
+                config["priority_content_url"] = playlist[0]
             config["priority_playlist"] = playlist
 
         ticker_messages = gad.ticker_messages or []
@@ -255,6 +265,7 @@ class VScreenSCompany(models.Model):
                 "font_size": "1.5rem",
                 "color": "#fbbf24",
                 "weight": "bold",
+                **socials,
             }
         if gad.ad_scripts:
             config["ad_scripts"] = gad.ad_scripts
@@ -387,12 +398,9 @@ class VScreenSCompany(models.Model):
         """Convierte un campo visual (One2many) al JSON que consume la TV."""
         self.ensure_one()
         if field_name == "playlist_items":
+            # La TV reproduce una lista de URLs (formato histórico del panel web).
             return [
-                {
-                    "url": item.url,
-                    "title": item.title or "",
-                    "youtube_id": item.youtube_id or False,
-                }
+                item.url
                 for item in self.playlist_items
                 if item.is_active and item.url
             ]
@@ -624,6 +632,23 @@ class VScreenSCompany(models.Model):
 
         return created
 
+    def _normalize_playlist_json(self):
+        """Convierte playlists antiguas con objetos a la lista de URLs que usa la TV."""
+        normalized = 0
+        for company in self:
+            values = []
+            for entry in company.video_playlist or []:
+                if isinstance(entry, str):
+                    values.append(entry)
+                elif isinstance(entry, dict):
+                    url = entry.get("url") or entry.get("youtube_id")
+                    if url:
+                        values.append(url)
+            if values != company.video_playlist:
+                super(VScreenSCompany, company).write({"video_playlist": values})
+                normalized += 1
+        return normalized
+
     def _sync_visual_to_json(self, field_names):
         """Vuelca sólo los One2many editados a los JSON de configuración."""
         for record in self:
@@ -661,6 +686,20 @@ class VScreenSCompany(models.Model):
                 )
         return res
 
+    def _merged_bottom_bar(self, extra=None):
+        """Barra inferior con los mensajes configurados y las redes sociales del cliente."""
+        self.ensure_one()
+        content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
+        if isinstance(extra, dict):
+            content.update(extra)
+        if self.whatsapp:
+            content["whatsapp"] = self.whatsapp
+        if self.instagram:
+            content["instagram"] = self.instagram.lstrip("@")
+        if self.phone:
+            content.setdefault("phone", self.phone)
+        return content
+
     def _base_config(self):
         self.ensure_one()
         alert = self._get_active_alert()
@@ -688,13 +727,19 @@ class VScreenSCompany(models.Model):
             "video_playlist": self.video_playlist or [],
             "scheduled_videos": self._active_scheduled_videos(),
             "sidebar_content": self.sidebar_content or [],
-            "bottom_bar_content": self.bottom_bar_content or {},
+            "bottom_bar_content": self._merged_bottom_bar(),
             "design_settings": self.design_settings or {},
             "pause_duration": self.pause_duration,
             "bcv_rate": get_bcv_rate(self.env),
             "plan": self.plan_code or "free",
             "sidebar_header_type": self.sidebar_header_type,
             "sidebar_header_value": self.sidebar_header_value or self.name,
+            "phone": self.phone,
+            "whatsapp": self.whatsapp,
+            "instagram": self.instagram,
+            "facebook": self.facebook,
+            "tiktok": self.tiktok,
+            "address": self.address,
             "menus": [
                 {"name": item.name, "price": item.price, "category": item.category}
                 for item in menus
@@ -754,6 +799,16 @@ class VScreenSCompany(models.Model):
             return {}
         config = company._base_config()
         if isinstance(draft, dict):
+            socials = {
+                key: draft[key]
+                for key in ("whatsapp", "instagram", "phone")
+                if draft.get(key)
+            }
+            if socials:
+                base_bottom = draft.get("bottom_bar_content")
+                base_bottom = dict(base_bottom) if isinstance(base_bottom, dict) else dict(config.get("bottom_bar_content") or {})
+                base_bottom.update(socials)
+                draft = dict(draft, bottom_bar_content=base_bottom)
             for key in (
                 "name",
                 "layout_type",
@@ -769,6 +824,11 @@ class VScreenSCompany(models.Model):
                 "ad_frequency",
                 "sidebar_header_type",
                 "sidebar_header_value",
+                "phone",
+                "whatsapp",
+                "instagram",
+                "facebook",
+                "tiktok",
                 "video_playlist",
                 "scheduled_videos",
                 "sidebar_content",

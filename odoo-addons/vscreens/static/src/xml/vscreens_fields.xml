@@ -177,10 +177,13 @@
         </div>
     </t>
     <t t-name="vscreens.TvPreviewField">
-        <div class="vs_tv_preview">
+        <div t-att-class="'vs_tv_preview' + (this.expanded ? ' vs_tv_preview_expanded' : '')">
             <div class="vs_tv_preview_head">
                 <span class="vs_tv_preview_title">📺 Vista previa en vivo</span>
                 <span class="vs_tv_preview_status" t-att-class="this._statusClass()" t-esc="this._status()"/>
+            </div>
+            <div class="vs_tv_preview_online" t-if="this._devices().length">
+                <span t-esc="this.onlineDevices"/> de <span t-esc="this._devices().length"/> pantallas en línea
             </div>
             <div class="vs_tv_preview_screen">
                 <iframe t-ref="this.iframeRef" t-att-src="this.previewUrl" title="Vista previa TV" allow="autoplay; fullscreen"/>
@@ -203,8 +206,12 @@
                 <button type="button" class="btn btn-primary vs_tv_push" t-on-click="this.pushToDevices" t-att-disabled="this._sending()">
                     <i class="fa fa-paper-plane"/> <t t-esc="this._sending() ? 'Enviando…' : 'Enviar a pantallas'"/>
                 </button>
-                <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.openFullscreen">
-                    <i class="fa fa-expand"/> Pantalla completa
+                <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.toggleExpanded">
+                    <i class="fa" t-att-class="this.expanded ? 'fa-compress' : 'fa-expand'"/>
+                    <t t-esc="this.expanded ? 'Reducir' : 'Ampliar'"/>
+                </button>
+                <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.openFullscreen" title="Abrir en una pestaña nueva">
+                    <i class="fa fa-external-link"/>
                 </button>
             </div>
             <p class="vs_tv_preview_help">

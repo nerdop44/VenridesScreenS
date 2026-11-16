@@ -25,6 +25,11 @@ const SIMPLE_FIELDS = [
     "ad_frequency",
     "sidebar_header_type",
     "sidebar_header_value",
+    "phone",
+    "whatsapp",
+    "instagram",
+    "facebook",
+    "tiktok",
 ];
 
 /**
@@ -53,6 +58,7 @@ export class VscreensTvPreviewField extends Component {
         this._status = signal("Conectando…");
         this._statusClass = signal("vs_tv_status_wait");
         this._sending = signal(false);
+        this._expanded = signal(false);
 
         onWillStart(async () => {
             if (!this.companyId) {
@@ -103,6 +109,14 @@ export class VscreensTvPreviewField extends Component {
         return this._sending();
     }
 
+    get expanded() {
+        return this._expanded();
+    }
+
+    get onlineDevices() {
+        return this._devices().filter((device) => device.is_online && device.is_active).length;
+    }
+
     get iframeEl() {
         return this.iframeRef();
     }
@@ -142,10 +156,7 @@ export class VscreensTvPreviewField extends Component {
             (row) => row.url && row.is_active !== false
         );
         if (playlist.length) {
-            draft.video_playlist = playlist.map((row) => ({
-                url: row.url,
-                title: row.title || "",
-            }));
+            draft.video_playlist = playlist.map((row) => row.url);
         }
 
         const scheduled = this.rowData("scheduled_video_items").filter(
@@ -178,10 +189,21 @@ export class VscreensTvPreviewField extends Component {
         const bottom = this.rowData("bottom_bar_items").filter(
             (row) => (row.value || row.label) && row.is_active !== false
         );
-        if (bottom.length) {
+        const socials = {};
+        if (data.whatsapp) {
+            socials.whatsapp = data.whatsapp;
+        }
+        if (data.instagram) {
+            socials.instagram = String(data.instagram).replace(/^@/, "");
+        }
+        if (data.phone) {
+            socials.phone = data.phone;
+        }
+        if (bottom.length || Object.keys(socials).length) {
             draft.bottom_bar_content = {
                 ...(this.baseConfig.bottom_bar_content || {}),
-                messages: bottom.map((row) => row.value || row.label),
+                ...(bottom.length ? { messages: bottom.map((row) => row.value || row.label) } : {}),
+                ...socials,
             };
         }
 
@@ -270,12 +292,19 @@ export class VscreensTvPreviewField extends Component {
                 [this.companyId],
             ]);
             this.sendPreview();
+            const online = this.onlineDevices;
             this.notification.add(
                 ids.length
                     ? `Configuración enviada a ${ids.length} pantalla(s).`
                     : "Configuración enviada a todas las pantallas de la empresa.",
                 { type: "success" }
             );
+            if (!online) {
+                this.notification.add(
+                    "Ninguna pantalla está conectada en este momento; aplicarán los cambios al reconectarse.",
+                    { type: "warning" }
+                );
+            }
         } catch (error) {
             console.error("VScreenS: error al publicar la configuración", error);
             this.notification.add("No se pudo publicar la configuración.", {
@@ -284,6 +313,10 @@ export class VscreensTvPreviewField extends Component {
         } finally {
             this._sending.set(false);
         }
+    }
+
+    toggleExpanded() {
+        this._expanded.set(!this._expanded());
     }
 
     openFullscreen() {
