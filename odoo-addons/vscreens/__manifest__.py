@@ -34,6 +34,7 @@ Incluye:
         "data/products.xml",
         "data/digital_products.xml",
         "data/email_digital_delivery.xml",
+        "data/email_crm_followup.xml",
         "data/global_ad.xml",
         "data/cron.xml",
         "views/plan_views.xml",

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         CORREO DE SEGUIMIENTO COMERCIAL
+         ============================================================================ -->
+    <record id="email_template_crm_followup" model="mail.template">
+        <field name="name">VScreenS — Seguimiento comercial</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">{{ object.contact_name or object.partner_id.name or 'Hola' }}, ¿activamos tus pantallas?</field>
+        <field name="email_from">{{ (object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="reply_to">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="partner_to" eval="False"/>
+        <field name="use_default_to" eval="True"/>
+        <field name="auto_delete" eval="False"/>
+        <field name="description">Seguimiento automático a leads de VScreenS (máximo 3 correos).</field>
+        <field name="body_html" type="html">
+<div style="margin:0;padding:0;background:#f5f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <div style="max-width:620px;margin:0 auto;padding:24px;">
+        <div style="background:#0a0e1a;border-radius:16px;padding:22px 24px;color:#ffffff;">
+            <div style="font-size:12px;letter-spacing:2px;color:#c8ff00;font-weight:700;">VSCREENS</div>
+            <div style="font-size:22px;font-weight:700;margin-top:6px;">Pantallas Publi-Inteligentes</div>
+            <div style="font-size:13px;color:#cbd5e1;margin-top:6px;">Publicidad y contenido para tu negocio</div>
+        </div>
+
+        <div style="background:#ffffff;border-radius:16px;padding:22px 24px;margin-top:16px;">
+            <p style="margin:0 0 12px;">
+                Hola <span t-out="object.contact_name or object.partner_id.name or ''"/>,</p>
+            <p style="margin:0 0 14px;font-size:14px;line-height:1.7;">
+                Vimos tu interés en VScreenS<strong t-if="object.vscreens_plan_interest"> (plan <span t-out="object.vscreens_plan_interest"/>)</strong>
+                y queremos ayudarte a poner tus pantallas a trabajar: contenido, promociones y publicidad
+                administrados desde un solo panel.
+            </p>
+            <ul style="margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.8;">
+                <li>Configura videos, promociones y alertas en minutos.</li>
+                <li>Controla todas tus pantallas desde el panel web.</li>
+                <li>Sin complicaciones técnicas: te acompañamos en la instalación.</li>
+            </ul>
+            <a t-attf-href="https://vscreens-app.inverpave.com"
+               style="display:inline-block;background:#c8ff00;color:#0a0e1a;text-decoration:none;font-weight:700;font-size:14px;padding:11px 20px;border-radius:10px;">
+                Activar mi cuenta
+            </a>
+            <p style="margin:16px 0 0;font-size:13px;color:#4b5563;line-height:1.7;">
+                ¿Prefieres que te llamemos? Responde este correo o escríbenos al
+                <a href="https://wa.me/584145694075" style="color:#059669;font-weight:700;">0414-5694075</a>.
+            </p>
+        </div>
+
+        <div style="text-align:center;font-size:12px;color:#6b7280;padding:18px 8px;line-height:1.7;">
+            Inversiones Pulido Aguirre (INVERPA)<br/>
+            Urb. La Cardenera, Olivos 719, Barinas · 0414-5694075<br/>
+            info.vscreens@inverpave.com
+        </div>
+    </div>
+</div>
+        </field>
+    </record>
+</odoo>

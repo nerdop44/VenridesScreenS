@@ -44,6 +44,10 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <form string="Lead VScreenS">
+                <header>
+                    <button name="action_send_followup" type="object" string="Enviar seguimiento ahora" class="oe_highlight"/>
+                    <button name="action_send_test_email" type="object" string="Enviar correo de prueba"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
@@ -64,6 +68,16 @@
                             <field name="active"/>
                         </group>
                     </group>
+                    <group string="Seguimiento automático">
+                        <group>
+                            <field name="vscreens_followup_active"/>
+                            <field name="vscreens_followup_count"/>
+                            <field name="vscreens_last_followup"/>
+                        </group>
+                        <group>
+                            <field name="vscreens_next_followup"/>
+                        </group>
+                    </group>
                     <group string="Notas">
                         <field name="description"/>
                     </group>
@@ -79,5 +93,13 @@
         <field name="domain">[('vscreens_source_detail', '!=', False)]</field>
         <field name="search_view_id" ref="view_vscreens_crm_lead_search"/>
         <field name="context">{'default_type': 'lead', 'default_vscreens_source_detail': 'VScreenS Panel'}</field>
+    </record>
+    <record id="action_vscreens_crm_mass_followup" model="ir.actions.server">
+        <field name="name">Enviar seguimiento a los seleccionados</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_send_mass_followup()</field>
     </record>
 </odoo>
