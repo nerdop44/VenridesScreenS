@@ -202,8 +202,11 @@
 
 /* Panel de vista previa: más ancho para que el video se distinga */
 .vs_tv_preview {
-    width: 680px;
-    max-width: 48vw;
+    width: 44vw;
+    min-width: 460px;
+    max-width: 900px;
+    resize: horizontal;
+    overflow: auto;
 }
 
 .vs_tv_preview_online {
@@ -230,8 +233,9 @@
 
 @media (max-width: 1500px) {
     .vs_tv_preview {
-        width: 560px;
-        max-width: 50vw;
+        width: 42vw;
+        min-width: 420px;
+        max-width: 760px;
     }
 }
 
@@ -239,8 +243,10 @@
     .vs_tv_preview {
         float: none;
         width: 100%;
+        min-width: 0;
         max-width: 100%;
         margin: 0 0 1rem 0;
+        resize: none;
     }
 }
 

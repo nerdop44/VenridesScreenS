@@ -27,6 +27,10 @@
         activeAlertId: null,
         queue: [],
         queueSignature: "",
+        manualOverride: null,
+        overrideTimer: null,
+        lastPlaylist: [],
+        lastScheduled: [],
         videoIndex: 0,
         failedVideos: {},
         player: null,
@@ -266,6 +270,10 @@
         handlePriority(data.priority_content_url || null);
         handleAlert(data.active_alert);
         handlePing(data);
+
+        if (!data.allow_youtube_control) {
+            clearYoutubeOverride();
+        }
 
         var splash = $("splash");
         if (splash) splash.classList.add("is-hidden");
@@ -760,14 +768,22 @@
     }
 
     function buildQueue(playlist, scheduled, data) {
+        state.lastPlaylist = Array.isArray(playlist) ? playlist : [];
+        state.lastScheduled = Array.isArray(scheduled) ? scheduled : [];
+
+        // Mientras hay un video elegido desde el control remoto no se toca la cola.
+        if (state.manualOverride) {
+            return;
+        }
+
         var queue = [];
 
-        (Array.isArray(scheduled) ? scheduled : []).forEach(function (entry) {
+        state.lastScheduled.forEach(function (entry) {
             var item = normalizeVideoItem(entry, true);
             if (item) queue.push(item);
         });
 
-        (Array.isArray(playlist) ? playlist : []).forEach(function (entry) {
+        state.lastPlaylist.forEach(function (entry) {
             var item = normalizeVideoItem(entry, false);
             if (item) queue.push(item);
         });
@@ -777,17 +793,8 @@
             if (driveItem) queue.push(driveItem);
         }
 
-        if (!queue.length && data.video_source === "youtube") {
-            fallbackPlaylist(data.filler_keywords).forEach(function (url) {
-                var item = normalizeVideoItem(url, false);
-                if (item) queue.push(item);
-            });
-        }
-
-        if (!queue.length) {
-            var fallback = normalizeVideoItem("https://www.youtube.com/watch?v=LXb3EKWsInQ", false);
-            if (fallback) queue.push(fallback);
-        }
+        // Sin contenido configurado no se inventan videos: se muestra la pantalla
+        // de respaldo con la información del negocio.
 
         var signature = JSON.stringify(queue.map(function (item) {
             return item.kind + ":" + (item.id || item.url);
@@ -945,6 +952,8 @@
                         if (event.data === window.YT.PlayerState.ENDED) {
                             if (state.inPriority) {
                                 finishPriority();
+                            } else if (state.manualOverride) {
+                                clearYoutubeOverride();
                             } else {
                                 nextVideo();
                             }
@@ -1365,6 +1374,81 @@
        Arranque
        --------------------------------------------------------------------- */
 
+    /* ---------------------------------------------------------------------
+       Control remoto: cambiar temporalmente el video de YouTube
+       --------------------------------------------------------------------- */
+    function showYoutubeControl() {
+        if (!state.config || !state.config.allow_youtube_control) {
+            return;
+        }
+        var overlay = $("yt-control");
+        if (!overlay) return;
+        overlay.classList.remove("hidden");
+        var input = $("yt-control-input");
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+        var msg = $("yt-control-msg");
+        if (msg) msg.textContent = "";
+    }
+
+    function hideYoutubeControl() {
+        var overlay = $("yt-control");
+        if (overlay) overlay.classList.add("hidden");
+    }
+
+    function scheduleOverrideTimeout() {
+        if (state.overrideTimer) {
+            window.clearTimeout(state.overrideTimer);
+        }
+        var minutes = Number(state.config && state.config.youtube_control_minutes) || 30;
+        state.overrideTimer = window.setTimeout(clearYoutubeOverride, Math.max(1, minutes) * 60000);
+    }
+
+    function playYoutubeOverride() {
+        if (!state.config || !state.config.allow_youtube_control) {
+            hideYoutubeControl();
+            return;
+        }
+        var input = $("yt-control-input");
+        var value = input ? input.value.trim() : "";
+        var id = extractYoutubeId(value);
+        var msg = $("yt-control-msg");
+        if (!id) {
+            if (msg) msg.textContent = "Enlace de YouTube no válido.";
+            return;
+        }
+        var item = {
+            raw: value,
+            url: value,
+            kind: "youtube",
+            id: id,
+            title: "Control remoto",
+            scheduled: false
+        };
+        state.manualOverride = item;
+        state.currentItem = item;
+        hideYoutubeControl();
+        hideFallback();
+        playYoutube(item);
+        scheduleOverrideTimeout();
+    }
+
+    function clearYoutubeOverride() {
+        var hadOverride = !!state.manualOverride;
+        state.manualOverride = null;
+        if (state.overrideTimer) {
+            window.clearTimeout(state.overrideTimer);
+            state.overrideTimer = null;
+        }
+        hideYoutubeControl();
+        if (hadOverride && state.config) {
+            state.queueSignature = "";
+            buildQueue(state.lastPlaylist, state.lastScheduled, state.config);
+        }
+    }
+
     function bindEvents() {
         updateClocks();
         window.setInterval(updateClocks, 1000);
@@ -1379,6 +1463,18 @@
         if (input) {
             input.addEventListener("keydown", function (event) {
                 if (event.key === "Enter") submitRegistration();
+            });
+        }
+
+        var ytPlay = $("yt-control-play");
+        if (ytPlay) ytPlay.addEventListener("click", playYoutubeOverride);
+        var ytBack = $("yt-control-back");
+        if (ytBack) ytBack.addEventListener("click", clearYoutubeOverride);
+        var ytInput = $("yt-control-input");
+        if (ytInput) {
+            ytInput.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") playYoutubeOverride();
+                if (event.key === "Escape") hideYoutubeControl();
             });
         }
 
@@ -1504,13 +1600,9 @@
             /* ---------- Búsqueda ---------- */
             if (code === "Search" || key === "search" || (e.ctrlKey && key === "f")) {
                 e.preventDefault();
-                var btnSearch = Array.from(document.querySelectorAll("button, a")).find(function (el) {
-                    var t = (el.textContent || "").toLowerCase();
-                    return t.indexOf("buscar") !== -1 || t.indexOf("search") !== -1;
-                });
-                if (btnSearch) { btnSearch.click(); }
-                var inp = document.querySelector("input[type='search'], input[placeholder*='buscar' i], input[placeholder*='search' i]");
-                if (inp) { inp.focus(); }
+                if (state.config && state.config.allow_youtube_control) {
+                    showYoutubeControl();
+                }
                 return;
             }
 

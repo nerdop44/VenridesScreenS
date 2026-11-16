@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=3.2">
-    <link rel="icon" type="image/png" href="vscreens_icon.png?v=3.2">
+    <link rel="stylesheet" href="styles.css?v=3.3">
+    <link rel="icon" type="image/png" href="vscreens_icon.png?v=3.3">
 </head>
 
 <body>
@@ -170,7 +170,26 @@
         </div>
     </div>
 
-    <script src="client.js?v=3.2"></script>
+    <!-- Control remoto: cambiar temporalmente el video de YouTube -->
+    <div id="yt-control" class="yt-control hidden">
+        <div class="yt-control-card">
+            <div class="yt-control-eyebrow">CONTROL REMOTO</div>
+            <h2 class="yt-control-title">Reproducir un video de YouTube</h2>
+            <input id="yt-control-input" class="yt-control-input" type="url"
+                   placeholder="https://www.youtube.com/watch?v=..." />
+            <div id="yt-control-msg" class="yt-control-msg"></div>
+            <div class="yt-control-actions">
+                <button id="yt-control-play" class="yt-control-btn primary" type="button">Reproducir</button>
+                <button id="yt-control-back" class="yt-control-btn" type="button">Volver a la lista</button>
+            </div>
+            <div class="yt-control-hint">
+                La pantalla vuelve a su playlist automáticamente al cumplirse el tiempo
+                o cuando el administrador desactiva el control.
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js?v=3.3"></script>
 </body>
 
 </html>

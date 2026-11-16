@@ -79,6 +79,18 @@ class VScreenSCompany(models.Model):
     design_settings = fields.Json(string="Ajustes de diseño", default=dict)
     pause_duration = fields.Integer(string="Duración de pausa (min)", default=10)
     ad_frequency = fields.Integer(string="Frecuencia de anuncios (s)", default=30)
+    allow_tv_youtube_control = fields.Boolean(
+        string="Permitir cambiar videos desde la TV",
+        default=False,
+        help="Si está activo, desde el control remoto de la TV se puede buscar y "
+             "reproducir un video de YouTube temporalmente. Al desactivarlo (o al "
+             "cumplirse el tiempo), la TV vuelve a su playlist habitual.",
+    )
+    tv_youtube_control_minutes = fields.Integer(
+        string="Minutos de control desde la TV",
+        default=30,
+        help="Tiempo máximo que se mantiene un video elegido desde el control remoto.",
+    )
     sidebar_header_type = fields.Selection(
         [("text", "Texto"), ("banner", "Banner")], default="text", string="Tipo de encabezado"
     )
@@ -665,6 +677,128 @@ class VScreenSCompany(models.Model):
                 # super() evita recursión sobre este mismo write().
                 super(VScreenSCompany, record).write(vals)
 
+    def _replace_visuals_from_json(self, field_names):
+        """Reconstruye los controles visuales cuando el panel web escribe el JSON.
+
+        Así el panel web (API) y Odoo quedan sincronizados en ambos sentidos.
+        """
+        Playlist = self.env["vscreens.playlist.item"].sudo()
+        Scheduled = self.env["vscreens.scheduled.video.item"].sudo()
+        Sidebar = self.env["vscreens.sidebar.item"].sudo()
+        Bottom = self.env["vscreens.bottom.bar.item"].sudo()
+        Design = self.env["vscreens.design.settings"].sudo()
+
+        def safe_create(model, vals):
+            try:
+                with self.env.cr.savepoint():
+                    model.create(vals)
+            except Exception:  # noqa: BLE001 - un dato inválido no rompe la sincronización
+                pass
+
+        for company in self:
+            if "video_playlist" in field_names:
+                company.playlist_items.sudo().unlink()
+                sequence = 10
+                for entry in company.video_playlist or []:
+                    if isinstance(entry, str):
+                        url, title = entry, entry
+                    elif isinstance(entry, dict):
+                        url = entry.get("url") or entry.get("youtube_id")
+                        title = entry.get("title") or url
+                    else:
+                        continue
+                    if url:
+                        safe_create(Playlist, {
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "title": title,
+                            "url": url,
+                        })
+                    sequence += 10
+
+            if "scheduled_videos" in field_names:
+                company.scheduled_video_items.sudo().unlink()
+                sequence = 10
+                for entry in company.scheduled_videos or []:
+                    if not isinstance(entry, dict):
+                        continue
+                    url = entry.get("url")
+                    if not url or not entry.get("start"):
+                        continue
+                    safe_create(Scheduled, {
+                        "company_id": company.id,
+                        "sequence": sequence,
+                        "title": entry.get("title") or url,
+                        "url": url,
+                        "start_datetime": entry.get("start"),
+                        "end_datetime": entry.get("end") or False,
+                        "duration": entry.get("duration") or 300,
+                    })
+                    sequence += 10
+
+            if "sidebar_content" in field_names:
+                company.sidebar_items.sudo().unlink()
+                sequence = 10
+                for entry in company.sidebar_content or []:
+                    if not isinstance(entry, dict):
+                        continue
+                    value = entry.get("value") or entry.get("text")
+                    if not value:
+                        continue
+                    safe_create(Sidebar, {
+                        "company_id": company.id,
+                        "sequence": sequence,
+                        "label": entry.get("label") or value[:40],
+                        "value": value,
+                        "icon": entry.get("icon") or "fa-tv",
+                        "color": entry.get("color") or "#ffffff",
+                    })
+                    sequence += 10
+
+            if "bottom_bar_content" in field_names:
+                company.bottom_bar_items.sudo().unlink()
+                data = company.bottom_bar_content if isinstance(company.bottom_bar_content, dict) else {}
+                messages = data.get("messages") or ([data.get("static")] if data.get("static") else [])
+                sequence = 10
+                for message in messages:
+                    text = message if isinstance(message, str) else str(message)
+                    if not text.strip():
+                        continue
+                    safe_create(Bottom, {
+                        "company_id": company.id,
+                        "sequence": sequence,
+                        "label": text[:40],
+                        "value": text,
+                        "color": data.get("color") or "#c8ff00",
+                    })
+                    sequence += 10
+
+            if "design_settings" in field_names:
+                company.design_settings_id.sudo().unlink()
+                data = company.design_settings if isinstance(company.design_settings, dict) else {}
+                if data:
+                    safe_create(Design, {
+                        "company_id": company.id,
+                        "title_font": data.get("name_font") or "inherit",
+                        "title_color": data.get("name_color") or "#ffffff",
+                        "title_size": data.get("name_size") or "1.2rem",
+                        "title_weight": data.get("name_weight") or "bold",
+                        "sidebar_width": int(data.get("sidebar_width") or 22),
+                        "sidebar_effect": data.get("sidebar_effect") or "none",
+                        "sidebar_bg": data.get("sidebar_bg") or "#1e293b",
+                        "sidebar_text": data.get("sidebar_text") or "#ffffff",
+                        "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",
+                        "bottom_bar_text": data.get("bottom_bar_text") or "#ffffff",
+                        "show_bcv": bool(data.get("show_bcv", True)),
+                        "bcv_color": data.get("bcv_color") or "#10b981",
+                        "bcv_font": data.get("bcv_font") or "inherit",
+                    })
+
+    def _sync_all_visual_to_json(self):
+        """Vuelca todos los controles visuales al JSON que consume el panel web."""
+        self._sync_visual_to_json(list(self._VISUAL_JSON_MAP))
+        return True
+
     def _notification_settings_dict(self):
         self.ensure_one()
         return {key: bool(self[field]) for field, key in self._NOTIFICATION_FIELDS.items()}
@@ -678,8 +812,19 @@ class VScreenSCompany(models.Model):
                 record._sync_visual_to_json(touched)
         return records
 
+    _JSON_VISUAL_FIELDS = (
+        "video_playlist",
+        "scheduled_videos",
+        "sidebar_content",
+        "bottom_bar_content",
+        "design_settings",
+    )
+
     def write(self, vals):
         res = super().write(vals)
+        json_touched = [f for f in self._JSON_VISUAL_FIELDS if f in vals]
+        if json_touched and not self.env.context.get("vscreens_skip_visual_rebuild"):
+            self._replace_visuals_from_json(json_touched)
         touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
         if touched:
             self._sync_visual_to_json(touched)
@@ -689,6 +834,17 @@ class VScreenSCompany(models.Model):
                     {"auto_notification_settings": record._notification_settings_dict()}
                 )
         return res
+
+    def _uses_visual_config(self):
+        """True si la empresa ya se gestiona con los controles visuales de Odoo."""
+        self.ensure_one()
+        return bool(
+            self.playlist_items
+            or self.scheduled_video_items
+            or self.sidebar_items
+            or self.bottom_bar_items
+            or self.design_settings_id
+        )
 
     def _active_scheduled_from_visual(self):
         """Videos programados activos según la ventana de fecha/hora configurada."""
@@ -724,23 +880,25 @@ class VScreenSCompany(models.Model):
         return f"{base}/web/image/vscreens.company/{self.id}/logo?unique={stamp}"
 
     def _merged_bottom_bar(self, extra=None):
-        """Barra inferior con los mensajes configurados y las redes sociales del cliente."""
+        """Barra inferior con los mensajes y las redes configuradas en Odoo."""
         self.ensure_one()
         content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
         if isinstance(extra, dict):
             content.update(extra)
+        # Las redes salen únicamente de los campos de la empresa, nunca del JSON viejo.
+        for key in ("whatsapp", "instagram", "facebook", "tiktok", "phone"):
+            content.pop(key, None)
         if self.whatsapp:
             content["whatsapp"] = self.whatsapp
         if self.instagram:
             content["instagram"] = self.instagram.lstrip("@")
-        if self.phone:
-            content.setdefault("phone", self.phone)
         return content
 
     def _base_config(self):
         self.ensure_one()
         alert = self._get_active_alert()
         menus = self._get_menus()
+        visual = self._uses_visual_config()
         from .vscreens_currency import get_bcv_rate
 
         config = {
@@ -763,22 +921,22 @@ class VScreenSCompany(models.Model):
             "priority_content_url": self.priority_content_url,
             "video_playlist": (
                 self._dump_visual_field("playlist_items")
-                if self.playlist_items else (self.video_playlist or [])
+                if visual else (self.video_playlist or [])
             ),
             "scheduled_videos": (
                 self._active_scheduled_from_visual()
-                if self.scheduled_video_items else self._active_scheduled_videos()
+                if visual else self._active_scheduled_videos()
             ),
             "sidebar_content": (
                 self._dump_visual_field("sidebar_items")
-                if self.sidebar_items else (self.sidebar_content or [])
+                if visual else (self.sidebar_content or [])
             ),
             "bottom_bar_content": self._merged_bottom_bar(
-                self._dump_visual_field("bottom_bar_items") if self.bottom_bar_items else None
+                self._dump_visual_field("bottom_bar_items") if visual else None
             ),
             "design_settings": (
                 self._dump_visual_field("design_settings_id")
-                if self.design_settings_id else (self.design_settings or {})
+                if visual else (self.design_settings or {})
             ),
             "pause_duration": self.pause_duration,
             "bcv_rate": get_bcv_rate(self.env),
@@ -797,6 +955,8 @@ class VScreenSCompany(models.Model):
             ],
             "ping_command": False,
             "config_version": self.config_version or 1,
+            "allow_youtube_control": bool(self.allow_tv_youtube_control),
+            "youtube_control_minutes": self.tv_youtube_control_minutes or 30,
             "notification_settings": self._notification_settings_dict(),
             "last_updated": self._iso(self.write_date or self.create_date),
         }

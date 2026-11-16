@@ -1608,3 +1608,97 @@ input {
         display: none;
     }
 }
+
+
+/* ==========================================================================
+   Control remoto: video temporal de YouTube
+   ========================================================================== */
+.yt-control {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 18, 0.86);
+    backdrop-filter: blur(6px);
+}
+
+.yt-control.hidden {
+    display: none;
+}
+
+.yt-control-card {
+    width: min(680px, 88vw);
+    background: #0b1220;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    padding: 34px 38px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    color: #e5e7eb;
+}
+
+.yt-control-eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    color: #c8ff00;
+    font-weight: 700;
+}
+
+.yt-control-title {
+    font-size: 1.7rem;
+    margin: 10px 0 18px;
+    color: #ffffff;
+}
+
+.yt-control-input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: #05080f;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.yt-control-input:focus {
+    outline: 2px solid #c8ff00;
+}
+
+.yt-control-msg {
+    min-height: 20px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #f87171;
+}
+
+.yt-control-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.yt-control-btn {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: #e5e7eb;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.yt-control-btn.primary {
+    background: #c8ff00;
+    border-color: #c8ff00;
+    color: #0a0e1a;
+}
+
+.yt-control-hint {
+    margin-top: 16px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #94a3b8;
+}
