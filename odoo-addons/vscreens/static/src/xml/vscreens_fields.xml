@@ -180,19 +180,19 @@
         <div class="vs_tv_preview">
             <div class="vs_tv_preview_head">
                 <span class="vs_tv_preview_title">📺 Vista previa en vivo</span>
-                <span class="vs_tv_preview_status" t-att-class="statusClass" t-esc="status"/>
+                <span class="vs_tv_preview_status" t-att-class="this._statusClass()" t-esc="this._status()"/>
             </div>
             <div class="vs_tv_preview_screen">
-                <iframe t-ref="this.iframeRef" t-att-src="previewUrl" title="Vista previa TV" allow="autoplay; fullscreen"/>
+                <iframe t-ref="this.iframeRef" t-att-src="this.previewUrl" title="Vista previa TV" allow="autoplay; fullscreen"/>
             </div>
-            <div class="vs_tv_preview_devices" t-if="devices.length">
+            <div class="vs_tv_preview_devices" t-if="this._devices().length">
                 <div class="vs_tv_preview_devices_title">
                     Enviar a las pantallas seleccionadas
                     <span class="vs_tv_preview_devices_hint">(ninguna = todas)</span>
                 </div>
-                <label class="vs_tv_preview_device" t-foreach="devices" t-as="device" t-key="device.id">
+                <label class="vs_tv_preview_device" t-foreach="this._devices()" t-as="device" t-key="device.id">
                     <input type="checkbox"
-                           t-att-checked="selected[device.id]"
+                           t-att-checked="this._selected()[device.id]"
                            t-on-change="() => this.toggleDevice(device.id)"/>
                     <span t-esc="device.name"/>
                     <span t-if="device.is_online and device.is_active" class="vs_tv_dot vs_tv_dot_on" title="Transmitiendo"/>
@@ -200,10 +200,10 @@
                 </label>
             </div>
             <div class="vs_tv_preview_actions">
-                <button type="button" class="btn btn-primary vs_tv_push" t-on-click="pushToDevices" t-att-disabled="sending">
-                    <i class="fa fa-paper-plane"/> <t t-esc="sending ? 'Enviando…' : 'Enviar a pantallas'"/>
+                <button type="button" class="btn btn-primary vs_tv_push" t-on-click="this.pushToDevices" t-att-disabled="this._sending()">
+                    <i class="fa fa-paper-plane"/> <t t-esc="this._sending() ? 'Enviando…' : 'Enviar a pantallas'"/>
                 </button>
-                <button type="button" class="btn btn-link vs_tv_full" t-on-click="openFullscreen">
+                <button type="button" class="btn btn-link vs_tv_full" t-on-click="this.openFullscreen">
                     <i class="fa fa-expand"/> Pantalla completa
                 </button>
             </div>
