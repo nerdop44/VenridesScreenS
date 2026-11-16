@@ -1,4 +1,11 @@
-import { Component, onMounted, onWillStart, useEffect, useProps, useRef, useState } from "@odoo/owl";
+import {
+    Component,
+    onMounted,
+    onWillStart,
+    signal,
+    useOnChange,
+    useProps,
+} from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -32,21 +39,20 @@ export class VscreensTvPreviewField extends Component {
     static template = "vscreens.TvPreviewField";
     props = useProps(standardFieldProps);
 
+    iframeRef = signal.ref();
+
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
-        this.iframe = useRef("iframe");
         this.companyId = this.props.record.resId;
         this.baseConfig = {};
         this.previewUrl = `https://vscreens-tv.inverpave.com/?preview=${this.companyId}`;
 
-        this.state = useState({
-            devices: [],
-            selected: {},
-            status: "Conectando…",
-            statusClass: "vs_tv_status_wait",
-            sending: false,
-        });
+        this._devices = signal([]);
+        this._selected = signal({});
+        this._status = signal("Conectando…");
+        this._statusClass = signal("vs_tv_status_wait");
+        this._sending = signal(false);
 
         onWillStart(async () => {
             if (!this.companyId) {
@@ -55,11 +61,13 @@ export class VscreensTvPreviewField extends Component {
             this.baseConfig = await this.orm.call("vscreens.company", "preview_config", [
                 [this.companyId],
             ]);
-            this.state.devices = await this.orm.searchRead(
-                "vscreens.device",
-                [["company_id", "=", this.companyId]],
-                ["name", "is_online", "is_active", "last_ping"],
-                { order: "name" }
+            this._devices.set(
+                await this.orm.searchRead(
+                    "vscreens.device",
+                    [["company_id", "=", this.companyId]],
+                    ["name", "is_online", "is_active", "last_ping"],
+                    { order: "name" }
+                )
             );
         });
 
@@ -68,16 +76,35 @@ export class VscreensTvPreviewField extends Component {
         });
 
         // Reenvía la vista previa cada vez que cambia cualquier campo visible.
-        useEffect(
-            () => {
-                this.sendPreview();
-            },
-            () => [this.snapshot()]
+        useOnChange(
+            () => [this.snapshot()],
+            () => this.sendPreview(),
+            { initialRun: false }
         );
     }
 
+    get devices() {
+        return this._devices();
+    }
+
+    get selected() {
+        return this._selected();
+    }
+
+    get status() {
+        return this._status();
+    }
+
+    get statusClass() {
+        return this._statusClass();
+    }
+
+    get sending() {
+        return this._sending();
+    }
+
     get iframeEl() {
-        return this.iframe.el;
+        return this.iframeRef();
     }
 
     // ------------------------------------------------------------------
@@ -185,7 +212,8 @@ export class VscreensTvPreviewField extends Component {
     // Envío en vivo al iframe
     // ------------------------------------------------------------------
     async sendPreview() {
-        if (!this.iframeEl || !this.iframeEl.contentWindow || !this.companyId) {
+        const iframe = this.iframeEl;
+        if (!iframe || !iframe.contentWindow || !this.companyId) {
             return;
         }
         try {
@@ -194,26 +222,30 @@ export class VscreensTvPreviewField extends Component {
                 "preview_config_draft",
                 [this.companyId, this.buildDraft()]
             );
-            this.iframeEl.contentWindow.postMessage(
+            iframe.contentWindow.postMessage(
                 { type: "PREVIEW_UPDATE", payload: config },
                 "*"
             );
-            this.state.status = "Vista previa en vivo";
-            this.state.statusClass = "vs_tv_status_live";
+            this._status.set("Vista previa en vivo");
+            this._statusClass.set("vs_tv_status_live");
         } catch (error) {
             console.error("VScreenS: error al actualizar la vista previa", error);
-            this.state.status = "Sin conexión con la TV";
-            this.state.statusClass = "vs_tv_status_error";
+            this._status.set("Sin conexión con la TV");
+            this._statusClass.set("vs_tv_status_error");
         }
     }
 
     toggleDevice(deviceId) {
-        this.state.selected[deviceId] = !this.state.selected[deviceId];
+        this._selected.set({
+            ...this._selected(),
+            [deviceId]: !this._selected()[deviceId],
+        });
     }
 
     get selectedIds() {
-        return Object.keys(this.state.selected)
-            .filter((key) => this.state.selected[key])
+        const selected = this._selected();
+        return Object.keys(selected)
+            .filter((key) => selected[key])
             .map((key) => Number(key));
     }
 
@@ -221,10 +253,10 @@ export class VscreensTvPreviewField extends Component {
     // Publicar en las pantallas reales
     // ------------------------------------------------------------------
     async pushToDevices() {
-        if (!this.companyId || this.state.sending) {
+        if (!this.companyId || this._sending()) {
             return;
         }
-        this.state.sending = true;
+        this._sending.set(true);
         try {
             await this.props.record.save();
             const ids = this.selectedIds;
@@ -250,7 +282,7 @@ export class VscreensTvPreviewField extends Component {
                 type: "danger",
             });
         } finally {
-            this.state.sending = false;
+            this._sending.set(false);
         }
     }
 
