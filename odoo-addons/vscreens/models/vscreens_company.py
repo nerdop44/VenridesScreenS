@@ -439,6 +439,155 @@ class VScreenSCompany(models.Model):
             return settings
         return None
 
+    def _hydrate_visuals_from_json(self):
+        """Completa los controles visuales con la configuración JSON histórica.
+
+        Es idempotente: sólo crea los registros que faltan, comparando por
+        URL/texto, de forma que se puede ejecutar varias veces sin duplicar.
+        """
+        Playlist = self.env["vscreens.playlist.item"]
+        Scheduled = self.env["vscreens.scheduled.video.item"]
+        Sidebar = self.env["vscreens.sidebar.item"]
+        BottomBar = self.env["vscreens.bottom.bar.item"]
+        Design = self.env["vscreens.design.settings"]
+        created = 0
+
+        for company in self:
+            # Playlist
+            known = {item.url for item in company.playlist_items if item.url}
+            sequence = 10
+            for entry in (company.video_playlist or []):
+                if isinstance(entry, str):
+                    url, title = entry, entry
+                elif isinstance(entry, dict):
+                    url = entry.get("url")
+                    title = entry.get("title") or url
+                else:
+                    continue
+                if not url or url in known:
+                    sequence += 10
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        Playlist.create({
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "title": title or url,
+                            "url": url,
+                        })
+                        known.add(url)
+                        created += 1
+                except Exception:  # noqa: BLE001
+                    pass
+                sequence += 10
+
+            # Videos programados
+            known_scheduled = {
+                (item.url, item.start_datetime) for item in company.scheduled_video_items
+            }
+            sequence = 10
+            for entry in (company.scheduled_videos or []):
+                if not isinstance(entry, dict):
+                    continue
+                url = entry.get("url")
+                start = entry.get("start")
+                if not url or not start or (url, start) in known_scheduled:
+                    sequence += 10
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        Scheduled.create({
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "title": entry.get("title") or url,
+                            "url": url,
+                            "start_datetime": start,
+                            "end_datetime": entry.get("end") or False,
+                            "duration": entry.get("duration") or 300,
+                        })
+                        created += 1
+                except Exception:  # noqa: BLE001
+                    pass
+                sequence += 10
+
+            # Barra lateral
+            known_sidebar = {item.value for item in company.sidebar_items}
+            sequence = 10
+            for entry in (company.sidebar_content or []):
+                if not isinstance(entry, dict):
+                    continue
+                value = entry.get("value") or entry.get("text")
+                if not value or value in known_sidebar:
+                    sequence += 10
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        Sidebar.create({
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "label": entry.get("label") or value[:40],
+                            "value": value,
+                            "icon": entry.get("icon") or "fa-tv",
+                            "color": entry.get("color") or "#ffffff",
+                        })
+                        known_sidebar.add(value)
+                        created += 1
+                except Exception:  # noqa: BLE001
+                    pass
+                sequence += 10
+
+            # Barra inferior
+            bottom_data = company.bottom_bar_content if isinstance(company.bottom_bar_content, dict) else {}
+            messages = bottom_data.get("messages") or ([bottom_data.get("static")] if bottom_data.get("static") else [])
+            known_bottom = {item.value for item in company.bottom_bar_items}
+            sequence = 10
+            for message in messages:
+                text = message if isinstance(message, str) else str(message)
+                if not text.strip() or text in known_bottom:
+                    sequence += 10
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        BottomBar.create({
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "label": text[:40],
+                            "value": text,
+                            "color": bottom_data.get("color") or "#c8ff00",
+                        })
+                        known_bottom.add(text)
+                        created += 1
+                except Exception:  # noqa: BLE001
+                    pass
+                sequence += 10
+
+            # Ajustes de diseño
+            if not company.design_settings_id:
+                data = company.design_settings if isinstance(company.design_settings, dict) else {}
+                try:
+                    with self.env.cr.savepoint():
+                        Design.create({
+                            "company_id": company.id,
+                            "title_font": data.get("name_font") or "inherit",
+                            "title_color": data.get("name_color") or "#ffffff",
+                            "title_size": data.get("name_size") or "1.2rem",
+                            "title_weight": data.get("name_weight") or "bold",
+                            "sidebar_width": int(data.get("sidebar_width") or 22),
+                            "sidebar_effect": data.get("sidebar_effect") or "none",
+                            "sidebar_bg": data.get("sidebar_bg") or "#1e293b",
+                            "sidebar_text": data.get("sidebar_text") or "#ffffff",
+                            "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",
+                            "bottom_bar_text": data.get("bottom_bar_text") or "#ffffff",
+                            "show_bcv": bool(data.get("show_bcv", True)),
+                            "bcv_color": data.get("bcv_color") or "#10b981",
+                            "bcv_font": data.get("bcv_font") or "inherit",
+                        })
+                        created += 1
+                except Exception:  # noqa: BLE001
+                    pass
+
+        return created
+
     def _sync_visual_to_json(self, field_names):
         """Vuelca sólo los One2many editados a los JSON de configuración."""
         for record in self:
