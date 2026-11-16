@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Remake ING. Nerdo José Pulido Aguirre - Localización Venezolana (LocVe)
 
+from odoo.tools import BinaryBytes
 from odoo import models, api, fields, _
 from odoo.exceptions import UserError, ValidationError
 from pytz import timezone
@@ -193,7 +194,11 @@ class AccountMove(models.Model):
         """Descarga el PDF fiscal de TFHKA y lo cachea en la factura."""
         self.ensure_one()
         if self.tfhka_pdf and not force:
-            return base64.b64decode(self.tfhka_pdf)
+            value = self.tfhka_pdf
+            content = getattr(value, "content", None)
+            if isinstance(content, (bytes, bytearray)):
+                return bytes(content)
+            return base64.b64decode(value)
         ref = self._tfhka_doc_ref()
         if not ref["numeroDocumento"]:
             raise UserError(
@@ -206,7 +211,7 @@ class AccountMove(models.Model):
         pdf = base64.b64decode(archivo)
         filename = "%s_fiscal.pdf" % self.name.replace("/", "-")
         self.write({
-            "tfhka_pdf": base64.b64encode(pdf),
+            "tfhka_pdf": BinaryBytes(pdf, filename),
             "tfhka_pdf_name": filename,
         })
         return pdf
