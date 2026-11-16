@@ -454,7 +454,7 @@ class VScreenSCompany(models.Model):
 
         for company in self:
             # Playlist
-            known = {item.url for item in company.playlist_items if item.url}
+            known = {item.youtube_id or item.url for item in company.playlist_items if item.url}
             sequence = 10
             for entry in (company.video_playlist or []):
                 if isinstance(entry, str):
@@ -464,7 +464,12 @@ class VScreenSCompany(models.Model):
                     title = entry.get("title") or url
                 else:
                     continue
-                if not url or url in known:
+                if not url:
+                    sequence += 10
+                    continue
+                temp = Playlist.new({"url": url})
+                key = temp.youtube_id or url
+                if key in known:
                     sequence += 10
                     continue
                 try:
@@ -475,11 +480,20 @@ class VScreenSCompany(models.Model):
                             "title": title or url,
                             "url": url,
                         })
-                        known.add(url)
+                        known.add(key)
                         created += 1
                 except Exception:  # noqa: BLE001
                     pass
                 sequence += 10
+
+            # Elimina duplicados históricos del mismo video
+            seen_ids = set()
+            for item in company.playlist_items.sorted("id"):
+                key = item.youtube_id or item.url
+                if key in seen_ids:
+                    item.unlink()
+                else:
+                    seen_ids.add(key)
 
             # Videos programados
             known_scheduled = {
