@@ -35,7 +35,8 @@ class VscreensDigitalDownload(http.Controller):
         # Incrementar contador de descargas
         product.sudo().write({"download_count": product.download_count + 1})
 
-        file_content = base64.b64decode(product.digital_file)
+        value = product.digital_file
+        file_content = value.content if hasattr(value, "content") else base64.b64decode(value)
         filename = product.digital_filename or f"{product.name.replace(' ', '_')}.apk"
 
         return request.make_response(
@@ -73,7 +74,7 @@ class VscreensDigitalDownload(http.Controller):
         })
 
         filename = product.digital_filename or f"{product.name.replace(' ', '_')}.apk"
-        payload = base64.b64decode(file_content)
+        payload = file_content if isinstance(file_content, (bytes, bytearray)) else base64.b64decode(file_content)
         return request.make_response(
             payload,
             headers=[

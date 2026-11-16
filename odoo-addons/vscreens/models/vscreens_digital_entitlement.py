@@ -21,6 +21,18 @@ from odoo import api, fields, models
 _logger = logging.getLogger(__name__)
 
 
+def _binary_content(value):
+    """Devuelve bytes desde un campo binario de Odoo 20 o desde base64."""
+    if not value:
+        return b""
+    content = getattr(value, "content", None)
+    if isinstance(content, (bytes, bytearray)):
+        return bytes(content)
+    import base64
+
+    return base64.b64decode(value)
+
+
 class VscreensDigitalEntitlement(models.Model):
     _name = "vscreens.digital.entitlement"
     _description = "Entrega de producto digital VScreenS"
@@ -78,7 +90,7 @@ class VscreensDigitalEntitlement(models.Model):
         return f"{base}/shop/download/{self.token}"
 
     def register_download(self):
-        """Marca una descarga y devuelve el archivo en base64."""
+        """Marca una descarga y devuelve el contenido binario del archivo."""
         self.ensure_one()
         if not self.is_valid:
             return False
@@ -88,7 +100,7 @@ class VscreensDigitalEntitlement(models.Model):
         })
         product = self.product_tmpl_id.sudo()
         product.write({"download_count": product.download_count + 1})
-        return product.digital_file
+        return _binary_content(product.digital_file)
 
     def action_resend_email(self):
         """Reenvía el correo de entrega del pedido asociado."""
