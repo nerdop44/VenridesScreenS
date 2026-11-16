@@ -117,6 +117,17 @@ export class VscreensTvPreviewField extends Component {
         return this._devices().filter((device) => device.is_online && device.is_active).length;
     }
 
+    get inactiveItems() {
+        const countInactive = (name) =>
+            this.rowData(name).filter((row) => row.is_active === false).length;
+        return (
+            countInactive("playlist_items") +
+            countInactive("sidebar_items") +
+            countInactive("bottom_bar_items") +
+            countInactive("scheduled_video_items")
+        );
+    }
+
     get iframeEl() {
         return this.iframeRef();
     }

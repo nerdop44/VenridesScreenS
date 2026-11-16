@@ -515,6 +515,7 @@ class VScreenSCompany(models.Model):
                             "sequence": sequence,
                             "title": title or url,
                             "url": url,
+                            "is_active": True,
                         })
                         known.add(key)
                         created += 1
@@ -545,6 +546,7 @@ class VScreenSCompany(models.Model):
                             "sequence": sequence,
                             "title": entry.get("title") or url,
                             "url": url,
+                            "is_active": True,
                             "start_datetime": start,
                             "end_datetime": entry.get("end") or False,
                             "duration": entry.get("duration") or 300,
@@ -571,6 +573,7 @@ class VScreenSCompany(models.Model):
                             "sequence": sequence,
                             "label": entry.get("label") or value[:40],
                             "value": value,
+                            "is_active": True,
                             "icon": entry.get("icon") or "fa-tv",
                             "color": entry.get("color") or "#ffffff",
                         })
@@ -597,6 +600,7 @@ class VScreenSCompany(models.Model):
                             "sequence": sequence,
                             "label": text[:40],
                             "value": text,
+                            "is_active": True,
                             "color": bottom_data.get("color") or "#c8ff00",
                         })
                         known_bottom.add(text)

@@ -185,6 +185,9 @@
             <div class="vs_tv_preview_online" t-if="this._devices().length">
                 <span t-esc="this.onlineDevices"/> de <span t-esc="this._devices().length"/> pantallas en línea
             </div>
+            <div class="vs_tv_preview_note" t-if="this.inactiveItems">
+                <i class="fa fa-eye-slash"/> <span t-esc="this.inactiveItems"/> ítem(s) desactivados no se envían a la TV.
+            </div>
             <div class="vs_tv_preview_screen">
                 <iframe t-ref="this.iframeRef" t-att-src="this.previewUrl" title="Vista previa TV" allow="autoplay; fullscreen"/>
             </div>
