@@ -39,6 +39,9 @@ class AccountMove(models.Model):
         help="La factura ya está registrada; la emisión TFHKA se procesa en segundo plano.")
     tfhka_attempts = fields.Integer("Intentos fiscales", default=0, copy=False)
     tfhka_last_error = fields.Text("Último error fiscal", copy=False)
+    tfhka_document_number = fields.Char("Número de documento fiscal", copy=False, readonly=True)
+    tfhka_series = fields.Char("Serie fiscal", copy=False, readonly=True)
+    tfhka_document_type = fields.Char("Tipo de documento fiscal", copy=False, readonly=True)
 
     def action_open_void_control_wizard(self):
         if self.company_id.ocultar_forma_libre_digital:
@@ -159,7 +162,12 @@ class AccountMove(models.Model):
         response = self.call_tfhka_api("emision", payload)
 
         if response:
-            self.is_digitalized = True
+            self.write({
+                "is_digitalized": True,
+                "tfhka_document_number": str(document_number),
+                "tfhka_series": series or "",
+                "tfhka_document_type": document_type,
+            })
             emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             self.message_post(
                 body=_("Documento digitalizado exitosamente en TFHKA el %(date)s") % {'date': emission_date},  
@@ -176,9 +184,9 @@ class AccountMove(models.Model):
     def _tfhka_doc_ref(self):
         self.ensure_one()
         return {
-            "serie": self.correlative or "",
-            "tipoDocumento": "01",
-            "numeroDocumento": str(self.correlative or ""),
+            "serie": self.tfhka_series or "",
+            "tipoDocumento": self.tfhka_document_type or "01",
+            "numeroDocumento": str(self.tfhka_document_number or ""),
         }
 
     def tfhka_descargar_pdf(self, force=False):
