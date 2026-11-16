@@ -178,8 +178,10 @@ class SaleOrder(models.Model):
         company = self._vscreens_resolve_company(plan=plan)
 
         # --- Productos digitales: una entrega por línea ---
+        entitled_products = self.env["product.template"].sudo()
         for line in digital_lines:
             product = line.product_id.product_tmpl_id
+            entitled_products |= product
             Entitlement.create({
                 "partner_id": self.partner_id.id,
                 "product_tmpl_id": product.id,
@@ -190,6 +192,25 @@ class SaleOrder(models.Model):
                 "expires_at": fields.Datetime.now() + timedelta(days=365),
                 "notes": f"Pedido {self.name}",
             })
+
+        # --- Un plan incluye las apps: entregar los APK gratuitos ---
+        if plan_lines:
+            apps = self.env["product.template"].sudo().search([
+                ("is_digital", "=", True),
+                ("digital_file", "!=", False),
+                ("list_price", "=", 0),
+            ]) - entitled_products
+            for product in apps:
+                Entitlement.create({
+                    "partner_id": self.partner_id.id,
+                    "product_tmpl_id": product.id,
+                    "order_id": self.id,
+                    "company_id": company.id if company else False,
+                    "quantity": 1,
+                    "max_downloads": 0,
+                    "expires_at": fields.Datetime.now() + timedelta(days=365),
+                    "notes": f"Incluido en el plan — pedido {self.name}",
+                })
 
         # --- Plan contratado: aplicarlo a la empresa ---
         valid_until = False

@@ -14,7 +14,7 @@
         <field name="purchase_ok">False</field>
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
-        <field name="is_published">True</field>
+        <field name="is_published">False</field>
         <field name="website_sequence">10</field>
         <field name="list_price">0.0</field>
         <field name="description">
@@ -40,7 +40,7 @@ Instrucciones:
         <field name="purchase_ok">False</field>
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
-        <field name="is_published">True</field>
+        <field name="is_published">False</field>
         <field name="website_sequence">10</field>
         <field name="list_price">0.0</field>
         <field name="description">
