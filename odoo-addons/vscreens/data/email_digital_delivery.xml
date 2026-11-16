@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================================
+         CORREO DE ENTREGA: productos digitales y plan contratado
+         ============================================================================ -->
+    <record id="email_template_digital_delivery" model="mail.template">
+        <field name="name">VScreenS — Entrega de compra digital</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="subject">Tu compra en VScreenS — {{ object.name }}</field>
+        <field name="email_from">{{ (object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="answer_to">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="partner_to" eval="False"/>
+        <field name="use_default_to" eval="True"/>
+        <field name="auto_delete" eval="False"/>
+        <field name="description">Se envía automáticamente al confirmarse una compra de producto digital o plan.</field>
+        <field name="body_html" type="html">
+<div style="margin:0;padding:0;background:#f5f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <div style="max-width:620px;margin:0 auto;padding:24px;">
+        <div style="background:#0a0e1a;border-radius:16px;padding:22px 24px;color:#ffffff;">
+            <div style="font-size:12px;letter-spacing:2px;color:#c8ff00;font-weight:700;">VSCREENS</div>
+            <div style="font-size:22px;font-weight:700;margin-top:6px;">¡Gracias por tu compra!</div>
+            <div style="font-size:13px;color:#cbd5e1;margin-top:6px;">
+                Pedido <span t-out="object.name"/> · <span t-out="object.date_order"/>
+            </div>
+        </div>
+
+        <div style="background:#ffffff;border-radius:16px;padding:22px 24px;margin-top:16px;">
+            <p style="margin:0 0 12px;">Hola <span t-out="object.partner_id.name or ''"/>,</p>
+            <p style="margin:0 0 16px;font-size:14px;line-height:1.6;">
+                Tu pedido fue confirmado. Aquí tienes tus descargas y las instrucciones para activar el servicio.
+            </p>
+
+            <div t-if="object.vscreens_entitlement_ids" style="margin:18px 0;">
+                <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:8px;">
+                    Tus descargas
+                </div>
+                <div t-foreach="object.vscreens_entitlement_ids" t-as="entitlement"
+                     style="border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+                    <div style="font-size:15px;font-weight:700;" t-out="entitlement.product_name"/>
+                    <div style="font-size:12px;color:#6b7280;margin:4px 0 10px;">
+                        Descargas ilimitadas · enlace válido hasta <span t-out="entitlement.expires_at"/>
+                    </div>
+                    <a t-att-href="entitlement.download_url()"
+                       style="display:inline-block;background:#c8ff00;color:#0a0e1a;text-decoration:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:10px;">
+                        Descargar APK
+                    </a>
+                </div>
+            </div>
+
+            <div t-if="object.vscreens_plan_id"
+                 style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 16px;margin:18px 0;">
+                <div style="font-size:13px;font-weight:700;color:#166534;">
+                    Plan activado: <span t-out="object.vscreens_plan_id.name"/>
+                </div>
+                <div style="font-size:13px;color:#15803d;margin-top:4px;">
+                    Vigente hasta <span t-out="object.vscreens_valid_until"/>. Ya puedes configurar tus pantallas.
+                </div>
+            </div>
+
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:20px 0 8px;">
+                Cómo activar tu dispositivo
+            </div>
+            <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;">
+                <li>Descarga e instala el APK en tu TV Android, Fire TV o teléfono.</li>
+                <li>Ingresa al panel de clientes: <a href="https://vscreens-app.inverpave.com" style="color:#2563eb;">vscreens-app.inverpave.com</a></li>
+                <li>Genera el código de vinculación de tu empresa.</li>
+                <li>Introduce el código en la app. La pantalla quedará autorizada automáticamente.</li>
+            </ol>
+
+            <p style="margin:18px 0 0;font-size:12px;color:#6b7280;line-height:1.6;">
+                La descarga es libre, pero la app solo es operativa cuando el dispositivo está
+                activado y autorizado en tu cuenta VScreenS.
+            </p>
+        </div>
+
+        <div style="text-align:center;font-size:12px;color:#6b7280;padding:18px 8px;line-height:1.7;">
+            Inversiones Pulido Aguirre (INVERPA)<br/>
+            Urb. La Cardenera, Olivos 719, Barinas · 0414-5694075<br/>
+            info.vscreens@inverpave.com
+        </div>
+    </div>
+</div>
+        </field>
+    </record>
+</odoo>

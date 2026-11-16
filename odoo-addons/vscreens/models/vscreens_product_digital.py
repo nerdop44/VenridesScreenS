@@ -33,6 +33,16 @@ class ProductTemplate(models.Model):
         default=True,
         help="Si está marcado, el archivo se puede descargar libremente pero solo funciona si el dispositivo está activado en el panel de clientes.",
     )
+    plan_id = fields.Many2one(
+        "vscreens.plan",
+        string="Plan VScreenS",
+        help="Si el producto representa un plan, al confirmarse la compra se aplica este plan a la empresa del cliente.",
+    )
+    plan_days = fields.Integer(
+        string="Días de vigencia por unidad",
+        default=30,
+        help="Días que se suman a la vigencia de la empresa por cada unidad comprada.",
+    )
 
 
 class ProductProduct(models.Model):
@@ -46,6 +56,8 @@ class ProductProduct(models.Model):
         related="product_tmpl_id.is_operational_only_when_activated",
         readonly=False,
     )
+    plan_id = fields.Many2one(related="product_tmpl_id.plan_id", readonly=False)
+    plan_days = fields.Integer(related="product_tmpl_id.plan_days", readonly=False)
 
 
 class VscreensDeviceActivation(models.Model):

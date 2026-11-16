@@ -25,6 +25,7 @@ Incluye:
         "crm",
         "account",
         "l10n_ve",
+        "website_sale",
     ],
     "data": [
         "security/groups.xml",
@@ -32,6 +33,7 @@ Incluye:
         "data/plans.xml",
         "data/products.xml",
         "data/digital_products.xml",
+        "data/email_digital_delivery.xml",
         "data/global_ad.xml",
         "data/cron.xml",
         "views/plan_views.xml",
@@ -50,6 +52,7 @@ Incluye:
         "views/email_template_views.xml",
         "views/email_template_digital_views.xml",
         "views/product_digital_views.xml",
+        "views/digital_entitlement_views.xml",
         "views/promotion_views.xml",
         "views/affiliate_views.xml",
         "views/tracking_link_views.xml",

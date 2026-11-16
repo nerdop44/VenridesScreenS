@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Licensed under the LGPLv3 - VScreenS - Localización Venezuela (LocVe)
 
-from odoo import http
+from odoo import fields, http
 from odoo.http import request
 import logging
 import base64
@@ -44,6 +44,42 @@ class VscreensDigitalDownload(http.Controller):
                 ("Content-Type", "application/vnd.android.package-archive"),
                 ("Content-Disposition", f'attachment; filename="{filename}"'),
                 ("Content-Length", str(len(file_content))),
+                ("Access-Control-Allow-Origin", "*"),
+            ],
+        )
+
+
+    @http.route("/shop/download/<string:token>", type="http", auth="public", methods=["GET"], csrf=False, save_session=False)
+    def download_entitlement(self, token, **kwargs):
+        """Descarga tokenizada de una compra. Registra estadística y límites."""
+        entitlement = request.env["vscreens.digital.entitlement"].sudo().search(
+            [("token", "=", token)], limit=1
+        )
+        if not entitlement or not entitlement.is_valid:
+            return request.not_found()
+
+        product = entitlement.product_tmpl_id
+        file_content = entitlement.register_download()
+        if not file_content:
+            return request.not_found()
+
+        request.env["vscreens.download.stat"].sudo().create({
+            "product_id": product.id,
+            "ip_address": request.httprequest.remote_addr,
+            "user_agent": request.httprequest.user_agent.string[:200] if request.httprequest.user_agent else "",
+            "company_id": entitlement.company_id.id if entitlement.company_id else False,
+            "device_uuid": kwargs.get("device_uuid") or "",
+            "is_authorized": True,
+        })
+
+        filename = product.digital_filename or f"{product.name.replace(' ', '_')}.apk"
+        payload = base64.b64decode(file_content)
+        return request.make_response(
+            payload,
+            headers=[
+                ("Content-Type", "application/vnd.android.package-archive"),
+                ("Content-Disposition", f'attachment; filename="{filename}"'),
+                ("Content-Length", str(len(payload))),
                 ("Access-Control-Allow-Origin", "*"),
             ],
         )

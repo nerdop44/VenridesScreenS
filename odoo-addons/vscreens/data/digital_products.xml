@@ -14,6 +14,8 @@
         <field name="purchase_ok">False</field>
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
+        <field name="is_published">True</field>
+        <field name="website_sequence">10</field>
         <field name="list_price">0.0</field>
         <field name="description">
 VScreenS App Móvil - Panel de Control para Clientes
@@ -38,6 +40,8 @@ Instrucciones:
         <field name="purchase_ok">False</field>
         <field name="is_digital">True</field>
         <field name="is_operational_only_when_activated">True</field>
+        <field name="is_published">True</field>
+        <field name="website_sequence">10</field>
         <field name="list_price">0.0</field>
         <field name="description">
 VScreenS App TV - Reproductor de Señalización Digital para Android TV
@@ -60,6 +64,9 @@ Control remoto: La app es compatible con controles remotos de TV
     <!-- Plan Free -->
     <record id="product_plan_free" model="product.template">
         <field name="name">Plan Free - VScreenS</field>
+        <field name="plan_id" ref="plan_free"/>
+        <field name="plan_days">30</field>
+        <field name="is_published">True</field>
         <field name="type">service</field>
         <field name="sale_ok">True</field>
         <field name="purchase_ok">False</field>
@@ -76,6 +83,9 @@ Duración de prueba: 7 días.
     <!-- Plan Básico -->
     <record id="product_plan_basic" model="product.template">
         <field name="name">Plan Básico - VScreenS</field>
+        <field name="plan_id" ref="plan_basic"/>
+        <field name="plan_days">30</field>
+        <field name="is_published">True</field>
         <field name="type">service</field>
         <field name="sale_ok">True</field>
         <field name="purchase_ok">False</field>
@@ -92,6 +102,9 @@ Precio: $30 USD/mes.
     <!-- Plan Plus -->
     <record id="product_plan_plus" model="product.template">
         <field name="name">Plan Plus - VScreenS</field>
+        <field name="plan_id" ref="plan_plus"/>
+        <field name="plan_days">30</field>
+        <field name="is_published">True</field>
         <field name="type">service</field>
         <field name="sale_ok">True</field>
         <field name="purchase_ok">False</field>
@@ -108,6 +121,9 @@ Precio: $50 USD/mes.
     <!-- Plan Ultra -->
     <record id="product_plan_ultra" model="product.template">
         <field name="name">Plan Ultra - VScreenS</field>
+        <field name="plan_id" ref="plan_ultra"/>
+        <field name="plan_days">30</field>
+        <field name="is_published">True</field>
         <field name="type">service</field>
         <field name="sale_ok">True</field>
         <field name="purchase_ok">False</field>

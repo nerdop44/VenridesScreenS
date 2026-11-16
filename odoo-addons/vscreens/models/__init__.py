@@ -22,3 +22,4 @@ from . import vscreens_free_plan_usage
 from . import vscreens_birthday
 from . import vscreens_product_digital
 from . import vscreens_content_visual
+from . import vscreens_digital_entitlement

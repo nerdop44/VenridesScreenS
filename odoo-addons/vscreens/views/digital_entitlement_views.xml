@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vscreens_digital_entitlement_list" model="ir.ui.view">
+        <field name="name">vscreens.digital.entitlement.list</field>
+        <field name="model">vscreens.digital.entitlement</field>
+        <field name="arch" type="xml">
+            <list string="Entregas digitales" decoration-muted="not is_active" decoration-danger="not is_valid">
+                <field name="create_date" string="Fecha"/>
+                <field name="partner_id"/>
+                <field name="email"/>
+                <field name="product_name"/>
+                <field name="order_id"/>
+                <field name="company_id"/>
+                <field name="download_count" string="Descargas"/>
+                <field name="last_download_at" optional="show"/>
+                <field name="expires_at" optional="show"/>
+                <field name="is_valid" string="Vigente"/>
+                <field name="is_active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vscreens_digital_entitlement_form" model="ir.ui.view">
+        <field name="name">vscreens.digital.entitlement.form</field>
+        <field name="model">vscreens.digital.entitlement</field>
+        <field name="arch" type="xml">
+            <form string="Entrega digital">
+                <header>
+                    <button name="action_resend_email" type="object" string="Reenviar correo de entrega"
+                            class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Cliente">
+                            <field name="partner_id"/>
+                            <field name="email"/>
+                            <field name="company_id"/>
+                            <field name="order_id"/>
+                        </group>
+                        <group string="Descarga">
+                            <field name="download_count"/>
+                            <field name="max_downloads"/>
+                            <field name="last_download_at"/>
+                            <field name="expires_at"/>
+                            <field name="is_valid" string="Vigente"/>
+                            <field name="is_active"/>
+                        </group>
+                    </group>
+                    <group string="Enlace de descarga">
+                        <field name="token" readonly="1"/>
+                    </group>
+                    <group string="Notas">
+                        <field name="notes" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vscreens_digital_entitlement_search" model="ir.ui.view">
+        <field name="name">vscreens.digital.entitlement.search</field>
+        <field name="model">vscreens.digital.entitlement</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="email"/>
+                <field name="product_name"/>
+                <field name="order_id"/>
+                <filter name="valid" string="Vigentes" domain="[('is_active','=',True)]"/>
+                <group>
+                    <filter name="group_product" string="Producto" context="{'group_by': 'product_tmpl_id'}"/>
+                    <filter name="group_company" string="Empresa" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vscreens_digital_entitlement" model="ir.actions.act_window">
+        <field name="name">Entregas digitales</field>
+        <field name="res_model">vscreens.digital.entitlement</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vscreens_digital_entitlement_search"/>
+    </record>
+
+    <menuitem id="menu_vscreens_digital_entitlement"
+              name="Entregas digitales"
+              parent="menu_vscreens_digital_download"
+              action="action_vscreens_digital_entitlement"
+              sequence="0"/>
+</odoo>
