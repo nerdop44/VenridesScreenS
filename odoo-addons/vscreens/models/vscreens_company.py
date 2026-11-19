@@ -1462,7 +1462,22 @@ class VScreenSCompany(models.Model):
 
     def action_generate_registration_code(self):
         self.ensure_one()
-        return self.env["vscreens.registration.code"].generate_for_company(self)
+        result = self.env["vscreens.registration.code"].generate_for_company(self)
+        code = result.get("code", "")
+        mins = result.get("expires_in_minutes", 10)
+        self.message_post(
+            body=f"Código de vinculación TV generado: {code} (válido por {mins} minutos)."
+        )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": f"Código de Vinculación: {code}",
+                "message": f"Ingresa el código {code} en tu TV. Válido por {mins} minutos.",
+                "type": "success",
+                "sticky": True,
+            },
+        }
 
     def action_view_devices(self):
         self.ensure_one()
