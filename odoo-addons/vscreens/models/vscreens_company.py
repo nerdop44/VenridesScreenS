@@ -121,7 +121,7 @@ class VScreenSCompany(models.Model):
     odoo_link_fields = fields.Char(
         string="Campos a mostrar",
         default="name:Referencia,amount_total:Monto",
-        help="Formato etiqueta:campo, separado por comas.",
+        help="Formato campo:etiqueta, separado por comas. Ej: name:Referencia,amount_total:Monto",
     )
     odoo_link_limit = fields.Integer(string="Máximo de registros", default=5)
     odoo_link_refresh = fields.Integer(string="Actualizar cada (minutos)", default=60)
@@ -1013,10 +1013,14 @@ class VScreenSCompany(models.Model):
         for item in (self.odoo_link_fields or "").split(","):
             if ":" not in item:
                 continue
-            label, field_name = item.split(":", 1)
-            if field_name.strip().isidentifier():
-                labels.append((label.strip() or field_name.strip(), field_name.strip()))
-                fields_list.append(field_name.strip())
+            field_name, label = item.split(":", 1)
+            import re
+
+            field_name = field_name.strip()
+            if re.fullmatch(r"[a-z_][a-z0-9_]*", field_name):
+                labels.append((label.strip() or field_name, field_name))
+                if field_name not in fields_list:
+                    fields_list.append(field_name)
 
         try:
             response = session.post(
