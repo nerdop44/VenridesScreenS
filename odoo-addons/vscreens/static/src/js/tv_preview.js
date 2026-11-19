@@ -30,6 +30,13 @@ const SIMPLE_FIELDS = [
     "instagram",
     "facebook",
     "tiktok",
+    "address",
+    "allow_youtube_control",
+    "youtube_control_minutes",
+    "odoo_link_enabled",
+    "odoo_link_label",
+    "odoo_link_icon",
+    "odoo_link_color",
 ];
 
 /**

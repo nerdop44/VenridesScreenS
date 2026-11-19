@@ -1702,3 +1702,45 @@ input {
     line-height: 1.5;
     color: #94a3b8;
 }
+
+
+/* ==========================================================================
+   Enlace configurable con el Odoo del cliente
+   ========================================================================== */
+.odoo-widget {
+    margin: 1.2vh 0;
+    padding: 1.2vh 1vw;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid var(--vs-secondary, #c8ff00);
+    color: #fff;
+    overflow: hidden;
+}
+
+.odoo-widget.hidden { display: none; }
+
+.odoo-widget-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6vw;
+    font-size: clamp(0.6rem, 1.1vw, 1rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.8vh;
+}
+
+.odoo-widget-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8vw;
+    font-size: clamp(0.55rem, 0.9vw, 0.85rem);
+    padding: 0.45vh 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+}
+
+.odoo-widget-row span:last-child {
+    text-align: right;
+    opacity: 0.9;
+}

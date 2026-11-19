@@ -19,5 +19,15 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+
+        <record id="ir_cron_vscreens_odoo_link" model="ir.cron">
+            <field name="name">VScreenS: sincronizar enlaces Odoo de clientes</field>
+            <field name="model_id" ref="model_vscreens_company"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_sync_odoo_links()</field>
+            <field name="interval_number">10</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

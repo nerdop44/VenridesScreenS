@@ -210,6 +210,25 @@
                         </page>
 
                         <page string="📊 Barra Lateral" name="sidebar">
+                            <group string="Enlace con el Odoo del cliente (opcional)" col="4">
+                                <field name="odoo_link_enabled" widget="boolean_toggle"/>
+                                <field name="odoo_link_label"/>
+                                <field name="odoo_link_url" placeholder="https://odoo.cliente.com"/>
+                                <field name="odoo_link_db"/>
+                                <field name="odoo_link_user"/>
+                                <field name="odoo_link_password" password="True"/>
+                                <field name="odoo_link_model"/>
+                                <field name="odoo_link_domain"/>
+                                <field name="odoo_link_fields"/>
+                                <field name="odoo_link_limit"/>
+                                <field name="odoo_link_refresh"/>
+                                <field name="odoo_link_icon"/>
+                                <field name="odoo_link_color" widget="color"/>
+                                <field name="odoo_link_last_sync" readonly="1"/>
+                                <field name="odoo_link_error" readonly="1" invisible="not odoo_link_error"/>
+                            </group>
+                            <button name="action_test_odoo_link" type="object"
+                                    string="Probar conexión Odoo" class="btn btn-secondary"/>
                             <field name="sidebar_items">
                                 <list editable="bottom" string="Ítems de barra lateral">
                                     <field name="sequence" widget="handle"/>

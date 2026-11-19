@@ -1,6 +1,8 @@
 from datetime import timedelta
+import ast
 import json
 import logging
+import requests
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
@@ -91,6 +93,43 @@ class VScreenSCompany(models.Model):
         default=30,
         help="Tiempo máximo que se mantiene un video elegido desde el control remoto.",
     )
+
+    # --- Enlace configurable con el Odoo de facturación / inventario del cliente ---
+    odoo_link_enabled = fields.Boolean(string="Mostrar enlace Odoo en la TV", default=False)
+    odoo_link_label = fields.Char(string="Etiqueta del enlace", default="Facturación")
+    odoo_link_url = fields.Char(string="URL base de Odoo", help="Debe empezar con https://")
+    odoo_link_db = fields.Char(string="Base de datos de Odoo")
+    odoo_link_user = fields.Char(string="Usuario de Odoo")
+    odoo_link_password = fields.Char(string="Contraseña / API key", groups="vscreens.group_vscreens_master")
+    odoo_link_model = fields.Selection(
+        [
+            ("account.move", "Facturas"),
+            ("sale.order", "Pedidos"),
+            ("purchase.order", "Compras"),
+            ("stock.picking", "Albaranes / Inventario"),
+            ("crm.lead", "Oportunidades"),
+            ("res.partner", "Contactos"),
+        ],
+        string="Modelo a mostrar",
+        default="account.move",
+    )
+    odoo_link_domain = fields.Char(
+        string="Filtro Odoo (domain)",
+        default="[]",
+        help="Ejemplo: [('state','=','posted')]. Solo se permite una lista literal segura.",
+    )
+    odoo_link_fields = fields.Char(
+        string="Campos a mostrar",
+        default="name:Referencia,amount_total:Monto",
+        help="Formato etiqueta:campo, separado por comas.",
+    )
+    odoo_link_limit = fields.Integer(string="Máximo de registros", default=5)
+    odoo_link_refresh = fields.Integer(string="Actualizar cada (minutos)", default=60)
+    odoo_link_icon = fields.Char(string="Icono (FontAwesome)", default="fa-file-text")
+    odoo_link_color = fields.Char(string="Color del enlace", default="#c8ff00")
+    odoo_link_data = fields.Json(string="Datos del enlace Odoo", copy=False)
+    odoo_link_error = fields.Char(string="Último error del enlace", copy=False)
+    odoo_link_last_sync = fields.Datetime(string="Última sincronización", copy=False)
     sidebar_header_type = fields.Selection(
         [("text", "Texto"), ("banner", "Banner")], default="text", string="Tipo de encabezado"
     )
@@ -906,6 +945,162 @@ class VScreenSCompany(models.Model):
             content["instagram"] = self.instagram.lstrip("@")
         return content
 
+    # ------------------------------------------------------------------
+    # Enlace configurable con el Odoo del cliente
+    # ------------------------------------------------------------------
+    def _odoo_link_session(self):
+        """Autentica contra el Odoo del cliente. Devuelve (session, base, error)."""
+        self.ensure_one()
+        base = (self.odoo_link_url or "").strip().rstrip("/")
+        if not base or not base.startswith("https://"):
+            return None, base, "La URL debe usar https://"
+        if not all((self.odoo_link_db, self.odoo_link_user, self.odoo_link_password)):
+            return None, base, "Faltan base de datos, usuario o contraseña"
+        session = requests.Session()
+        try:
+            response = session.post(
+                f"{base}/web/session/authenticate",
+                json={
+                    "jsonrpc": "2.0",
+                    "params": {
+                        "db": self.odoo_link_db,
+                        "login": self.odoo_link_user,
+                        "password": self.odoo_link_password,
+                    },
+                },
+                timeout=10,
+                headers={"User-Agent": "VScreenS-OdooLink/1.0"},
+            )
+            data = response.json()
+            if data.get("error") or not (data.get("result") or {}).get("uid"):
+                return None, base, "Credenciales o base de datos incorrectas"
+        except Exception as error:  # noqa: BLE001
+            return None, base, f"No se pudo conectar: {str(error)[:120]}"
+        return session, base, False
+
+    def action_test_odoo_link(self):
+        self.ensure_one()
+        session, base, error = self._odoo_link_session()
+        message = error or f"Conexión correcta con {base}"
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Enlace Odoo",
+                "message": message,
+                "type": "success" if not error else "warning",
+            },
+        }
+
+    def _sync_odoo_link(self):
+        self.ensure_one()
+        if not self.odoo_link_enabled:
+            return False
+        session, base, error = self._odoo_link_session()
+        if error:
+            self.write({"odoo_link_error": error})
+            return False
+
+        try:
+            domain = ast.literal_eval(self.odoo_link_domain or "[]")
+            if not isinstance(domain, list):
+                domain = []
+        except (ValueError, SyntaxError):
+            domain = []
+
+        fields_list = ["id"]
+        labels = []
+        for item in (self.odoo_link_fields or "").split(","):
+            if ":" not in item:
+                continue
+            label, field_name = item.split(":", 1)
+            if field_name.strip().isidentifier():
+                labels.append((label.strip() or field_name.strip(), field_name.strip()))
+                fields_list.append(field_name.strip())
+
+        try:
+            response = session.post(
+                f"{base}/web/dataset/call_kw/{self.odoo_link_model}/search_read",
+                json={
+                    "jsonrpc": "2.0",
+                    "params": {
+                        "model": self.odoo_link_model,
+                        "method": "search_read",
+                        "args": [domain],
+                        "kwargs": {
+                            "fields": fields_list,
+                            "limit": min(max(self.odoo_link_limit or 5, 1), 20),
+                            "order": "id desc",
+                        },
+                    },
+                },
+                timeout=15,
+            )
+            result = response.json()
+            if result.get("error"):
+                raise ValueError(str(result["error"])[:120])
+            rows = result.get("result") or []
+        except Exception as error:  # noqa: BLE001
+            self.write({"odoo_link_error": f"Error al consultar: {str(error)[:120]}"})
+            return False
+
+        records = []
+        for row in rows:
+            values = []
+            for label, field_name in labels:
+                value = row.get(field_name)
+                if isinstance(value, list) and len(value) == 2:
+                    value = value[1]
+                if isinstance(value, (dict, list)):
+                    continue
+                values.append({"label": label, "value": "" if value is None else str(value)[:80]})
+            records.append({
+                "id": row.get("id"),
+                "title": str(row.get("name") or row.get("id") or "")[:80],
+                "values": values,
+                "url": f"{base}/odoo/{self.odoo_link_model}/{row.get('id')}",
+            })
+
+        self.write({
+            "odoo_link_data": records,
+            "odoo_link_error": False,
+            "odoo_link_last_sync": fields.Datetime.now(),
+        })
+        return True
+
+    @api.model
+    def cron_sync_odoo_links(self):
+        now = fields.Datetime.now()
+        companies = self.sudo().search([("odoo_link_enabled", "=", True)])
+        synced = 0
+        for company in companies:
+            minutes = max(company.odoo_link_refresh or 60, 5)
+            if company.odoo_link_last_sync and (
+                now - company.odoo_link_last_sync
+            ).total_seconds() < minutes * 60:
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    if company._sync_odoo_link():
+                        synced += 1
+            except Exception as error:  # noqa: BLE001
+                _logger.warning("VScreenS Odoo link falló en empresa %s: %s", company.id, error)
+        return synced
+
+    def _odoo_widget_config(self):
+        self.ensure_one()
+        if not self.odoo_link_enabled:
+            return {}
+        return {
+            "enabled": True,
+            "label": self.odoo_link_label or "Odoo",
+            "icon": self.odoo_link_icon or "fa-file-text",
+            "color": self.odoo_link_color or "#c8ff00",
+            "records": self.odoo_link_data or [],
+            "error": self.odoo_link_error or False,
+            "last_sync": self._iso(self.odoo_link_last_sync),
+        }
+
     def _base_config(self):
         self.ensure_one()
         alert = self._get_active_alert()
@@ -951,6 +1146,7 @@ class VScreenSCompany(models.Model):
                 if visual else (self.design_settings or {})
             ),
             "pause_duration": self.pause_duration,
+            "ad_frequency": self.ad_frequency,
             "bcv_rate": get_bcv_rate(self.env),
             "plan": self.plan_code or "free",
             "sidebar_header_type": self.sidebar_header_type,
@@ -970,6 +1166,7 @@ class VScreenSCompany(models.Model):
             "allow_youtube_control": bool(self.allow_tv_youtube_control),
             "youtube_control_minutes": self.tv_youtube_control_minutes or 30,
             "notification_settings": self._notification_settings_dict(),
+            "odoo_widget": self._odoo_widget_config(),
             "last_updated": self._iso(self.write_date or self.create_date),
         }
         config = self._free_plan_overrides(config)
@@ -1022,6 +1219,19 @@ class VScreenSCompany(models.Model):
             return {}
         config = company._base_config()
         if isinstance(draft, dict):
+            if "odoo_link_enabled" in draft:
+                widget = dict(config.get("odoo_widget") or {})
+                if not draft.get("odoo_link_enabled"):
+                    widget = {}
+                else:
+                    for key, source in (
+                        ("label", "odoo_link_label"),
+                        ("icon", "odoo_link_icon"),
+                        ("color", "odoo_link_color"),
+                    ):
+                        if source in draft:
+                            widget[key] = draft[source]
+                config["odoo_widget"] = widget
             socials = {
                 key: draft[key]
                 for key in ("whatsapp", "instagram", "phone")
@@ -1045,6 +1255,14 @@ class VScreenSCompany(models.Model):
                 "priority_content_url",
                 "pause_duration",
                 "ad_frequency",
+                "address",
+                "allow_youtube_control",
+                "youtube_control_minutes",
+                "odoo_link_enabled",
+                "odoo_link_label",
+                "odoo_link_icon",
+                "odoo_link_color",
+                "odoo_widget",
                 "sidebar_header_type",
                 "sidebar_header_value",
                 "phone",

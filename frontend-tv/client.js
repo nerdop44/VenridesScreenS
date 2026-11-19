@@ -29,6 +29,8 @@
         queueSignature: "",
         manualOverride: null,
         overrideTimer: null,
+        cueTimer: null,
+        cuedId: null,
         lastPlaylist: [],
         lastScheduled: [],
         videoIndex: 0,
@@ -265,6 +267,7 @@
         applyTheme(data, design);
         applyBrand(data, design);
         buildSidebar(sidebarItems, menus, design);
+        buildOdooWidget(data.odoo_widget);
         buildTicker(bottom, data, design);
         buildQueue(playlist, scheduled, data);
         handlePriority(data.priority_content_url || null);
@@ -623,6 +626,47 @@
        Ticker y barra inferior
        --------------------------------------------------------------------- */
 
+    function buildOdooWidget(widget) {
+        var root = $("odoo-widget");
+        if (!root) return;
+        root.innerHTML = "";
+        if (!widget || !widget.enabled || !Array.isArray(widget.records) || !widget.records.length) {
+            root.classList.add("hidden");
+            return;
+        }
+        root.classList.remove("hidden");
+        if (widget.color) root.style.borderLeftColor = widget.color;
+
+        var title = document.createElement("div");
+        title.className = "odoo-widget-title";
+        var icon = document.createElement("i");
+        icon.className = "fa " + (widget.icon || "fa-file-text");
+        if (widget.color) icon.style.color = widget.color;
+        title.appendChild(icon);
+        title.appendChild(document.createTextNode(widget.label || "Odoo"));
+        root.appendChild(title);
+
+        widget.records.slice(0, 8).forEach(function (record) {
+            var row = document.createElement("div");
+            row.className = "odoo-widget-row";
+            var name = document.createElement("span");
+            name.textContent = record.title || "";
+            row.appendChild(name);
+            var values = Array.isArray(record.values) ? record.values : [];
+            if (values.length) {
+                var value = document.createElement("span");
+                value.textContent = values.map(function (v) { return v.value; }).filter(Boolean).join(" · ");
+                row.appendChild(value);
+            }
+            if (record.url) {
+                row.addEventListener("click", function () {
+                    window.open(record.url, "_blank", "noopener");
+                });
+            }
+            root.appendChild(row);
+        });
+    }
+
     function buildTicker(bottom, data, design) {
         var track = $("ticker-track");
         if (!track) return;
@@ -842,6 +886,11 @@
     }
 
     function nextVideo() {
+        state.cuedId = null;
+        if (state.cueTimer) {
+            window.clearInterval(state.cueTimer);
+            state.cueTimer = null;
+        }
         if (!state.queue.length) {
             showFallback();
             return;
@@ -954,6 +1003,8 @@
                                 finishPriority();
                             } else if (state.manualOverride) {
                                 clearYoutubeOverride();
+                            } else if (playCuedNext()) {
+                                // El siguiente video ya está cargado: arranca al instante.
                             } else {
                                 nextVideo();
                             }
@@ -970,6 +1021,54 @@
                 }
             });
         });
+    }
+
+    function scheduleNextCue() {
+        if (state.cueTimer) {
+            window.clearInterval(state.cueTimer);
+            state.cueTimer = null;
+        }
+        state.cuedId = null;
+        if (state.manualOverride || state.inPriority || !state.playerReady ||
+            !state.player || state.queue.length < 2) {
+            return;
+        }
+        state.cueTimer = window.setInterval(function () {
+            try {
+                var next = state.queue[(state.videoIndex + 1) % state.queue.length];
+                if (!next || next.kind !== "youtube" || !next.id) return;
+                var duration = state.player.getDuration();
+                var current = state.player.getCurrentTime();
+                if (duration > 0 && (duration - current) <= 8) {
+                    state.player.cueVideoById({ videoId: next.id });
+                    state.cuedId = next.id;
+                    window.clearInterval(state.cueTimer);
+                    state.cueTimer = null;
+                }
+            } catch (err) {
+                // El reproductor aún no está listo: se reintenta en el siguiente tick.
+            }
+        }, 1000);
+    }
+
+    function playCuedNext() {
+        if (!state.cuedId || state.queue.length < 2 || !state.playerReady || !state.player) {
+            return false;
+        }
+        var next = state.queue[(state.videoIndex + 1) % state.queue.length];
+        if (!next || next.id !== state.cuedId) {
+            return false;
+        }
+        state.videoIndex = (state.videoIndex + 1) % state.queue.length;
+        state.currentItem = next;
+        state.cuedId = null;
+        updateVideoBadge(next);
+        try {
+            state.player.playVideo();
+            return true;
+        } catch (err) {
+            return false;
+        }
     }
 
     function playYoutube(item) {
@@ -1007,6 +1106,7 @@
                     state.player.playVideo();
                     hideFallback();
                     showSoundToggle();
+                    scheduleNextCue();
                 } catch (err) {
                     console.warn("YouTube load error", err);
                     nextVideo();
@@ -1438,6 +1538,11 @@
     function clearYoutubeOverride() {
         var hadOverride = !!state.manualOverride;
         state.manualOverride = null;
+        state.cuedId = null;
+        if (state.cueTimer) {
+            window.clearInterval(state.cueTimer);
+            state.cueTimer = null;
+        }
         if (state.overrideTimer) {
             window.clearTimeout(state.overrideTimer);
             state.overrideTimer = null;
