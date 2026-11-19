@@ -72,6 +72,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/forms/contact", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def contact(self, **kwargs):
+        if request.env["vscreens.request.log"].sudo().is_limited(client_ip(), "form_contact", 10, 300):
+            return error(429, "Demasiados envíos. Espere unos minutos.")
         data = payload()
         if data.get("website") or data.get("hp_field") or data.get("url"):
             return json_response({"message": "Gracias por tu mensaje.", "status": "success"})
@@ -99,6 +101,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/forms/signup/plan", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def signup_plan(self, **kwargs):
+        if request.env["vscreens.request.log"].sudo().is_limited(client_ip(), "form_signup", 10, 300):
+            return error(429, "Demasiados envíos. Espere unos minutos.")
         data = payload()
         if data.get("website") or data.get("hp_field") or data.get("url"):
             return json_response({"message": "Registro recibido.", "status": "success"})
@@ -107,13 +111,17 @@ class VScreenSPublicController(http.Controller):
         if not name or not email:
             return error(400, "Nombre y email son obligatorios")
         plan = data.get("plan") or ""
+        tipo_negocio = (data.get("tipo_negocio") or "").strip()
+        desc = (data.get("mensaje") or "").strip()
+        if tipo_negocio:
+            desc = f"Tipo de negocio: {tipo_negocio}\n{desc}".strip()
         request.env["crm.lead"].sudo().create({
             "name": f"Solicitud de plan {plan} — {name}",
             "contact_name": name,
             "email_from": email,
             "phone": data.get("telefono") or "",
             "partner_name": data.get("empresa") or "",
-            "description": data.get("mensaje") or "",
+            "description": desc,
             "type": "lead",
             "vscreens_plan_interest": plan,
             "vscreens_source_detail": "plan_signup",
@@ -185,6 +193,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/benry/chat", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def benry_chat(self, **kwargs):
+        if request.env["vscreens.request.log"].sudo().is_limited(client_ip(), "benry_chat", 40, 60):
+            return error(429, "Demasiados mensajes. Espere un momento.")
         data = payload()
         session_id = data.get("session_id") or "guest"
         message = (data.get("message") or "").strip()
@@ -195,6 +205,8 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/benry/lead", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def benry_lead(self, **kwargs):
+        if request.env["vscreens.request.log"].sudo().is_limited(client_ip(), "benry_lead", 10, 300):
+            return error(429, "Demasiados envíos. Espere unos minutos.")
         data = payload()
         if data.get("email"):
             request.env["crm.lead"].sudo().create({
@@ -211,6 +223,9 @@ class VScreenSPublicController(http.Controller):
 
     @http.route("/api/benry/session/<string:session_id>", type="http", auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def benry_clear(self, session_id, **kwargs):
+        user = bearer_user()
+        if not user or not is_master(user):
+            return error(403, "No autorizado")
         request.env["vscreens.benry"].sudo().clear_session(session_id)
         return json_response({"status": "ok"})
 

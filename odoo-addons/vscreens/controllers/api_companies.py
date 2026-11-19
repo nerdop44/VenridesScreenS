@@ -1,11 +1,12 @@
+import base64
 import logging
 import re
 from io import BytesIO
 
 from odoo import fields, http
+from odoo.http import request
 
 _logger = logging.getLogger(__name__)
-from odoo.http import request
 
 from .api_common import (
     bearer_user,
@@ -14,10 +15,15 @@ from .api_common import (
     error,
     is_master,
     json_response,
+    make_preview_token,
     payload,
     role_of,
     company_of,
+    verify_preview_token,
 )
+
+ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "webp", "gif"}
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 def _to_datetime(value):
@@ -160,7 +166,12 @@ class VScreenSCompanyController(http.Controller):
             return error(403, "No tiene acceso a los datos de esta empresa")
 
         if request.httprequest.method == "GET":
-            return json_response(company.api_dict())
+            res = company.api_dict()
+            res["preview_token"] = make_preview_token(company.id)
+            return json_response(res)
+
+        if not is_master(user) and role_of(user) == "user_basic":
+            return error(403, "Tu rol de usuario es de solo lectura")
 
         data = payload()
         if not is_master(user) and any(field in data for field in ("plan", "max_screens", "valid_until", "is_active")):
@@ -178,11 +189,18 @@ class VScreenSCompanyController(http.Controller):
                 return error(403, "Tu plan no incluye branding personalizado")
         profile_fields = {"name", "rif", "address", "phone", "contact_person", "email"}
         if not is_master(user):
-            if not company.can_edit_profile and any(field in data for field in profile_fields):
+            changed_profile = [
+                f for f in profile_fields
+                if f in data and (data[f] or "") != (getattr(company, f, "") or "")
+            ]
+            if not company.can_edit_profile and changed_profile:
                 return error(403, "Edición de perfil (Datos de Empresa) deshabilitada. Contacte al administrador.")
-            if any(field in data for field in profile_fields):
+            if changed_profile:
                 data["can_edit_profile"] = False
                 data["has_edited_profile"] = True
+            else:
+                for f in profile_fields:
+                    data.pop(f, None)
             if role_of(user) == "operador_empresa":
                 allowed = {"video_playlist", "priority_content_url", "video_source"}
                 data = {key: value for key, value in data.items() if key in allowed}
@@ -217,13 +235,27 @@ class VScreenSCompanyController(http.Controller):
                 vals[key] = value
         if vals:
             company.sudo().write(vals)
-        return json_response(company.api_dict())
+        res = company.api_dict()
+        res["preview_token"] = make_preview_token(company.id)
+        return json_response(res)
 
     @http.route("/companies/<int:company_id>/preview-config", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def preview_config(self, company_id, **kwargs):
         company = company_or_404(company_id)
         if not company:
             return error(404, "Empresa no encontrada")
+        token = request.httprequest.args.get("pt") or request.httprequest.args.get("token") or ""
+        authorized = verify_preview_token(company_id, token)
+        if not authorized:
+            user = bearer_user()
+            if user and can_access_company(user, company):
+                authorized = True
+        if not authorized:
+            web_user = request.env.user
+            if web_user and not web_user._is_public() and can_access_company(web_user, company):
+                authorized = True
+        if not authorized:
+            return error(403, "Se requiere token de vista previa válido o autenticación")
         return json_response(company.preview_config())
 
     @http.route("/companies/<int:company_id>/toggle", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -264,19 +296,23 @@ class VScreenSCompanyController(http.Controller):
         company = company_or_404(company_id)
         if not user or not company:
             return error(404, "Empresa no encontrada")
-        if not can_access_company(user, company):
+        if not can_access_company(user, company) or not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No autorizado")
         if not company._plan_allows("allow_custom_branding"):
             return error(403, "Tu plan no incluye branding personalizado")
         upload = request.httprequest.files.get("file")
         if not upload:
             return error(400, "Archivo requerido")
-        binary = upload.read()
-        ext = (upload.filename.rsplit(".", 1)[-1] if "." in upload.filename else "png").lower()
+        ext = (upload.filename.rsplit(".", 1)[-1] if "." in (upload.filename or "") else "png").lower()
+        if ext not in ALLOWED_IMAGE_EXTS:
+            return error(400, "Formato de imagen no permitido (use PNG, JPG, WEBP o GIF)")
+        binary = upload.read(MAX_UPLOAD_BYTES + 1)
+        if not binary or len(binary) > MAX_UPLOAD_BYTES:
+            return error(400, "La imagen excede el tamaño máximo permitido (5 MB)")
         filename = f"{company.id}_logo.{ext}"
         colors = _extract_colors(binary)
         company.sudo().write({
-            "logo": binary,
+            "logo": base64.b64encode(binary),
             "logo_filename": upload.filename,
             "logo_url": f"/api/logos/{filename}",
             "primary_color": colors["primary"],
@@ -291,20 +327,24 @@ class VScreenSCompanyController(http.Controller):
         company = company_or_404(company_id)
         if not user or not company:
             return error(404, "Empresa no encontrada")
-        if not can_access_company(user, company):
+        if not can_access_company(user, company) or not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No autorizado")
         if not company._plan_allows("allow_custom_branding"):
             return error(403, "Tu plan no incluye branding personalizado")
         upload = request.httprequest.files.get("file")
         if not upload:
             return error(400, "Archivo requerido")
-        binary = upload.read()
-        ext = (upload.filename.rsplit(".", 1)[-1] if "." in upload.filename else "png").lower()
+        ext = (upload.filename.rsplit(".", 1)[-1] if "." in (upload.filename or "") else "png").lower()
+        if ext not in ALLOWED_IMAGE_EXTS:
+            return error(400, "Formato de imagen no permitido (use PNG, JPG, WEBP o GIF)")
+        binary = upload.read(MAX_UPLOAD_BYTES + 1)
+        if not binary or len(binary) > MAX_UPLOAD_BYTES:
+            return error(400, "La imagen excede el tamaño máximo permitido (5 MB)")
         filename = f"{company.id}_sidebar.{ext}"
         settings = dict(company.design_settings or {})
         settings["sidebar_bg_image"] = f"/api/logos/{filename}"
         company.sudo().write({
-            "sidebar_bg": binary,
+            "sidebar_bg": base64.b64encode(binary),
             "sidebar_bg_filename": upload.filename,
             "design_settings": settings,
         })
@@ -319,13 +359,13 @@ class VScreenSCompanyController(http.Controller):
         if not can_access_company(user, company):
             return error(403, "No autorizado")
         if request.httprequest.method == "DELETE":
-            if not (is_master(user) or role_of(user) in ("admin_empresa", "operador_empresa")):
-                return error(403, "No autorizado")
+            if not (is_master(user) or role_of(user) == "admin_empresa"):
+                return error(403, "Solo el administrador de empresa puede desvincular pantallas")
             company.device_ids.sudo().unlink()
             return json_response({"message": "Todos los dispositivos han sido desvinculados correctamente"})
         return json_response([device.api_dict() for device in company.device_ids])
 
-    @http.route("/admin/companies/<int:company_id>/menus", type="http", auth="public", methods=["GET", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    @http.route(["/admin/companies/<int:company_id>/menus", "/admin/companies/<int:company_id>/menus/"], type="http", auth="public", methods=["GET", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def company_menus(self, company_id, **kwargs):
         user = bearer_user()
         company = company_or_404(company_id)
@@ -333,6 +373,8 @@ class VScreenSCompanyController(http.Controller):
             return error(404, "Empresa no encontrada")
         if request.httprequest.method == "GET":
             return json_response([item.api_dict() for item in company.menu_item_ids])
+        if not (is_master(user) or role_of(user) == "admin_empresa"):
+            return error(403, "No autorizado para crear ítems de menú")
         data = payload()
         item = request.env["vscreens.menu.item"].sudo().create({
             "company_id": company.id,
@@ -349,7 +391,7 @@ class VScreenSCompanyController(http.Controller):
         item = request.env["vscreens.menu.item"].sudo().browse(menu_id).exists()
         if not user or not item:
             return error(404, "Ítem no encontrado")
-        if not can_access_company(user, item.company_id):
+        if not can_access_company(user, item.company_id) or not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No autorizado")
         item.sudo().unlink()
         return json_response({"status": "ok"})
@@ -362,7 +404,7 @@ class VScreenSCompanyController(http.Controller):
             return error(404, "Empresa no encontrada")
         if not can_access_company(user, company):
             return error(403, "No tiene permiso para enviar mensajes a esta empresa")
-        if role_of(user) == "operador_empresa":
+        if not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No tiene permisos suficientes")
         data = payload()
         body = (data.get("text") or data.get("body") or "").strip()

@@ -3,7 +3,6 @@
   "appName": "VScreenS",
   "webDir": "dist",
   "server": {
-    "cleartext": true,
-    "androidScheme": "http"
+    "androidScheme": "https"
   }
 }

@@ -1,9 +1,15 @@
 {
   "appId": "com.vscreens.tv",
-  "appName": "VScreenS",
+  "appName": "VScreenS TV",
   "webDir": "dist",
   "server": {
-    "url": "https://vscreens-tv.inverpave.com",
-    "cleartext": true
+    "androidScheme": "https",
+    "allowNavigation": [
+      "vscreens-api.inverpave.com",
+      "vscreens-tv.inverpave.com",
+      "*.youtube.com",
+      "*.ytimg.com",
+      "*.googlevideo.com"
+    ]
   }
 }

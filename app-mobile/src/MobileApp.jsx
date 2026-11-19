@@ -5,21 +5,23 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-const API_BASE = localStorage.getItem('server_url') || 'https://vscreens-api.inverpave.com';
+const API_BASE = localStorage.getItem('server_url') || import.meta.env.VITE_API_BASE_URL || 'https://vscreens-api.inverpave.com';
+const TV_URL = import.meta.env.VITE_TV_URL || 'https://vscreens-tv.inverpave.com';
 
 const MobileApp = ({ token, userObj, onLogout }) => {
     // Derived State
     const role = userObj?.role || 'client';
 
-    const [view, setView] = useState(role === 'admin_empresa' ? 'content' : 'home');
+    const [view, setView] = useState(role === 'admin_empresa' ? 'home' : 'home');
     const [myCompany, setMyCompany] = useState(null);
+    const [myDevices, setMyDevices] = useState([]);
     const isSuperAdmin = userObj?.is_admin || role === 'admin_master';
     const companyId = userObj?.company_id;
 
     // Initial Fetch
     useEffect(() => {
         if (isSuperAdmin) {
-            // Future: Implement Super Admin Logic if needed, for now focus on Client
+            return;
         } else if (companyId) {
             fetchClientData();
         }
@@ -31,6 +33,7 @@ const MobileApp = ({ token, userObj, onLogout }) => {
             const compRes = await fetch(`${API_BASE}/companies/${companyId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (compRes.status === 401) { onLogout(); return; }
             if (compRes.ok) setMyCompany(await compRes.json());
 
             // 2. Get Devices
@@ -50,7 +53,7 @@ const MobileApp = ({ token, userObj, onLogout }) => {
             <div className="mobile-content">
                 {view === 'home' && <ClientHome company={myCompany} devices={myDevices} />}
                 {view === 'content' && <MobileContent company={myCompany} user={userObj} token={token} />}
-                {view === 'devices' && <ClientDevices devices={myDevices} token={token} refresh={fetchClientData} />}
+                {view === 'devices' && <ClientDevices company={myCompany} devices={myDevices} token={token} refresh={fetchClientData} />}
                 {view === 'profile' && <MobileProfile user={userObj} company={myCompany} onLogout={onLogout} />}
             </div>
 
@@ -125,24 +128,46 @@ const ClientHome = ({ company, devices }) => {
     );
 };
 
-const ClientDevices = ({ devices, token, refresh }) => {
+const ClientDevices = ({ company, devices, token, refresh }) => {
     const [selectedDevice, setSelectedDevice] = useState(null);
-    const [action, setAction] = useState(null); // 'menu', 'rename', 'delete_confirm'
+    const [action, setAction] = useState(null); // 'menu', 'rename', 'delete_confirm', 'pair_code'
     const [newName, setNewName] = useState('');
+    const [pairCode, setPairCode] = useState(null);
+    const [pairing, setPairing] = useState(false);
 
     const handleAction = (device) => {
         setSelectedDevice(device);
         setAction('menu');
     };
 
+    const handleGenerateCode = async () => {
+        if (!company?.id) return;
+        setPairing(true);
+        try {
+            const res = await fetch(`${API_BASE}/devices/generate-code?company_id=${company.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || 'No se pudo generar el código');
+            setPairCode(data);
+            setAction('pair_code');
+        } catch (e) {
+            alert(e.message || 'Error al generar código');
+        } finally {
+            setPairing(false);
+        }
+    };
+
     const handleRename = async () => {
         if (!newName.trim()) return;
         try {
-            await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}`, {
+            const res = await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ name: newName })
             });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'Error al renombrar'); }
             setAction(null);
             refresh();
         } catch (e) { alert("Error: " + e.message); }
@@ -150,31 +175,38 @@ const ClientDevices = ({ devices, token, refresh }) => {
 
     const handleToggle = async () => {
         try {
-            await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}/status?is_active=${!selectedDevice.is_active}`, {
+            const res = await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}/status?is_active=${!selectedDevice.is_active}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'No autorizado'); }
             setAction(null);
             refresh();
-        } catch (e) { alert("Error"); }
+        } catch (e) { alert(e.message || "Error"); }
     };
 
     const handleDelete = async () => {
         try {
-            await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}`, {
+            const res = await fetch(`${API_BASE}/admin/devices/${selectedDevice.uuid}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'No autorizado'); }
             setAction(null);
             refresh();
-        } catch (e) { alert("Error"); }
+        } catch (e) { alert(e.message || "Error"); }
     };
 
     return (
         <div className="mobile-view relative">
             <div className="view-header p-4 border-b border-gray-800 flex justify-between items-center">
                 <h2 className="text-lg font-bold">Mis Pantallas</h2>
-                <button onClick={refresh} className="text-sm text-blue-400">Actualizar</button>
+                <div className="flex items-center gap-3">
+                    <button onClick={handleGenerateCode} disabled={pairing} className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold flex items-center gap-1">
+                        <Plus size={14} /> {pairing ? '...' : 'Vincular TV'}
+                    </button>
+                    <button onClick={refresh} className="text-sm text-blue-400">Actualizar</button>
+                </div>
             </div>
 
             <div className="list-container pb-24">
@@ -221,9 +253,24 @@ const ClientDevices = ({ devices, token, refresh }) => {
                                 {selectedDevice.is_active ? 'Suspender Pantalla' : 'Reactivar Pantalla'}
                             </button>
                             <button onClick={() => setAction('delete_confirm')} className="p-4 bg-red-500/10 text-red-500 rounded-xl flex items-center gap-3 font-bold mt-2">
-                                <LogOut size={20} /> Desvincular Permanenetemente
+                                <LogOut size={20} /> Desvincular Permanentemente
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {action === 'pair_code' && pairCode && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setAction(null)}>
+                    <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-6 text-center" onClick={e => e.stopPropagation()}>
+                        <Monitor size={40} className="mx-auto mb-3 text-green-400" />
+                        <h3 className="font-bold text-lg mb-1">Código de Vinculación</h3>
+                        <p className="text-xs opacity-70 mb-4">Ingresa este código de 6 dígitos en tu TV:</p>
+                        <div className="font-mono text-4xl font-extrabold tracking-[0.25em] text-green-400 bg-black/40 py-4 rounded-xl border border-green-500/30 mb-3">
+                            {pairCode.code}
+                        </div>
+                        <p className="text-xs opacity-60 mb-5">Válido por {pairCode.expires_in_minutes || 10} minutos</p>
+                        <button onClick={() => setAction(null)} className="w-full p-3 rounded-xl bg-blue-600 font-bold text-white">Entendido</button>
                     </div>
                 </div>
             )}
@@ -605,7 +652,11 @@ const MobileProfile = ({ user, company, onLogout }) => {
 
             {/* Configuration Actions */}
             <div className="flex flex-col gap-3 mb-6">
-                <button className="p-4 bg-[rgba(255,255,255,0.05)] rounded-xl flex items-center justify-between" onClick={() => window.open(`${API_BASE}/tv/${company.uuid_playlist}`, '_blank')}>
+                <button className="p-4 bg-[rgba(255,255,255,0.05)] rounded-xl flex items-center justify-between" onClick={() => {
+                    if (!company?.id) return;
+                    const pt = company.preview_token ? `&pt=${encodeURIComponent(company.preview_token)}` : '';
+                    window.open(`${TV_URL}/?preview=${company.id}${pt}`, '_blank');
+                }}>
                     <div className="flex items-center gap-3">
                         <Monitor size={20} className="text-purple-400" />
                         <span>Ver mi Canal de TV</span>

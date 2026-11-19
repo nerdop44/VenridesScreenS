@@ -1,13 +1,14 @@
 # CONTINUIDAD DEL PROYECTO: VScreenS
 
-Para retomar el hilo de este proyecto específico, lee los archivos en:
+Para retomar el hilo de este proyecto, lee primero en este orden:
 
-1.  **Skill de Sistema**: `.agent/skills/continuity/SKILL.md` (Instrucciones para IA)
-2.  **Contexto Maestro**: `/home/nerdop/laboratorio/deposito de conocimientos antigravity/PROYECTO_VSCREENS.md`
-3.  **Datos Técnicos**: `/home/nerdop/laboratorio/deposito de conocimientos antigravity/CREDENCIALES_Y_ENTORNOS_VSCREENS.md`
+1. **Brief de Sesión:** `.cerebro/SESSION_BRIEF.md`
+2. **Trazabilidad Viva:** `trazabilidad.md`
+3. **Skill de Sistema:** `.agent/skills/continuity/SKILL.md`
 
-## Últimos Hitos Resueltos en VScreenS
-- Corregido el renderizado del **Ticker** (cintillo) en la TV App.
-- Habilitado acceso a **admin_master** para planes free.
-- Añadido botón de **Sincronizar** manual en el Panel Admin.
-- Resuelto problema de inyección de variables `VITE_` en el pipeline de deployment.
+## Estado Actual (2026-11-19)
+- Backend y Control Maestro 100% en **Odoo 20 CE** (`odoo-addons/vscreens/`).
+- `vscreens.inverpave.com` conectado a **Odoo Website + eCommerce (`/shop`) + `/d/CODIGO`**.
+- Panel Cliente (`frontend-admin`) y App Móvil (`app-mobile`) exclusivos para clientes, compilando sin errores.
+- App TV (`frontend-tv` / `app-tv`) endurecida para operación 24/7 (caché offline, D-Pad, `BootReceiver`, `FLAG_KEEP_SCREEN_ON`, sin congelamiento de playlist).
+- Descargas TV compatibles con **Downloader by AFTVnews** (`aftvnews_code` configurable/generable desde Odoo).

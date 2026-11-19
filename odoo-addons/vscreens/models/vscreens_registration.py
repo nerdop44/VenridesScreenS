@@ -82,16 +82,4 @@ class VScreenSRegistrationCode(models.Model):
 
         reg.unlink()
         return True, company.device_config(device)
-
-
-class VScreenSFreePlanUsage(models.Model):
-    _name = "vscreens.free.plan.usage"
-    _description = "Uso de prueba gratuita por dispositivo"
-    _order = "used_at desc"
-
-    uuid = fields.Char(string="UUID", required=True, index=True)
-    company_id = fields.Many2one("vscreens.company", string="Empresa", ondelete="cascade")
-    used_at = fields.Datetime(default=fields.Datetime.now)
-    expires_at = fields.Datetime()
-
-    _uuid_uniq = models.Constraint("UNIQUE(uuid)", "Este dispositivo ya utilizó la prueba gratuita.")
+# Nota: VScreenSFreePlanUsage vive en vscreens_free_plan_usage.py.

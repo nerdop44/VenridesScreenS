@@ -140,7 +140,7 @@ Método: Navegador interactivo (Chromium) + pruebas de API con curl + simulació
 | Paso | Acción | Estado |
 |------|--------|--------|
 | 1 | Accede a `vscreens-erp.inverpave.com/web/login` | ✅ HTTP 200 |
-| 2 | Inicia sesión (admin / 14304044np1) | ✅ JSON-RPC autenticación |
+| 2 | Inicia sesión (admin / [REDACTED]) | ✅ JSON-RPC autenticación |
 | 3 | Ve menú VScreenS | ✅ Dashboard, Clientes, Contenido, Mensajería, Soporte, CRM |
 | 4 | Crea empresa | ⚠️ Vía API (el frontend SPA lo hace) |
 | 5 | Genera código de vinculación | ✅ |

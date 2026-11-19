@@ -3,9 +3,13 @@
 """Códigos cortos de descarga para la app de TV (y móvil)."""
 
 from datetime import timedelta
+import logging
+import re
 import secrets
 
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -21,6 +25,10 @@ class VscreensDownloadCode(models.Model):
     _rec_name = "code"
 
     code = fields.Char(string="Código", required=True, index=True, copy=False, default=_new_code)
+    aftvnews_code = fields.Char(
+        string="Código Downloader (AFTVnews)",
+        help="Código numérico de aftvnews.com compatible con la app Downloader en Android TV / Fire TV.",
+    )
     product_tmpl_id = fields.Many2one(
         "product.template", string="Producto", required=True, ondelete="cascade"
     )
@@ -40,12 +48,38 @@ class VscreensDownloadCode(models.Model):
     _code_uniq = models.Constraint("UNIQUE(code)", "Ese código de descarga ya existe.")
 
     @api.model
+    def _shorten_aftvnews(self, target_url):
+        """Intenta acortar target_url mediante go.aftvnews.com (Downloader by AFTVnews).
+        Devuelve el código numérico (ej. '123456') o False si AFTVnews bloquea o falla."""
+        if not target_url:
+            return False
+        try:
+            import requests
+            resp = requests.post(
+                "https://go.aftvnews.com/",
+                data={"url": target_url},
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Referer": "https://go.aftvnews.com/",
+                },
+                timeout=6,
+            )
+            if resp.status_code == 200:
+                # Busca patrones como aftv.news/123456 o Short Code: 123456
+                match = re.search(r"aftv\.news/(\d{4,10})", resp.text)
+                if match:
+                    return match.group(1)
+        except Exception as exc:
+            _logger.debug("No se pudo acortar en go.aftvnews.com: %s", exc)
+        return False
+
+    @api.model
     def generate(self, product, company=None, partner=None, order=None, max_uses=0, notes=None):
-        """Genera un código único (reintenta en caso de colisión)."""
+        """Genera un código único (reintenta en caso de colisión) y resuelve código AFTVnews."""
         for _ in range(10):
             try:
                 with self.env.cr.savepoint():
-                    return self.create({
+                    rec = self.create({
                         "code": _new_code(),
                         "product_tmpl_id": product.id,
                         "company_id": company.id if company else False,
@@ -54,6 +88,12 @@ class VscreensDownloadCode(models.Model):
                         "max_uses": max_uses,
                         "notes": notes,
                     })
+                    aftv_code = (getattr(product, "aftvnews_code", "") or "").strip()
+                    if not aftv_code:
+                        aftv_code = self._shorten_aftvnews(rec.download_url()) or ""
+                    if aftv_code:
+                        rec.sudo().write({"aftvnews_code": aftv_code})
+                    return rec
             except Exception:  # noqa: BLE001
                 continue
         return self
@@ -64,7 +104,9 @@ class VscreensDownloadCode(models.Model):
 
     def download_url(self):
         self.ensure_one()
-        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
+        base = self.env["ir.config_parameter"].sudo().get_str(
+            "vscreens.landing_public_url", "https://vscreens.inverpave.com"
+        ).rstrip("/")
         return f"{base}/dl/{self.code}"
 
     def is_valid(self):

@@ -14,6 +14,7 @@ from .api_common import (
     is_master,
     json_response,
     payload,
+    revoke_user_tokens,
     role_of,
     user_dict,
 )
@@ -67,28 +68,52 @@ class VScreenSAuthController(http.Controller):
     def auth_login(self, **kwargs):
         return self._login()
 
+    @http.route("/auth/logout", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def auth_logout(self, **kwargs):
+        header = request.httprequest.headers.get("Authorization", "")
+        if header.lower().startswith("bearer "):
+            token_value = header[7:].strip()
+            request.env["vscreens.api.token"].sudo().search(
+                [("token", "=", token_value), ("active", "=", True)]
+            ).write({"active": False})
+        return json_response({"message": "Sesión cerrada correctamente"})
+
     @http.route("/auth/forgot-password", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def forgot_password(self, **kwargs):
+        ip = client_ip()
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "forgot_password", 5, 600):
+            return error(429, "Demasiados intentos. Espere unos minutos.")
         data = payload()
         login = (data.get("username") or data.get("login") or "").strip()
-        user = request.env["res.users"].sudo().search([("login", "=", login)], limit=1)
+        if not login:
+            return error(400, "Correo electrónico obligatorio")
+        user = request.env["res.users"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
         if user:
-            chars = string.ascii_letters + string.digits
-            temp_password = "".join(secrets.choice(chars) for _ in range(12))
-            user.sudo().write({
-                "password": temp_password,
-                "vscreens_must_change_password": True,
+            # No sobrescribimos la contraseña actual: emitimos un código temporal de 6 dígitos (15 min)
+            # almacenado en vscreens.api.token con prefijo reset: para confirmar en /auth/reset-password.
+            reset_code = "".join(secrets.choice(string.digits) for _ in range(6))
+            token_key = f"reset:{user.id}:{reset_code}"
+            now = fields.Datetime.now()
+            request.env["vscreens.api.token"].sudo().search([
+                ("user_id", "=", user.id),
+                ("token", "=like", f"reset:{user.id}:%"),
+                ("active", "=", True),
+            ]).write({"active": False})
+            request.env["vscreens.api.token"].sudo().create({
+                "token": token_key,
+                "user_id": user.id,
+                "expires_at": now + timedelta(minutes=15),
             })
             body = f"""
                 <p>Hola,</p>
-                <p>Has solicitado recuperar tu contraseña de VScreenS.</p>
-                <p>Tu contraseña temporal es: <strong>{temp_password}</strong></p>
-                <p>Por seguridad, deberás cambiarla al iniciar sesión.</p>
-                <p>Si no solicitaste este cambio, ignora este correo.</p>
+                <p>Has solicitado restablecer tu contraseña de <strong>VScreenS</strong>.</p>
+                <p>Tu código de verificación (válido por 15 minutos) es:</p>
+                <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">{reset_code}</p>
+                <p>Si no solicitaste este cambio, ignora este correo. Tu contraseña actual sigue intacta.</p>
             """
             try:
                 mail = request.env["mail.mail"].sudo().create({
-                    "subject": "Recuperación de contraseña — VScreenS",
+                    "subject": "Código de recuperación de contraseña — VScreenS",
                     "body_html": body,
                     "email_to": user.login,
                     "email_from": request.env["ir.config_parameter"].sudo().get_str(
@@ -98,7 +123,37 @@ class VScreenSAuthController(http.Controller):
                 mail.send()
             except Exception:
                 pass
-        return json_response({"message": "Si el correo existe, recibirá instrucciones."})
+        return json_response({"message": "Si el correo existe, recibirá un código de verificación."})
+
+    @http.route("/auth/reset-password", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def reset_password(self, **kwargs):
+        ip = client_ip()
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "reset_password", 10, 600):
+            return error(429, "Demasiados intentos. Espere unos minutos.")
+        data = payload()
+        login = (data.get("username") or data.get("login") or "").strip()
+        code = (data.get("code") or data.get("token") or "").strip()
+        new_password = data.get("new_password") or ""
+        if not login or not code or len(new_password) < 6:
+            return error(400, "Correo, código y nueva contraseña (mínimo 6 caracteres) son obligatorios")
+        user = request.env["res.users"].sudo().search([("login", "=", login), ("active", "=", True)], limit=1)
+        if not user:
+            return error(400, "Código inválido o expirado")
+        now = fields.Datetime.now()
+        token_rec = request.env["vscreens.api.token"].sudo().search([
+            ("user_id", "=", user.id),
+            ("token", "=", f"reset:{user.id}:{code}"),
+            ("active", "=", True),
+            ("expires_at", ">=", now),
+        ], limit=1)
+        if not token_rec:
+            return error(400, "Código inválido o expirado")
+        user.sudo().write({
+            "password": new_password,
+            "vscreens_must_change_password": False,
+        })
+        revoke_user_tokens(user)
+        return json_response({"message": "Contraseña restablecida correctamente. Ya puedes iniciar sesión."})
 
     @http.route("/auth/change-password", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def change_password(self, **kwargs):
@@ -108,8 +163,8 @@ class VScreenSAuthController(http.Controller):
         data = payload()
         old_password = data.get("old_password") or ""
         new_password = data.get("new_password") or ""
-        if not old_password or not new_password:
-            return error(400, "Contraseña actual y nueva son obligatorias")
+        if not old_password or len(new_password) < 6:
+            return error(400, "Contraseña actual y nueva (mínimo 6 caracteres) son obligatorias")
         try:
             request.env["res.users"].sudo().authenticate(
                 {"type": "password", "login": user.login, "password": old_password},
@@ -121,6 +176,9 @@ class VScreenSAuthController(http.Controller):
             "password": new_password,
             "vscreens_must_change_password": False,
         })
+        header = request.httprequest.headers.get("Authorization", "")
+        current_token = header[7:].strip() if header.lower().startswith("bearer ") else None
+        revoke_user_tokens(user, exclude_token=current_token)
         return json_response({"message": "Contraseña actualizada correctamente"})
 
     @http.route("/admin/me", type="http", auth="public", methods=["PATCH", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -131,6 +189,7 @@ class VScreenSAuthController(http.Controller):
         data = payload()
         username = (data.get("username") or "").strip()
         password = data.get("password") or ""
+        old_password = data.get("old_password") or ""
         if username and username != user.login:
             if not is_master(user):
                 return error(403, "Solo el Administrador Maestro puede cambiar nombres de usuario")
@@ -138,17 +197,34 @@ class VScreenSAuthController(http.Controller):
                 return error(400, "El nombre de usuario ya está en uso")
             user.sudo().write({"login": username})
         if password:
+            if len(password) < 6:
+                return error(400, "La nueva contraseña debe tener al menos 6 caracteres")
+            if not old_password:
+                return error(400, "Debe proporcionar su contraseña actual para cambiarla")
+            try:
+                request.env["res.users"].sudo().authenticate(
+                    {"type": "password", "login": user.login, "password": old_password},
+                    {"interactive": False, "REMOTE_ADDR": client_ip()},
+                )
+            except Exception:
+                return error(401, "La contraseña actual es incorrecta")
             user.sudo().write({"password": password, "vscreens_must_change_password": False})
+            header = request.httprequest.headers.get("Authorization", "")
+            current_token = header[7:].strip() if header.lower().startswith("bearer ") else None
+            revoke_user_tokens(user, exclude_token=current_token)
         return json_response({"id": user.id, "username": user.login, "role": role_of(user)})
 
     @http.route("/admin/master-info", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def master_info(self, **kwargs):
+        user = bearer_user()
+        if not user:
+            return error(401, "No autenticado")
         master = request.env["res.users"].sudo().search(
-            [("group_ids", "in", request.env.ref("vscreens.group_vscreens_master").id)], limit=1
+            [("group_ids", "in", request.env.ref("vscreens.group_vscreens_master").id), ("active", "=", True)], limit=1
         )
         if not master:
             return error(404, "Administrador Maestro no encontrado")
-        return json_response({"id": master.id, "username": master.login})
+        return json_response({"id": master.id, "username": "Soporte VScreenS", "name": master.name or "Soporte VScreenS"})
 
     @http.route("/admin/users/", type="http", auth="public", methods=["GET", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def users(self, **kwargs):
@@ -225,6 +301,8 @@ class VScreenSAuthController(http.Controller):
             vals["password"] = data["password"]
         if vals:
             target.sudo().write(vals)
+            if "password" in vals:
+                revoke_user_tokens(target)
         return json_response({"id": target.id, "username": target.login, "role": target.vscreens_role})
 
     @http.route("/admin/users/<int:user_id>/password", type="http", auth="public", methods=["PATCH", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -239,9 +317,10 @@ class VScreenSAuthController(http.Controller):
         if not allowed:
             return error(403, "No tiene permiso para cambiar esta contraseña")
         data = payload()
-        if not data.get("password"):
-            return error(400, "Contraseña obligatoria")
+        if not data.get("password") or len(data["password"]) < 6:
+            return error(400, "Contraseña obligatoria (mínimo 6 caracteres)")
         target.sudo().write({"password": data["password"], "vscreens_must_change_password": False})
+        revoke_user_tokens(target)
         return json_response({"message": "Contraseña actualizada correctamente"})
 
     @http.route("/admin/users/<int:user_id>/status", type="http", auth="public", methods=["PATCH", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -251,13 +330,20 @@ class VScreenSAuthController(http.Controller):
         if not actor or not target:
             return error(404, "Usuario no encontrado")
         if not is_master(actor):
-            if role_of(actor) != "admin_empresa" or target.vscreens_company_id.id != company_of(actor).id:
+            if (
+                role_of(actor) != "admin_empresa"
+                or not company_of(actor)
+                or target.vscreens_company_id.id != company_of(actor).id
+                or target.vscreens_role != "operador_empresa"
+            ):
                 return error(403, "No autorizado")
         if target.id == actor.id:
             return error(400, "No puedes desactivar tu propia cuenta")
         raw = request.httprequest.args.get("is_active", "true").lower()
         is_active = raw in ("1", "true", "yes")
         target.sudo().write({"active": is_active})
+        if not is_active:
+            revoke_user_tokens(target)
         return json_response({"message": "Estado actualizado", "is_active": is_active})
 
     def delete_user(self, user_id, **kwargs):
@@ -268,8 +354,14 @@ class VScreenSAuthController(http.Controller):
         if target.has_group("vscreens.group_vscreens_master"):
             return error(403, "No se puede eliminar al Administrador Maestro")
         if not is_master(actor):
-            if role_of(actor) != "admin_empresa" or target.vscreens_company_id.id != company_of(actor).id or target.vscreens_role != "operador_empresa":
+            if (
+                role_of(actor) != "admin_empresa"
+                or not company_of(actor)
+                or target.vscreens_company_id.id != company_of(actor).id
+                or target.vscreens_role != "operador_empresa"
+            ):
                 return error(403, "No autorizado")
+        revoke_user_tokens(target)
         target.sudo().unlink()
         return json_response({"message": "Usuario eliminado correctamente"})
 

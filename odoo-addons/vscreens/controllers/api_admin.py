@@ -23,7 +23,12 @@ class VScreenSAdminController(http.Controller):
         user = bearer_user()
         if not user:
             return error(401, "No autenticado")
-        domain = [] if is_master(user) else [("company_id", "=", user.vscreens_company_id.id)]
+        if is_master(user):
+            domain = []
+        elif user.vscreens_company_id:
+            domain = [("company_id", "=", user.vscreens_company_id.id)]
+        else:
+            return json_response([])
         payments = request.env["vscreens.payment"].sudo().search(domain, order="payment_date desc")
         return json_response([payment.api_dict() for payment in payments])
 
@@ -42,14 +47,12 @@ class VScreenSAdminController(http.Controller):
         user = bearer_user()
         if not user:
             return error(401, "No autenticado")
+        if not is_master(user):
+            return error(403, "Solo el Administrador Maestro puede registrar pagos confirmados")
         data = payload()
         company = request.env["vscreens.company"].sudo().browse(int(data.get("company_id") or 0)).exists()
         if not company:
             return error(400, "Empresa requerida")
-        if not can_access_company(user, company):
-            return error(403, "No autorizado")
-        if role_of(user) == "operador_empresa":
-            return error(403, "No autorizado")
         currency = request.env["res.currency"].sudo().search([("name", "=", data.get("currency") or "USD")], limit=1)
         payment = request.env["vscreens.payment"].sudo().create({
             "company_id": company.id,
@@ -145,16 +148,23 @@ class VScreenSAdminController(http.Controller):
         if not user:
             return error(401, "No autenticado")
         if request.httprequest.method == "GET":
-            domain = [] if is_master(user) else [
-                "|", ("user_id", "=", user.id), ("company_id", "=", user.vscreens_company_id.id)
-            ]
+            if is_master(user):
+                domain = []
+            elif user.vscreens_company_id:
+                domain = ["|", ("user_id", "=", user.id), ("company_id", "=", user.vscreens_company_id.id)]
+            else:
+                domain = [("user_id", "=", user.id)]
             tickets = request.env["vscreens.ticket"].sudo().search(domain, order="write_date desc")
             return json_response([ticket.api_dict() for ticket in tickets])
         data = payload()
+        raw_cat = (data.get("category") or "general").strip().lower()
+        category = raw_cat if raw_cat in ("technical", "billing", "general") else "general"
+        raw_prio = (data.get("priority") or "normal").strip().lower()
+        priority = raw_prio if raw_prio in ("low", "normal", "high", "urgent") else "normal"
         ticket = request.env["vscreens.ticket"].sudo().create({
             "name": data.get("subject") or "Ticket",
-            "category": data.get("category") or "general",
-            "priority": data.get("priority") or "normal",
+            "category": category,
+            "priority": priority,
             "status": "open",
             "company_id": user.vscreens_company_id.id if user.vscreens_company_id else False,
             "user_id": user.id,
@@ -173,7 +183,8 @@ class VScreenSAdminController(http.Controller):
         ticket = request.env["vscreens.ticket"].sudo().browse(ticket_id).exists()
         if not user or not ticket:
             return error(404, "Ticket no encontrado")
-        if not is_master(user) and ticket.user_id.id != user.id and ticket.company_id.id != user.vscreens_company_id.id:
+        same_company = bool(user.vscreens_company_id and ticket.company_id and ticket.company_id.id == user.vscreens_company_id.id)
+        if not is_master(user) and ticket.user_id.id != user.id and not same_company:
             return error(403, "No tiene permiso para ver este ticket")
         data = ticket.api_dict()
         data["messages"] = [message.api_dict() for message in ticket.vscreens_message_ids]
@@ -185,7 +196,8 @@ class VScreenSAdminController(http.Controller):
         ticket = request.env["vscreens.ticket"].sudo().browse(ticket_id).exists()
         if not user or not ticket:
             return error(404, "Ticket no encontrado")
-        if not is_master(user) and ticket.user_id.id != user.id and ticket.company_id.id != user.vscreens_company_id.id:
+        same_company = bool(user.vscreens_company_id and ticket.company_id and ticket.company_id.id == user.vscreens_company_id.id)
+        if not is_master(user) and ticket.user_id.id != user.id and not same_company:
             return error(403, "No tiene permiso para responder a este ticket")
         body = (payload().get("body") or "").strip()
         if not body:
@@ -233,7 +245,8 @@ class VScreenSAdminController(http.Controller):
         message = request.env["vscreens.message"].sudo().browse(message_id).exists()
         if not user or not message:
             return error(404, "Mensaje no encontrado")
-        if not is_master(user) and message.receiver_id.id != user.id and message.company_id.id != user.vscreens_company_id.id:
+        same_company = bool(user.vscreens_company_id and message.company_id and message.company_id.id == user.vscreens_company_id.id)
+        if not is_master(user) and message.receiver_id.id != user.id and not same_company:
             return error(403, "No autorizado")
         message.sudo().write({"is_read": True})
         return json_response({"status": "ok"})
@@ -302,7 +315,8 @@ class VScreenSAdminController(http.Controller):
             partner = request.env["res.users"].sudo().browse(pid).exists()
             if not partner:
                 return error(404, "Destinatario no encontrado")
-            if not is_master(user) and partner.vscreens_company_id.id != user.vscreens_company_id.id:
+            same_company = bool(user.vscreens_company_id and partner.vscreens_company_id and partner.vscreens_company_id.id == user.vscreens_company_id.id)
+            if not is_master(user) and not is_master(partner) and not same_company:
                 return error(403, "No autorizado")
             messages = request.env["vscreens.message"].sudo().search([
                 ("is_alert", "=", False),
@@ -311,6 +325,15 @@ class VScreenSAdminController(http.Controller):
                 "&", ("sender_id", "=", pid), ("receiver_id", "=", user.id),
             ], order="create_date asc")
             messages.filtered(lambda m: m.receiver_id.id == user.id).sudo().write({"is_read": True})
+            p1, p2 = sorted([user.id, pid])
+            thread = request.env["vscreens.chat.thread"].sudo().search([
+                ("participant_1_id", "=", p1), ("participant_2_id", "=", p2)
+            ], limit=1)
+            if thread:
+                if thread.participant_1_id.id == user.id and not thread.is_read_by_1:
+                    thread.sudo().write({"is_read_by_1": True})
+                elif thread.participant_2_id.id == user.id and not thread.is_read_by_2:
+                    thread.sudo().write({"is_read_by_2": True})
         return json_response([message.api_dict() for message in messages])
 
     @http.route("/admin/chat/send", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -326,6 +349,8 @@ class VScreenSAdminController(http.Controller):
         session_id = None
         receiver_id = None
         if receiver_raw.startswith("guest_"):
+            if not is_master(user):
+                return error(403, "Solo soporte maestro puede responder a invitados")
             session_id = receiver_raw.replace("guest_", "")
         else:
             try:
@@ -335,7 +360,8 @@ class VScreenSAdminController(http.Controller):
             receiver = request.env["res.users"].sudo().browse(receiver_id).exists()
             if not receiver:
                 return error(404, "Destinatario no encontrado")
-            if not is_master(user) and receiver.vscreens_company_id.id != user.vscreens_company_id.id:
+            same_company = bool(user.vscreens_company_id and receiver.vscreens_company_id and receiver.vscreens_company_id.id == user.vscreens_company_id.id)
+            if not is_master(user) and not is_master(receiver) and not same_company:
                 return error(403, "No autorizado")
             blocked = request.env["vscreens.blocked.user"].sudo().search([
                 "|",
@@ -402,7 +428,8 @@ class VScreenSAdminController(http.Controller):
         blocked_user = request.env["res.users"].sudo().browse(blocked_id).exists()
         if not blocked_user:
             return error(404, "Usuario no encontrado")
-        if not is_master(user) and blocked_user.vscreens_company_id.id != user.vscreens_company_id.id:
+        same_company = bool(user.vscreens_company_id and blocked_user.vscreens_company_id and blocked_user.vscreens_company_id.id == user.vscreens_company_id.id)
+        if not is_master(user) and not same_company:
             return error(403, "No autorizado")
         existing = request.env["vscreens.blocked.user"].sudo().search([
             ("blocker_id", "=", user.id), ("blocked_id", "=", blocked_id)
@@ -430,12 +457,22 @@ class VScreenSAdminController(http.Controller):
             block.sudo().unlink()
         return json_response({"message": "Usuario desbloqueado"})
 
-    @http.route("/admin/chat/conversation/<int:partner_id>", type="http", auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    @http.route("/admin/chat/conversation/<string:partner_id>", type="http", auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def chat_delete(self, partner_id, **kwargs):
         user = bearer_user()
         if not user:
             return error(401, "No autenticado")
-        p1, p2 = sorted([user.id, partner_id])
+        if str(partner_id).startswith("guest_"):
+            if not is_master(user):
+                return error(403, "No autorizado")
+            session_id = str(partner_id).replace("guest_", "")
+            request.env["vscreens.message"].sudo().search([("session_id", "=", session_id)]).write({"is_read": True})
+            return json_response({"message": "Conversación de invitado archivada"})
+        try:
+            pid = int(partner_id)
+        except ValueError:
+            return error(400, "ID inválido")
+        p1, p2 = sorted([user.id, pid])
         thread = request.env["vscreens.chat.thread"].sudo().search([
             ("participant_1_id", "=", p1), ("participant_2_id", "=", p2)
         ], limit=1)

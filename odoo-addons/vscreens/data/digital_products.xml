@@ -39,6 +39,7 @@ Instrucciones:
         <field name="sale_ok">True</field>
         <field name="purchase_ok">False</field>
         <field name="is_digital">True</field>
+        <field name="aftvnews_code">3490035</field>
         <field name="is_operational_only_when_activated">True</field>
         <field name="is_published">False</field>
         <field name="website_sequence">10</field>
@@ -65,7 +66,7 @@ Control remoto: La app es compatible con controles remotos de TV
     <record id="product_plan_free" model="product.template">
         <field name="name">Plan Free - VScreenS</field>
         <field name="plan_id" ref="plan_free"/>
-        <field name="plan_days">30</field>
+        <field name="plan_days">7</field>
         <field name="is_published">True</field>
         <field name="type">service</field>
         <field name="sale_ok">True</field>
@@ -80,9 +81,9 @@ Duración de prueba: 7 días.
         </field>
     </record>
 
-    <!-- Plan Básico -->
+    <!-- Plan Emprendedor (Básico) -->
     <record id="product_plan_basic" model="product.template">
-        <field name="name">Plan Básico - VScreenS</field>
+        <field name="name">Plan Emprendedor (Básico) - VScreenS</field>
         <field name="plan_id" ref="plan_basic"/>
         <field name="plan_days">30</field>
         <field name="is_published">True</field>
@@ -93,15 +94,15 @@ Duración de prueba: 7 días.
         <field name="list_price">30.0</field>
         
         <field name="description">
-Plan Básico de VScreenS.
+Plan Emprendedor (Básico) de VScreenS.
 Incluye: 5 pantallas, contenido publicitario, sin publicidad de terceros, programación avanzada, panel web completo, multi-ubicación, soporte Helpdesk.
 Precio: $30 USD/mes.
         </field>
     </record>
 
-    <!-- Plan Plus -->
+    <!-- Plan Profesional (Plus) -->
     <record id="product_plan_plus" model="product.template">
-        <field name="name">Plan Plus - VScreenS</field>
+        <field name="name">Plan Profesional (Plus) - VScreenS</field>
         <field name="plan_id" ref="plan_plus"/>
         <field name="plan_days">30</field>
         <field name="is_published">True</field>
@@ -112,15 +113,15 @@ Precio: $30 USD/mes.
         <field name="list_price">50.0</field>
         
         <field name="description">
-Plan Plus de VScreenS.
+Plan Profesional (Plus) de VScreenS.
 Incluye: 10 pantallas, contenido publicitario, sin publicidad de terceros, panel web y app móvil completo, multi-ubicación, capacitación personalizada, soporte dedicado.
 Precio: $50 USD/mes.
         </field>
     </record>
 
-    <!-- Plan Ultra -->
+    <!-- Plan Enterprise (Ultra) -->
     <record id="product_plan_ultra" model="product.template">
-        <field name="name">Plan Ultra - VScreenS</field>
+        <field name="name">Plan Enterprise (Ultra) - VScreenS</field>
         <field name="plan_id" ref="plan_ultra"/>
         <field name="plan_days">30</field>
         <field name="is_published">True</field>
@@ -131,7 +132,7 @@ Precio: $50 USD/mes.
         <field name="list_price">80.0</field>
         
         <field name="description">
-Plan Ultra de VScreenS.
+Plan Enterprise (Ultra) de VScreenS.
 Incluye: 20 pantallas, contenido publicitario, sin publicidad de terceros, panel web y app móvil completo, multi-ubicación, capacitación personalizada, soporte dedicado.
 Precio: $80 USD/mes.
         </field>

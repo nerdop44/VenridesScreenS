@@ -3,7 +3,7 @@ import os, sys
 sys.path.insert(0, '/home/nerdop/VScreenS/backend')
 os.chdir('/home/nerdop/VScreenS/backend')
 os.environ['SMTP_USER'] = 'info.vscreens@inverpave.com'
-os.environ['SMTP_PASSWORD'] = 'ozxrkpkksgihqnya'
+os.environ['SMTP_PASSWORD'] = os.environ.get('SMTP_PASSWORD', 'CHANGE_ME_SMTP_PASSWORD')
 os.environ['NOTIFICATION_EMAIL'] = 'info.vscreens@inverpave.com'
 os.environ['GOOGLE_SHEETS_CREDENTIALS_PATH'] = './credentials/google-service-account.json'
 

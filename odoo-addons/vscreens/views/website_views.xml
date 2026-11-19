@@ -85,7 +85,7 @@
                     <t t-elif="_txt_elt_content == 'mail_stretched'">
                         <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
                             <a href="tel:+584145694075" class="nav-link o_nav-link_secondary p-2 o_navlink_background_hover d-flex align-items-center h-100 text-reset">
-                                <i class="oi oi-1x oi-fw i-filled me-1" data-icon="phone"/>
+                                <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="phone"/>
                                 <span class="o_force_ltr"><small>0414-5694075</small></span>
                             </a>
                         </div>

@@ -20,10 +20,36 @@ class VscreensEmailTemplate(models.Model):
          ("cobranza", "Cobranza"),
          ("marketing", "Marketing"),
          ("soporte", "Soporte"),
+         ("cumpleanos", "Cumpleaños"),
          ("general", "General")],
         string="Categoría", default="general")
     active = fields.Boolean(string="Activa", default=True)
     created_at = fields.Datetime(string="Creado el", default=fields.Datetime.now, readonly=True)
+
+    _name_uniq = models.Constraint("UNIQUE(name)", "La clave de la plantilla debe ser única.")
+
+    def render_for_company(self, company, extra=None):
+        self.ensure_one()
+        values = {
+            "nombre_empresa": company.name or "",
+            "contacto": company.contact_person or company.name or "",
+            "email": company.email or "",
+            "telefono": company.phone or "",
+            "plan": (company.plan_code or "free").capitalize(),
+            "fecha_vencimiento": fields.Date.to_string(company.valid_until.date()) if company.valid_until else "N/A",
+            "pantallas_activas": str(company.active_screens),
+            "max_pantallas": str(company.max_screens_effective),
+            "fecha_hoy": fields.Date.to_string(fields.Date.today()),
+            "whatsapp": company.whatsapp or "",
+        }
+        values.update(extra or {})
+        subject = self.subject or ""
+        body = self.body or ""
+        for key, value in values.items():
+            token = "{{" + key + "}}"
+            subject = subject.replace(token, str(value))
+            body = body.replace(token, str(value))
+        return {"subject": subject, "body": body}
 
     def api_dict(self):
         self.ensure_one()

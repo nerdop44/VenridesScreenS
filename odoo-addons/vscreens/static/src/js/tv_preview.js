@@ -75,6 +75,9 @@ export class VscreensTvPreviewField extends Component {
             this.baseConfig = await this.orm.call("vscreens.company", "preview_config", [
                 [this.companyId],
             ]);
+            const tvBase = (this.baseConfig && this.baseConfig.tv_url) || "https://vscreens-tv.inverpave.com";
+            const pt = (this.baseConfig && this.baseConfig.preview_token) || "";
+            this.previewUrl = `${tvBase.replace(/\/$/, "")}/?preview=${this.companyId}${pt ? `&pt=${encodeURIComponent(pt)}` : ""}`;
             this._devices.set(
                 await this.orm.searchRead(
                     "vscreens.device",

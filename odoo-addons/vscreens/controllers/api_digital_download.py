@@ -33,10 +33,12 @@ class VscreensDigitalDownload(http.Controller):
             return request.not_found()
 
         # Registrar la estadística de descarga (supervisada por nosotros)
+        ua = request.httprequest.user_agent
+        ua_str = (ua.string if hasattr(ua, "string") else str(ua or ""))[:200]
         request.env["vscreens.download.stat"].sudo().create({
             "product_id": product_id,
             "ip_address": request.httprequest.remote_addr,
-            "user_agent": request.httprequest.user_agent,
+            "user_agent": ua_str,
             "device_uuid": kwargs.get("device_uuid") or "",
             "is_authorized": bool(kwargs.get("device_uuid")),
         })
@@ -62,6 +64,13 @@ class VscreensDigitalDownload(http.Controller):
     @http.route("/shop/download/<string:token>", type="http", auth="public", methods=["GET"], csrf=False, save_session=False)
     def download_entitlement(self, token, **kwargs):
         """Descarga tokenizada de una compra. Registra estadística y límites."""
+        ip = request.httprequest.remote_addr or ""
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "apk-token", 20, 60):
+            return request.make_response(
+                '{"error": "Demasiadas descargas. Espere un minuto."}',
+                headers=[("Content-Type", "application/json")],
+                status=429,
+            )
         entitlement = request.env["vscreens.digital.entitlement"].sudo().search(
             [("token", "=", token)], limit=1
         )
@@ -114,26 +123,30 @@ class VscreensDigitalDownload(http.Controller):
 
         product = record.product_tmpl_id
         value = product.digital_file
-        payload = value.content if hasattr(value, "content") else base64.b64decode(value)
-        if not payload:
+        if not value:
+            return request.not_found()
+        payload_bytes = value.content if hasattr(value, "content") else base64.b64decode(value)
+        if not payload_bytes:
             return request.not_found()
 
         record.sudo().write({"uses": record.uses + 1})
+        ua = request.httprequest.user_agent
+        ua_str = (ua.string if hasattr(ua, "string") else str(ua or ""))[:200]
         request.env["vscreens.download.stat"].sudo().create({
             "product_id": product.id,
             "ip_address": ip,
-            "user_agent": (request.httprequest.user_agent or "")[:200] if isinstance(request.httprequest.user_agent, str) else (request.httprequest.user_agent.string[:200] if request.httprequest.user_agent else ""),
+            "user_agent": ua_str,
             "company_id": record.company_id.id if record.company_id else False,
             "device_uuid": "CODE:" + record.code,
             "is_authorized": True,
         })
         filename = product.digital_filename or f"{product.name.replace(' ', '_')}.apk"
         return request.make_response(
-            payload,
+            payload_bytes,
             headers=[
                 ("Content-Type", "application/vnd.android.package-archive"),
                 ("Content-Disposition", f'attachment; filename="{filename}"'),
-                ("Content-Length", str(len(payload))),
+                ("Content-Length", str(len(payload_bytes))),
                 ("Access-Control-Allow-Origin", "*"),
             ],
         )
@@ -149,27 +162,20 @@ class VscreensDigitalDownload(http.Controller):
         if not product.exists() or not product.is_digital:
             return json_response({"error": "Producto digital no válido"}, status=400)
         record = request.env["vscreens.download.code"].sudo().generate(product=product, notes=data.get("notes"))
-        return json_response({"code": record.code, "url": record.download_url()})
+        return json_response({
+            "code": record.code,
+            "aftvnews_code": record.aftvnews_code or "",
+            "url": record.download_url(),
+        })
 
-    @http.route("/api/digital/stats", type="http", auth="public", methods=["GET"], csrf=False, cors="*", save_session=False)
+    @http.route("/api/digital/stats", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def download_stats(self, **kwargs):
         """Estadísticas de descargas supervisadas (solo para admin/master)."""
-        token = request.httprequest.headers.get("Authorization", "").replace("Bearer ", "")
-        if not token:
-            return request.make_response(
-                '{"error": "No autorizado"}',
-                headers=[("Content-Type", "application/json"), ("Access-Control-Allow-Origin", "*")],
-                status=401,
-            )
-
-        # Verificar token del admin
-        user = request.env["res.users"].sudo().search([("vscreens_api_token", "=", token)], limit=1)
-        if not user or not user.has_group("vscreens.group_vscreens_master"):
-            return request.make_response(
-                '{"error": "Acceso denegado"}',
-                headers=[("Content-Type", "application/json"), ("Access-Control-Allow-Origin", "*")],
-                status=403,
-            )
+        user = bearer_user()
+        if not user:
+            return error(401, "No autorizado")
+        if not is_master(user):
+            return error(403, "Acceso denegado")
 
         stats = request.env["vscreens.download.stat"].sudo().search_read(
             [],
@@ -177,10 +183,10 @@ class VscreensDigitalDownload(http.Controller):
             order="downloaded_at desc",
             limit=100,
         )
-        return request.make_response(
-            request.env["ir.http"].json.dumps({"stats": stats}),
-            headers=[("Content-Type", "application/json"), ("Access-Control-Allow-Origin", "*")],
-        )
+        for row in stats:
+            if row.get("downloaded_at"):
+                row["downloaded_at"] = fields.Datetime.to_string(row["downloaded_at"])
+        return json_response({"stats": stats})
 
 
 class VscreensDeviceActivationAPI(http.Controller):

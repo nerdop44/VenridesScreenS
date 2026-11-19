@@ -1,4 +1,6 @@
-from odoo import fields, models
+from datetime import timedelta
+
+from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -13,6 +15,7 @@ class VScreenSPayment(models.Model):
     payment_method = fields.Char(string="Método de pago")
     description = fields.Char(string="Descripción")
     payment_date = fields.Datetime(string="Fecha de pago", default=fields.Datetime.now, required=True)
+    duration_days = fields.Integer(string="Días de vigencia", default=30, help="Días que extiende la vigencia al confirmar el pago.")
     state = fields.Selection(
         [("draft", "Borrador"), ("confirmed", "Confirmado"), ("cancelled", "Cancelado")],
         default="confirmed",
@@ -21,6 +24,35 @@ class VScreenSPayment(models.Model):
     reference = fields.Char(string="Referencia")
     notes = fields.Text(string="Notas")
     account_move_id = fields.Many2one("account.move", string="Factura", readonly=True, copy=False)
+
+    def _extend_company_validity(self):
+        if self.env.context.get("skip_extend_valid_until"):
+            return
+        now = fields.Datetime.now()
+        for payment in self:
+            if payment.state != "confirmed" or not payment.company_id:
+                continue
+            days = payment.duration_days or 30
+            company = payment.company_id.sudo()
+            base_dt = company.valid_until if company.valid_until and company.valid_until > now else now
+            company.write({
+                "valid_until": base_dt + timedelta(days=days),
+                "is_active": True,
+            })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.filtered(lambda p: p.state == "confirmed")._extend_company_validity()
+        return records
+
+    def write(self, vals):
+        was_confirmed = {p.id: p.state == "confirmed" for p in self}
+        res = super().write(vals)
+        if vals.get("state") == "confirmed":
+            newly_confirmed = self.filtered(lambda p: not was_confirmed.get(p.id))
+            newly_confirmed._extend_company_validity()
+        return res
 
     def _ensure_partner(self):
         self.ensure_one()
@@ -34,7 +66,7 @@ class VScreenSPayment(models.Model):
             if ch in "VEJGP":
                 prefix = ch
                 break
-        partner = self.env["res.partner"].sudo().create({
+        partner_vals = {
             "name": company.name,
             "email": company.email or False,
             "phone": company.phone or False,
@@ -42,9 +74,11 @@ class VScreenSPayment(models.Model):
             "customer_rank": 1,
             "street": company.address or False,
             "vat": raw_vat or False,
-            "prefix_vat": prefix or False,
             "country_id": self.env.ref("base.ve").id,
-        })
+        }
+        if "prefix_vat" in self.env["res.partner"]._fields:
+            partner_vals["prefix_vat"] = prefix or False
+        partner = self.env["res.partner"].sudo().create(partner_vals)
         company.sudo().write({"partner_id": partner.id})
         return partner
 

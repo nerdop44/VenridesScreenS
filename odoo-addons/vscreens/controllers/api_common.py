@@ -1,5 +1,7 @@
+import hmac
 import json
 import hashlib
+import time
 
 from odoo import fields, http
 from odoo.http import request
@@ -42,13 +44,50 @@ def bearer_user():
         [("token", "=", token_value), ("active", "=", True)], limit=1
     )
     now = fields.Datetime.now()
-    if not token or token.expires_at < now:
+    if not token or token.expires_at < now or not token.user_id or not token.user_id.active:
         return request.env["res.users"]
     # Evitamos writes concurrentes sobre el mismo token en cada request.
     # El dato es informativo; lo refrescamos como máximo cada 5 minutos.
     if not token.last_used_at or (now - token.last_used_at).total_seconds() > 300:
         token.sudo().write({"last_used_at": now})
     return token.user_id.sudo()
+
+
+def revoke_user_tokens(user, exclude_token=None):
+    if not user:
+        return
+    domain = [("user_id", "=", user.id), ("active", "=", True)]
+    if exclude_token:
+        domain.append(("token", "!=", exclude_token))
+    request.env["vscreens.api.token"].sudo().search(domain).write({"active": False})
+
+
+def _preview_secret():
+    return request.env["ir.config_parameter"].sudo().get_str(
+        "database.secret", "vscreens-preview-secret"
+    )
+
+
+def make_preview_token(company_id, ttl=86400):
+    exp = int(time.time()) + int(ttl)
+    msg = f"preview:{int(company_id)}:{exp}".encode("utf-8")
+    sig = hmac.new(_preview_secret().encode("utf-8"), msg, hashlib.sha256).hexdigest()[:24]
+    return f"{exp}.{sig}"
+
+
+def verify_preview_token(company_id, token):
+    if not token or "." not in str(token):
+        return False
+    try:
+        exp_str, sig = str(token).split(".", 1)
+        exp = int(exp_str)
+    except Exception:
+        return False
+    if exp < int(time.time()):
+        return False
+    msg = f"preview:{int(company_id)}:{exp}".encode("utf-8")
+    expected = hmac.new(_preview_secret().encode("utf-8"), msg, hashlib.sha256).hexdigest()[:24]
+    return hmac.compare_digest(sig, expected)
 
 
 def role_of(user):

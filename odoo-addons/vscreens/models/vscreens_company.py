@@ -1,11 +1,14 @@
 from datetime import timedelta
 import ast
+import hashlib
 import json
 import logging
 import requests
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class VScreenSCompany(models.Model):
@@ -449,8 +452,8 @@ class VScreenSCompany(models.Model):
         """Convierte un campo visual (One2many) al JSON que consume la TV."""
         self.ensure_one()
         if field_name == "playlist_items":
-            # La TV reproduce una lista de URLs (formato histórico del panel web).
-            return [item.url for item in self.playlist_items if item.url]
+            # La TV reproduce una lista de URLs activas (formato histórico del panel web).
+            return [item.url for item in self.playlist_items if item.url and item.is_active]
         if field_name == "scheduled_video_items":
             return [
                 {
@@ -462,7 +465,7 @@ class VScreenSCompany(models.Model):
                     "scheduled": True,
                 }
                 for item in self.scheduled_video_items
-                if item.url
+                if item.url and item.is_active
             ]
         if field_name == "sidebar_items":
             return [
@@ -474,14 +477,14 @@ class VScreenSCompany(models.Model):
                     "color": item.color or "#ffffff",
                 }
                 for item in self.sidebar_items
-                if (item.value or item.label)
+                if (item.value or item.label) and item.is_active
             ]
         if field_name == "bottom_bar_items":
             content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
             content["messages"] = [
                 item.value or item.label
                 for item in self.bottom_bar_items
-                if (item.value or item.label)
+                if (item.value or item.label) and item.is_active
             ]
             return content
         if field_name == "design_settings_id":
@@ -943,13 +946,17 @@ class VScreenSCompany(models.Model):
             content["whatsapp"] = self.whatsapp
         if self.instagram:
             content["instagram"] = self.instagram.lstrip("@")
+        if self.facebook:
+            content["facebook"] = self.facebook
+        if self.tiktok:
+            content["tiktok"] = self.tiktok.lstrip("@")
         return content
 
     # ------------------------------------------------------------------
     # Enlace configurable con el Odoo del cliente
     # ------------------------------------------------------------------
     def action_send_welcome_email(self, login=None, password=None):
-        """Correo de alta: código de descarga, Downloader, panel y credenciales."""
+        """Correo de alta: código Downloader (AFTVnews), enlace directo, panel y credenciales."""
         self.ensure_one()
         Code = self.env["vscreens.download.code"].sudo()
         apps = self.env["product.template"].sudo().search([
@@ -965,7 +972,8 @@ class VScreenSCompany(models.Model):
                 notes="Alta / prueba gratuita",
             )
             if record:
-                codes.append((product.name, record.code))
+                aftv_code = (record.aftvnews_code or product.aftvnews_code or "").strip()
+                codes.append((product.name, record.code, aftv_code))
 
         users = self.user_ids.filtered(
             lambda user: not user.has_group("vscreens.group_vscreens_master")
@@ -978,10 +986,15 @@ class VScreenSCompany(models.Model):
         )
         panel = "https://vscreens-app.inverpave.com"
         rows = "".join(
-            f"<tr><td style='padding:8px 12px;border:1px solid #e5e7eb;'>{product}</td>"
+            f"<tr>"
+            f"<td style='padding:8px 12px;border:1px solid #e5e7eb;'><b>{product}</b></td>"
             f"<td style='padding:8px 12px;border:1px solid #e5e7eb;font-family:monospace;"
-            f"font-size:20px;font-weight:bold;letter-spacing:3px;color:#0a0e1a;'>{code}</td></tr>"
-            for product, code in codes
+            f"font-size:20px;font-weight:bold;letter-spacing:3px;color:#166534;'>"
+            f"{aftv_code if aftv_code else '—'}</td>"
+            f"<td style='padding:8px 12px;border:1px solid #e5e7eb;font-family:monospace;font-size:13px;'>"
+            f"https://vscreens.inverpave.com/d/{code}</td>"
+            f"</tr>"
+            for product, code, aftv_code in codes
         )
         body = f"""
         <div style="font-family:Arial,sans-serif;color:#1f2937;max-width:640px;margin:auto;">
@@ -992,13 +1005,21 @@ class VScreenSCompany(models.Model):
           <div style="padding:18px 4px;line-height:1.7;font-size:14px;">
             <p>Hola {self.name}, tu cuenta está lista. Sigue estos pasos para poner tu pantalla en línea.</p>
             <h3>1. Descarga la app en tu TV</h3>
-            <p>Instala <b>Downloader</b> desde la tienda de tu TV/Android TV y elige
-            <b>Enter URL</b>. En el cuadro escribe:</p>
-            <p style="background:#f3f4f6;padding:10px;border-radius:8px;font-family:monospace;">
-              vscreens.inverpave.com/d/TU-CODIGO
-            </p>
-            <p>O simplemente usa el código de la tabla con esa dirección base.</p>
-            <table style="border-collapse:collapse;margin:10px 0;">{rows}</table>
+            <p>Instala <b>Downloader (by AFTVnews)</b> desde la tienda de tu Android TV / Fire TV:</p>
+            <ul>
+              <li><b>Con código numérico AFTVnews (recomendado):</b> escribe el código numérico de la columna <em>Código Downloader</em> y pulsa <b>Go</b>.</li>
+              <li><b>Con enlace directo:</b> escribe la URL completa de la columna <em>Enlace directo</em> (incluyendo <code>https://</code>) y pulsa <b>Go</b>.</li>
+            </ul>
+            <table style="border-collapse:collapse;margin:10px 0;width:100%;">
+              <thead>
+                <tr style="background:#f3f4f6;">
+                  <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Aplicación</th>
+                  <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Código Downloader (AFTVnews)</th>
+                  <th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left;">Enlace directo (URL)</th>
+                </tr>
+              </thead>
+              <tbody>{rows}</tbody>
+            </table>
             <h3>2. Registra tu pantalla</h3>
             <p>Descarga e instala el APK. Al abrirlo, genera el código de vinculación desde el panel
             y registra la pantalla. Sin este paso la app <b>no mostrará contenido</b>.</p>
@@ -1248,8 +1269,14 @@ class VScreenSCompany(models.Model):
             "odoo_widget": self._odoo_widget_config(),
             "last_updated": self._iso(self.write_date or self.create_date),
         }
+        config = self._apply_plan_locks(config)
         config = self._free_plan_overrides(config)
-        return self._apply_plan_locks(config)
+        # Hash determinista para que las TVs detecten cambios en alertas, BCV, menús,
+        # videos programados o anuncios globales aunque write_date de empresa no cambie.
+        sig_payload = json.dumps(config, sort_keys=True, default=str).encode("utf-8")
+        config["config_hash"] = hashlib.sha256(sig_payload).hexdigest()[:16]
+        config["last_updated"] = f"{config['last_updated'] or ''}:{config['config_hash']}"
+        return config
 
     def device_config(self, device):
         self.ensure_one()
@@ -1283,7 +1310,13 @@ class VScreenSCompany(models.Model):
 
     def preview_config(self):
         self.ensure_one()
-        return self._base_config()
+        from ..controllers.api_common import make_preview_token
+        cfg = self._base_config()
+        cfg["tv_url"] = self.env["ir.config_parameter"].sudo().get_str(
+            "vscreens.tv_url", "https://vscreens-tv.inverpave.com"
+        ).rstrip("/")
+        cfg["preview_token"] = make_preview_token(self.id)
+        return cfg
 
     @api.model
     def preview_config_draft(self, company_id, draft=None):
@@ -1477,12 +1510,14 @@ class VScreenSCompany(models.Model):
 
     def action_preview_tv(self):
         self.ensure_one()
+        from ..controllers.api_common import make_preview_token
         base = self.env["ir.config_parameter"].sudo().get_str(
             "vscreens.tv_url", "https://vscreens-tv.inverpave.com"
-        )
+        ).rstrip("/")
+        pt = make_preview_token(self.id)
         return {
             "type": "ir.actions.act_url",
-            "url": f"{base}?preview={self.id}",
+            "url": f"{base}/?preview={self.id}&pt={pt}",
             "target": "new",
         }
 
@@ -1490,8 +1525,8 @@ class VScreenSCompany(models.Model):
         """Publica la configuración actual en las pantallas seleccionadas.
 
         Si no se seleccionó ninguna pantalla se envía a todas las de la empresa.
-        Las pantallas consultan su configuración cada 30 s y aplican la versión
-        nueva sin necesidad de reiniciarse.
+        Las pantallas consultan su configuración cada 10 s y aplican la versión
+        nueva sin necesidad de reiniciarse (y sin mostrar el banner de ping).
         """
         self.ensure_one()
         if device_ids:
@@ -1500,9 +1535,6 @@ class VScreenSCompany(models.Model):
             )
         else:
             devices = self.push_device_ids or self.device_ids
-        now = fields.Datetime.now()
-        if devices:
-            devices.sudo().write({"ping_requested_at": now})
         super(VScreenSCompany, self).write({"config_version": (self.config_version or 1) + 1})
         self.message_post(
             body=(

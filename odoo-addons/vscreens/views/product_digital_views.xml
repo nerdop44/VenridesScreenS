@@ -102,7 +102,50 @@
         <field name="view_mode">list</field>
     </record>
 
-    <menuitem id="menu_vscreens_digital_download" name="Descargas Digitales" sequence="20"/>
+    <!-- ============================================================================
+         CAMPOS VSCREENS EN PRODUCTO (APK DIGITAL / AFTVNEWS / PLAN)
+         ============================================================================ -->
+    <record id="view_product_template_form_vscreens_digital" model="ir.ui.view">
+        <field name="name">product.template.form.vscreens.digital</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="VScreenS Digital / Plan" name="vscreens_digital">
+                    <group>
+                        <group string="Producto Digital (APK)">
+                            <field name="is_digital"/>
+                            <field name="digital_file" filename="digital_filename" invisible="not is_digital"/>
+                            <field name="digital_filename" invisible="1"/>
+                            <field name="is_operational_only_when_activated" invisible="not is_digital"/>
+                            <field name="download_count" readonly="1" invisible="not is_digital"/>
+                            <field name="aftvnews_code" invisible="not is_digital" placeholder="Ej: 123456 (go.aftvnews.com)"/>
+                            <field name="aftvnews_short_url" widget="url" readonly="1" invisible="not is_digital or not aftvnews_code"/>
+                            <button name="action_generate_aftvnews_code"
+                                    type="object"
+                                    string="Generar código AFTVnews (Downloader)"
+                                    class="btn-secondary"
+                                    invisible="not is_digital"/>
+                        </group>
+                        <group string="Plan VScreenS">
+                            <field name="plan_id"/>
+                            <field name="plan_days" invisible="not plan_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_vscreens_products_digital" model="ir.actions.act_window">
+        <field name="name">Productos y APKs VScreenS</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|', ('is_digital', '=', True), ('plan_id', '!=', False)]</field>
+    </record>
+
+    <menuitem id="menu_vscreens_digital_download" name="Descargas Digitales" parent="menu_vscreens_root" sequence="35"/>
+    <menuitem id="menu_vscreens_products_digital" name="Productos y APKs" parent="menu_vscreens_digital_download" action="action_vscreens_products_digital" sequence="0"/>
     <menuitem id="menu_vscreens_device_activation" name="Dispositivos Activados" parent="menu_vscreens_digital_download" action="action_vscreens_device_activation" sequence="1"/>
     <menuitem id="menu_vscreens_download_stats" name="Estadísticas de Descarga" parent="menu_vscreens_digital_download" action="action_vscreens_download_stats" sequence="2"/>
 </odoo>

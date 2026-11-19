@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
             <list string="Códigos de descarga" decoration-danger="not valid_now">
                 <field name="code"/>
+                <field name="aftvnews_code"/>
                 <field name="product_name"/>
                 <field name="company_id"/>
                 <field name="partner_id"/>
@@ -28,6 +29,7 @@
                     </div>
                     <group col="4">
                         <field name="product_tmpl_id"/>
+                        <field name="aftvnews_code"/>
                         <field name="company_id"/>
                         <field name="partner_id"/>
                         <field name="order_id"/>

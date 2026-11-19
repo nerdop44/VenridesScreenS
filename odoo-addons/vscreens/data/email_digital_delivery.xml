@@ -32,21 +32,46 @@
 
             <div t-if="object.vscreens_download_code_ids" style="margin:18px 0;">
                 <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:8px;">
-                    Tu código de descarga
+                    Descarga tus aplicaciones
                 </div>
                 <div t-foreach="object.vscreens_download_code_ids" t-as="download_code"
                      style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:10px;">
                     <div style="font-size:15px;font-weight:700;" t-out="download_code.product_name"/>
-                    <div style="font-family:monospace;font-size:26px;font-weight:800;letter-spacing:5px;color:#0a0e1a;margin:10px 0;"
-                         t-out="download_code.code"/>
-                    <div style="font-size:12px;color:#6b7280;line-height:1.6;">
-                        Instala <strong>Downloader</strong> desde la tienda de tu Android TV y elige
-                        <strong>Enter URL</strong>. Escribe:
-                        <code style="background:#f3f4f6;padding:3px 6px;border-radius:4px;">vscreens.inverpave.com/d/<span t-out="download_code.code"/></code>
+                    <div t-if="download_code.aftvnews_code or download_code.product_tmpl_id.aftvnews_code" style="margin:10px 0;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#166534;">
+                            Código Downloader (AFTVnews) — Android TV / Fire TV
+                        </div>
+                        <div style="font-family:monospace;font-size:28px;font-weight:800;letter-spacing:5px;color:#0a0e1a;margin:4px 0;"
+                             t-out="download_code.aftvnews_code or download_code.product_tmpl_id.aftvnews_code"/>
+                        <div style="font-size:12px;color:#15803d;">
+                            Abre la app <strong>Downloader</strong> en tu TV, introduce ese código numérico y pulsa <strong>Go</strong>.
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;line-height:1.6;margin-top:8px;">
+                        Enlace directo (escríbelo completo en <strong>Downloader → Enter URL</strong> o ábrelo desde tu navegador):<br/>
+                        <code style="background:#f3f4f6;padding:3px 6px;border-radius:4px;">https://vscreens.inverpave.com/d/<span t-out="download_code.code"/></code>
                     </div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
-                        Alternativa: <a t-att-href="download_code.download_url()" t-out="download_code.download_url()"/>
+                        Descarga directa: <a t-att-href="download_code.download_url()" t-out="download_code.download_url()"/>
                     </div>
+                </div>
+            </div>
+
+            <div t-if="object.vscreens_panel_login"
+                 style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;margin:18px 0;">
+                <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:6px;">
+                    Tus credenciales del Panel de Clientes
+                </div>
+                <div style="font-size:13px;color:#1e3a8a;line-height:1.7;">
+                    Panel: <a href="https://vscreens-app.inverpave.com" style="color:#2563eb;font-weight:700;">https://vscreens-app.inverpave.com</a><br/>
+                    Usuario: <strong t-out="object.vscreens_panel_login"/><br/>
+                    <span t-if="object.vscreens_panel_temp_password">
+                        Contraseña temporal: <code style="background:#dbeafe;padding:2px 6px;border-radius:4px;font-weight:700;" t-out="object.vscreens_panel_temp_password"/><br/>
+                        <em style="font-size:12px;">Por seguridad deberás cambiarla al ingresar por primera vez.</em>
+                    </span>
+                    <span t-else="">
+                        Usa tu contraseña registrada (si la olvidaste, pulsa "¿Olvidaste tu contraseña?" en el login).
+                    </span>
                 </div>
             </div>
 

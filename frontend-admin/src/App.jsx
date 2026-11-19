@@ -456,7 +456,14 @@ function App() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.clear();
+        const currentToken = localStorage.getItem('token');
+        if (currentToken) {
+            fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            }).catch(() => {});
+        }
+        ['token', 'user', 'user_role', 'user_permissions', 'remembered_password'].forEach(k => localStorage.removeItem(k));
         setToken(null);
         setView('login');
         setCompany(null);
@@ -477,13 +484,12 @@ function App() {
 
             const data = await res.json();
             if (res.ok) {
-                // Save credentials if remember me is checked
+                // Solo recordar el usuario (nunca guardar contraseñas en localStorage)
+                localStorage.removeItem('remembered_password');
                 if (rememberMe) {
                     localStorage.setItem('remembered_username', credentials.username);
-                    localStorage.setItem('remembered_password', btoa(credentials.password));
                 } else {
                     localStorage.removeItem('remembered_username');
-                    localStorage.removeItem('remembered_password');
                 }
 
                 localStorage.setItem('token', data.access_token);
@@ -529,11 +535,7 @@ function App() {
         const resetTimer = () => {
             clearTimeout(inactivityTimer);
             inactivityTimer = setTimeout(() => {
-                // Auto logout
-                localStorage.clear();
-                setView('login');
-                setToken(null);
-                alert('Sesión cerrada por inactividad');
+                handleLogout();
             }, INACTIVITY_TIMEOUT);
         };
 
@@ -548,16 +550,13 @@ function App() {
         };
     }, [view]);
 
-    // Load remembered credentials
+    // Load remembered username only (purge any legacy remembered_password)
     useEffect(() => {
+        localStorage.removeItem('remembered_password');
         const savedUsername = localStorage.getItem('remembered_username');
-        const savedPassword = localStorage.getItem('remembered_password');
         if (savedUsername) {
             setCredentials(prev => ({ ...prev, username: savedUsername }));
-            if (savedPassword) {
-                setCredentials(prev => ({ ...prev, password: atob(savedPassword) }));
-                setRememberMe(true);
-            }
+            setRememberMe(true);
         }
     }, []);
 
@@ -613,38 +612,10 @@ function App() {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             if (role === 'superadmin') {
-                const res = await fetch(`${API_BASE}/companies/`, { headers });
-                if (res.status === 401) {
-                    handleLogout();
-                    return;
-                }
-                const data = await res.json();
-                setCompanies(Array.isArray(data) ? data : []);
-
-                const statsRes = await fetch(`${API_BASE}/admin/stats/overview`, { headers });
-                if (statsRes.ok) {
-                    const statsData = await statsRes.json();
-                    setStats(statsData);
-                }
-
-                const paymentsRes = await fetch(`${API_BASE}/admin/payments/`, { headers });
-                if (paymentsRes.ok) {
-                    const paymentsData = await paymentsRes.json();
-                    setPayments(Array.isArray(paymentsData) ? paymentsData : []);
-                }
-
-                const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
-                if (usersRes.ok) {
-                    const usersData = await usersRes.json();
-                    setUsers(Array.isArray(usersData) ? usersData : []);
-                }
-
-                const devicesRes = await fetch(`${API_BASE}/admin/devices/`, { headers });
-                if (devicesRes.ok) {
-                    const devicesData = await devicesRes.json();
-                    setAllDevices(Array.isArray(devicesData) ? devicesData : []);
-                }
-            } else if (role === 'client') {
+                // El control maestro ahora vive 100% en Odoo ERP
+                setLoading(false);
+                return;
+            } else if (role === 'client' || role === 'operator') {
                 const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const targetId = impersonatingCompanyId || storedUser.company_id;
 
@@ -670,16 +641,18 @@ function App() {
                     setCompanyDevices(Array.isArray(devData) ? devData : []);
                 }
 
-                // Fetch users for this company (scoped by backend)
-                const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
-                if (usersRes.ok) {
-                    const usersData = await usersRes.json();
-                    setUsers(Array.isArray(usersData) ? usersData : []);
+                // Fetch users for this company (solo admin_empresa)
+                if (role === 'client' && storedUser.role === 'admin_empresa') {
+                    const usersRes = await fetch(`${API_BASE}/admin/users/`, { headers });
+                    if (usersRes.ok) {
+                        const usersData = await usersRes.json();
+                        setUsers(Array.isArray(usersData) ? usersData : []);
+                    }
                 }
             }
         } catch (err) {
             console.error("Fetch Error:", err);
-            handleLogout();
+            setAlertModalData({ title: "Error de conexión", message: "No se pudo conectar con el servidor. Verifica tu conexión e intenta de nuevo.", type: "error" });
         } finally {
             setLoading(false);
         }
@@ -899,25 +872,37 @@ function App() {
 
             if (!targetId) throw new Error("No company ID found");
 
-            // Prepare payload - EXPLICITLY filter for allowed fields only
-            const allowedFields = [
-                'name', 'layout_type', 'primary_color', 'secondary_color', 'accent_color',
-                'logo_url', 'filler_keywords', 'google_drive_link', 'video_source', 'video_playlist',
-                'sidebar_content', 'bottom_bar_content', 'design_settings', 'pause_duration',
-                'priority_content_url', 'ad_frequency', 'rif', 'address', 'phone', 'whatsapp',
-                'instagram', 'facebook', 'tiktok', 'sidebar_header_type', 'sidebar_header_value',
-                'client_editable_fields', 'plan', 'max_screens', 'valid_until'
+            // Campos editables permitidos para cliente (nunca enviar plan, max_screens, valid_until)
+            const pf = localCompany?.plan_features || {};
+            const baseFields = [
+                'layout_type', 'primary_color', 'secondary_color', 'accent_color',
+                'logo_url', 'filler_keywords', 'google_drive_link', 'video_source',
+                'pause_duration', 'ad_frequency', 'whatsapp', 'instagram',
+                'facebook', 'tiktok', 'sidebar_header_type', 'sidebar_header_value'
             ];
+            if (pf.allow_sidebar !== false) baseFields.push('sidebar_content');
+            if (pf.allow_bottom_bar !== false) baseFields.push('bottom_bar_content');
+            if (pf.allow_video_playlist !== false) baseFields.push('video_playlist');
+            if (pf.allow_priority_content !== false) baseFields.push('priority_content_url');
+            if (pf.allow_custom_branding !== false) baseFields.push('design_settings');
 
+            const profileFields = ['name', 'rif', 'address', 'phone', 'contact_person', 'email'];
             const payload = {};
-            // Deep copy to avoid mutation reference issues
             const sourceInfo = JSON.parse(JSON.stringify(localCompany));
 
-            allowedFields.forEach(f => {
+            baseFields.forEach(f => {
                 if (sourceInfo[f] !== undefined) {
                     payload[f] = sourceInfo[f];
                 }
             });
+            // Solo incluir campos de perfil si realmente cambiaron y la edición de perfil está habilitada
+            if (localCompany?.can_edit_profile) {
+                profileFields.forEach(f => {
+                    if (sourceInfo[f] !== undefined && (sourceInfo[f] || '') !== (company?.[f] || '')) {
+                        payload[f] = sourceInfo[f];
+                    }
+                });
+            }
 
             // Ensure JSON objects are objects, not strings
             ['sidebar_content', 'bottom_bar_content', 'design_settings', 'video_playlist'].forEach(field => {
@@ -1389,11 +1374,37 @@ function App() {
                         <button onClick={() => setAlertModalData(null)} className="btn btn-primary" style={{ width: '100%' }}>Aceptar</button>
                     </div>
                 </Modal>}
+                <ForgotPasswordModal isOpen={showForgotPassword} onClose={() => setShowForgotPassword(false)} />
             </div>
         );
     }
 
     if (view === 'superadmin') {
+        const erpUrl = 'https://vscreens-erp.inverpave.com/odoo';
+        return (
+            <div className="login-page" data-theme={theme}>
+                <GlobalStyles />
+                <div className="glass-card login-box" style={{ maxWidth: '480px', textAlign: 'center' }}>
+                    <img src={logo} alt="VScreenS" style={{ width: '200px', marginBottom: '1rem' }} />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '0.35rem 0.9rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '1rem' }}>
+                        <ShieldCheck size={16} /> Control Maestro en Odoo ERP
+                    </div>
+                    <h2 style={{ margin: '0 0 0.75rem 0' }}>Panel de Administración Maestro</h2>
+                    <p style={{ opacity: 0.75, fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                        La gestión maestra (empresas, planes, facturación TFHKA, usuarios, CRM y mantenimiento) ahora se administra exclusivamente desde <strong>Odoo ERP</strong>. Este portal está reservado para clientes de VScreenS.
+                    </p>
+                    <a href={erpUrl} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem', textDecoration: 'none' }}>
+                        Ir a Odoo ERP Maestro
+                    </a>
+                    <button onClick={handleLogout} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                        <LogOut size={16} /> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (false && view === 'superadmin') {
         const groups = [
             {
                 title: "Administración",
@@ -2108,9 +2119,15 @@ function App() {
                                                 <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.2rem', border: '1px solid var(--border-color)' }}>
                                                     <label style={{ color: 'var(--text-secondary)' }}>Estatus del Plan</label>
                                                     <div style={{ fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--accent-color)', fontSize: '1.4rem' }}>{localCompany?.plan} Plan</div>
-                                                    <div style={{ fontSize: '0.8rem', opacity: 0.8, color: 'var(--text-main)', marginTop: '0.5rem' }}>
-                                                        Capacidad: <strong>{companyDevices.length} / {localCompany?.max_screens}</strong> TVs en uso.
+                                                    <div style={{ fontSize: '0.8rem', opacity: 0.85, color: 'var(--text-main)', marginTop: '0.5rem' }}>
+                                                        Capacidad: <strong>{companyDevices.length} / {localCompany?.max_screens || 'Ilimitadas'}</strong> TVs en uso.
                                                     </div>
+                                                    <div style={{ fontSize: '0.8rem', opacity: 0.85, color: 'var(--text-main)', marginTop: '0.35rem' }}>
+                                                        Vigente hasta: <strong>{localCompany?.valid_until ? new Date(localCompany.valid_until).toLocaleDateString() : 'Sin vencimiento'}</strong>
+                                                    </div>
+                                                    <a href="https://vscreens.inverpave.com/shop" target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center', fontSize: '0.8rem', textDecoration: 'none' }}>
+                                                        Renovar o Mejorar Plan
+                                                    </a>
                                                 </div>
                                                 <div className="glass-card" style={{ background: 'var(--bg-app)', padding: '1.2rem', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>
                                                     <button
@@ -2140,13 +2157,15 @@ function App() {
                                                 {companyDevices.length > 0 ? companyDevices.map(d => (
                                                     <div key={d.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px rgba(16,185,129,0.5)' }}></div>
+                                                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: d.is_online ? '#10b981' : '#64748b', boxShadow: d.is_online ? '0 0 10px rgba(16,185,129,0.5)' : 'none' }}></div>
                                                             <div>
                                                                 <div style={{ fontWeight: 'bold' }}>{d.name}</div>
                                                                 <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>UUID: {d.uuid}</div>
                                                             </div>
                                                         </div>
-                                                        <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '4px' }}>Online</span>
+                                                        <span style={{ fontSize: '0.7rem', background: d.is_online ? 'rgba(16, 185, 129, 0.1)' : 'rgba(100, 116, 139, 0.15)', color: d.is_online ? '#10b981' : '#94a3b8', padding: '2px 8px', borderRadius: '4px' }}>
+                                                            {d.is_online ? 'Online' : 'Sin señal'}
+                                                        </span>
                                                         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
                                                             <Tooltip text="Identificar esta Pantalla">
                                                                 <button onClick={() => handlePingTV(d.uuid)} className="action-btn" style={{ background: 'rgba(251, 191, 36, 0.1)', border: 'none', color: '#fbbf24', cursor: 'pointer' }}><Wifi size={16} /></button>
@@ -2249,7 +2268,7 @@ function App() {
                             }}>
                                 <iframe
                                     id="preview-frame"
-                                    src={`${TV_URL}/?preview=${localCompany?.id}&t=${Date.now()}`}
+                                    src={`${TV_URL}/?preview=${localCompany?.id}${localCompany?.preview_token ? `&pt=${encodeURIComponent(localCompany.preview_token)}` : ''}`}
                                     style={{ width: '100%', height: '100%', border: 'none' }}
                                     title="TV Preview"
                                     onLoad={(e) => {
@@ -2265,13 +2284,55 @@ function App() {
                                 <strong>Tip:</strong> Sincronización 1:1 activa. Lo que ves aquí es exactamente lo que se muestra en las pantallas.
                             </div>
                             <button className="btn" style={{ width: '100%', fontSize: '0.75rem', justifyContent: 'center' }} onClick={() => {
-                                const tvUrl = TV_URL;
-                                window.open(tvUrl, '_blank');
+                                const pt = localCompany?.preview_token ? `&pt=${encodeURIComponent(localCompany.preview_token)}` : '';
+                                window.open(`${TV_URL}/?preview=${localCompany?.id}${pt}`, '_blank');
                             }}><Eye size={14} /> Abrir en Pantalla Completa</button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <Modal isOpen={!!codeModalData} onClose={() => setCodeModalData(null)} title="Vincular Nueva Pantalla">
+                {codeModalData && (
+                    <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <Monitor size={48} color="var(--primary-color)" style={{ opacity: 0.8 }} />
+                        </div>
+                        <h3 style={{ margin: '0 0 1rem 0' }}>Código de Vinculación</h3>
+                        <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>Ingresa el siguiente código de 6 dígitos en tu TV:</p>
+                        <div style={{
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '1.5rem',
+                            borderRadius: '16px',
+                            marginBottom: '1.5rem',
+                            border: '2px dashed var(--primary-color)',
+                            display: 'inline-block',
+                            minWidth: '280px'
+                        }}>
+                            <div style={{
+                                fontSize: '3.5rem',
+                                fontWeight: 'bold',
+                                letterSpacing: '8px',
+                                color: '#10b981',
+                                fontFamily: 'monospace',
+                                lineHeight: 1
+                            }}>
+                                {codeModalData.code}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', opacity: 0.7, fontSize: '0.9rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Clock size={16} /> Expira en {codeModalData.expires_in_minutes || 10} minutos
+                            </div>
+                        </div>
+                        <button onClick={() => setCodeModalData(null)} className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '1rem', fontSize: '1rem' }}>
+                            Entendido
+                        </button>
+                    </div>
+                )}
+            </Modal>
+
+            <ChangePasswordModal isOpen={showChangePassword} token={token} onClose={() => setShowChangePassword(false)} />
 
             <Modal isOpen={showCompanyModal} onClose={() => setShowCompanyModal(false)} title="Actualizar Perfil de Empresa">
                 <CompanyForm company={selectedCompany} onSave={saveCompany} onCancel={() => setShowCompanyModal(false)} isSuperAdmin={view === 'superadmin'} onGenerateCode={generateRegistrationCode} />
@@ -2478,7 +2539,7 @@ const BrandingEditor = ({ company, onChange }) => {
                 </div>
                 <div>
                     <label>Margen de Seguridad / Overscan (%) <Tooltip text="Aumente si el contenido se corta en los bordes del televisor físico." /></label>
-                    <input type="range" min="0" max="10" step="0.5" value={ds.safety_margin || 0} onChange={e => updateDesign('safety_margin', parseFloat(e.target.value))} />
+                    <input type="range" min="0" max="10" step="0.5" value={ds.safety_margin || 0} onChange={e => update('safety_margin', parseFloat(e.target.value))} />
                 </div>
                 <div>
                     <label style={{ fontSize: '0.75rem' }}>Grosor</label>
@@ -4071,13 +4132,15 @@ const MessagingSystem = ({ company, token }) => {
         if (!msg) return;
         setSending(true);
         try {
-            await fetch(`${API_BASE}/companies/${company.id}/message`, {
+            const res = await fetch(`${API_BASE}/companies/${company.id}/message`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ text: msg, duration: 10, type: 'alert' })
+                body: JSON.stringify({ text: msg, duration: 15, type: 'alert' })
             });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || "No se pudo enviar el aviso");
             setMsg('');
             alert("Mensaje enviado a las pantallas!");
-        } catch (e) { alert("Error"); }
+        } catch (e) { alert(e.message || "Error al enviar el mensaje"); }
         setSending(false);
     };
 
@@ -4312,7 +4375,7 @@ const Helpdesk = ({ token, userRole }) => {
     const [tickets, setTickets] = useState([]);
     const [view, setView] = useState('list'); // list, detail, create
     const [selectedTicket, setSelectedTicket] = useState(null);
-    const [newTicket, setNewTicket] = useState({ subject: '', category: 'Technical', priority: 'normal', initial_message: '' });
+    const [newTicket, setNewTicket] = useState({ subject: '', category: 'technical', priority: 'normal', initial_message: '' });
     const [replyBody, setReplyBody] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -4349,8 +4412,11 @@ const Helpdesk = ({ token, userRole }) => {
             });
             if (res.ok) {
                 alert("Ticket Creado");
-                setNewTicket({ subject: '', category: 'Technical', priority: 'normal', initial_message: '' });
+                setNewTicket({ subject: '', category: 'technical', priority: 'normal', initial_message: '' });
                 setView('list');
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert(err.detail || "Error al crear ticket");
             }
         } catch (e) { alert("Error"); }
     };
@@ -4423,10 +4489,9 @@ const Helpdesk = ({ token, userRole }) => {
                     <input placeholder="Asunto" value={newTicket.subject} onChange={e => setNewTicket({ ...newTicket, subject: e.target.value })} />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <select value={newTicket.category} onChange={e => setNewTicket({ ...newTicket, category: e.target.value })}>
-                            <option value="Technical">Soporte Técnico</option>
-                            <option value="Billing">Facturación</option>
-                            <option value="Feature">Solicitud de Función</option>
-                            <option value="General">General</option>
+                            <option value="technical">Soporte Técnico</option>
+                            <option value="billing">Facturación</option>
+                            <option value="general">General / Solicitud</option>
                         </select>
                         <select value={newTicket.priority} onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}>
                             <option value="low">Baja</option>
@@ -4590,6 +4655,144 @@ const ChatWidget = ({ token, currentUser, plan }) => {
                 </div>
             )}
         </div>
+    );
+};
+
+const ForgotPasswordModal = ({ isOpen, onClose }) => {
+    const [step, setStep] = useState(1);
+    const [username, setUsername] = useState('');
+    const [code, setCode] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [msg, setMsg] = useState('');
+    const [err, setErr] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    const requestCode = async (e) => {
+        e.preventDefault();
+        setBusy(true); setErr(''); setMsg('');
+        try {
+            const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || 'No se pudo enviar el código');
+            setMsg(data.message || 'Si el correo existe, recibirás un código de 6 dígitos.');
+            setStep(2);
+        } catch (error) {
+            setErr(error.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const confirmReset = async (e) => {
+        e.preventDefault();
+        setBusy(true); setErr(''); setMsg('');
+        try {
+            const res = await fetch(`${API_BASE}/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, code, new_password: newPassword })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || 'Código inválido o expirado');
+            setMsg(data.message || 'Contraseña actualizada. Ya puedes iniciar sesión.');
+            setTimeout(() => { setStep(1); setCode(''); setNewPassword(''); onClose(); }, 1800);
+        } catch (error) {
+            setErr(error.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Recuperar Contraseña">
+            <div style={{ padding: '0.5rem' }}>
+                {err && <div style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>{err}</div>}
+                {msg && <div style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>{msg}</div>}
+                {step === 1 ? (
+                    <form onSubmit={requestCode}>
+                        <p style={{ fontSize: '0.85rem', opacity: 0.75, marginBottom: '1rem' }}>
+                            Ingresa tu correo registrado. Te enviaremos un código de verificación de 6 dígitos sin modificar tu contraseña actual hasta confirmarlo.
+                        </p>
+                        <label>Correo electrónico</label>
+                        <input type="email" required value={username} onChange={e => setUsername(e.target.value)} placeholder="tu@correo.com" />
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={busy}>
+                            {busy ? 'Enviando...' : 'Enviar código de verificación'}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={confirmReset}>
+                        <label>Código de 6 dígitos</label>
+                        <input type="text" maxLength={6} required value={code} onChange={e => setCode(e.target.value)} placeholder="000000" />
+                        <label>Nueva contraseña (mínimo 6 caracteres)</label>
+                        <input type="password" minLength={6} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nueva contraseña" />
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button type="button" className="btn btn-secondary" onClick={() => setStep(1)} disabled={busy}>Volver</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={busy}>
+                                {busy ? 'Actualizando...' : 'Restablecer contraseña'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </div>
+        </Modal>
+    );
+};
+
+const ChangePasswordModal = ({ isOpen, token, onClose }) => {
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [err, setErr] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    const submit = async (e) => {
+        e.preventDefault();
+        setErr('');
+        if (newPassword.length < 6) { setErr('La contraseña debe tener al menos 6 caracteres'); return; }
+        if (newPassword !== confirmPassword) { setErr('Las contraseñas no coinciden'); return; }
+        setBusy(true);
+        try {
+            const res = await fetch(`${API_BASE}/auth/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || 'No se pudo actualizar la contraseña');
+            const stored = JSON.parse(localStorage.getItem('user') || '{}');
+            stored.must_change_password = false;
+            localStorage.setItem('user', JSON.stringify(stored));
+            setOldPassword(''); setNewPassword(''); setConfirmPassword('');
+            onClose();
+        } catch (error) {
+            setErr(error.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Actualiza tu Contraseña">
+            <form onSubmit={submit} style={{ padding: '0.5rem' }}>
+                <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '1rem' }}>
+                    Por seguridad, debes cambiar tu contraseña temporal antes de continuar.
+                </p>
+                {err && <div style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>{err}</div>}
+                <label>Contraseña actual / temporal</label>
+                <input type="password" required value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
+                <label>Nueva contraseña</label>
+                <input type="password" minLength={6} required value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <label>Confirmar nueva contraseña</label>
+                <input type="password" minLength={6} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={busy}>
+                    {busy ? 'Guardando...' : 'Guardar nueva contraseña'}
+                </button>
+            </form>
+        </Modal>
     );
 };
 

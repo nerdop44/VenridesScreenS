@@ -2,6 +2,7 @@
 set -eu
 
 CONF=/tmp/odoo.conf
+umask 077
 
 cat > "$CONF" <<EOF
 [options]

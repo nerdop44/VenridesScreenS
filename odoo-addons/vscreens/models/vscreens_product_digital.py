@@ -43,6 +43,50 @@ class ProductTemplate(models.Model):
         default=30,
         help="Días que se suman a la vigencia de la empresa por cada unidad comprada.",
     )
+    aftvnews_code = fields.Char(
+        string="Código Downloader (AFTVnews)",
+        help="Código numérico corto generado en go.aftvnews.com para descargar este APK directamente desde la app Downloader en Android TV / Fire TV.",
+    )
+    aftvnews_short_url = fields.Char(
+        string="Enlace AFTVnews",
+        compute="_compute_aftvnews_short_url",
+    )
+
+    @api.depends("aftvnews_code")
+    def _compute_aftvnews_short_url(self):
+        for rec in self:
+            code = (rec.aftvnews_code or "").strip()
+            rec.aftvnews_short_url = f"https://aftv.news/{code}" if code else False
+
+    def action_generate_aftvnews_code(self):
+        """Intenta acortar la URL de descarga del APK en go.aftvnews.com para obtener el código numérico de Downloader."""
+        self.ensure_one()
+        base = self.env["ir.config_parameter"].sudo().get_str(
+            "vscreens.api_public_url", "https://vscreens-api.inverpave.com"
+        ).rstrip("/")
+        target_url = f"{base}/api/digital/download/{self.id}"
+        code = self.env["vscreens.download.code"].sudo()._shorten_aftvnews(target_url)
+        if code:
+            self.sudo().write({"aftvnews_code": code})
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "Código AFTVnews generado",
+                    "message": f"Código Downloader: {code} (https://aftv.news/{code})",
+                    "type": "success",
+                },
+            }
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Generación manual requerida en AFTVnews",
+                "message": f"go.aftvnews.com requiere verificación manual. Pega {target_url} en https://go.aftvnews.com/ y guarda el código numérico en 'Código Downloader (AFTVnews)'.",
+                "type": "warning",
+                "sticky": True,
+            },
+        }
 
 
 class ProductProduct(models.Model):
@@ -58,6 +102,7 @@ class ProductProduct(models.Model):
     )
     plan_id = fields.Many2one(related="product_tmpl_id.plan_id", readonly=False)
     plan_days = fields.Integer(related="product_tmpl_id.plan_days", readonly=False)
+    aftvnews_code = fields.Char(related="product_tmpl_id.aftvnews_code", readonly=False)
 
 
 class VscreensDeviceActivation(models.Model):
@@ -85,7 +130,7 @@ class VscreensDeviceActivation(models.Model):
         related="company_id.partner_id",
         store=True,
     )
-    is_active = fields.Boolean(string="Activo", default=True, tracking=True)
+    is_active = fields.Boolean(string="Activo", default=True)
     activated_at = fields.Datetime(string="Activado el", default=fields.Datetime.now, readonly=True)
     deactivated_at = fields.Datetime(string="Desactivado el")
     last_ping_at = fields.Datetime(string="Último ping")

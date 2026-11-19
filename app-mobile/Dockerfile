@@ -1,11 +1,11 @@
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 ARG VITE_API_BASE_URL=https://vscreens-api.inverpave.com
 ARG VITE_TV_URL=https://vscreens-tv.inverpave.com
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_TV_URL=$VITE_TV_URL
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json* ./
+RUN npm ci || npm install
 COPY . .
 RUN npx vite build --base=/mobile/
 

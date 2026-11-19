@@ -39,5 +39,35 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+
+        <record id="ir_cron_vscreens_plan_expiration" model="ir.cron">
+            <field name="name">VScreenS: verificar expiración de planes</field>
+            <field name="model_id" ref="model_vscreens_company"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_plan_expiration()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="ir_cron_vscreens_birthday_greetings" model="ir.cron">
+            <field name="name">VScreenS: enviar saludos de cumpleaños</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_birthday_greetings()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="ir_cron_vscreens_seed_holidays" model="ir.cron">
+            <field name="name">VScreenS: sembrar feriados venezolanos</field>
+            <field name="model_id" ref="model_vscreens_calendar_activity"/>
+            <field name="state">code</field>
+            <field name="code">model.seed_venezuelan_holidays()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">months</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

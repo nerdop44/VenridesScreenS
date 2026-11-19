@@ -318,7 +318,14 @@ function App() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.clear();
+        const currentToken = localStorage.getItem('token');
+        if (currentToken) {
+            fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            }).catch(() => {});
+        }
+        ['token', 'user', 'user_role', 'user_permissions', 'remembered_password'].forEach(k => localStorage.removeItem(k));
         setToken(null);
         setView('login');
         setCompany(null);
@@ -339,12 +346,11 @@ function App() {
 
             const data = await res.json();
             if (res.ok) {
+                localStorage.removeItem('remembered_password');
                 if (rememberMe) {
                     localStorage.setItem('remembered_username', credentials.username);
-                    localStorage.setItem('remembered_password', btoa(credentials.password));
                 } else {
                     localStorage.removeItem('remembered_username');
-                    localStorage.removeItem('remembered_password');
                 }
 
                 localStorage.setItem('token', data.access_token);
@@ -1132,15 +1138,31 @@ function App() {
         );
     }
 
-    // MOBILE VIEW INTERCEPTION
-    // MOBILE VIEW INTERCEPTION (Clients Only - Admins stay on Responsive Desktop)
-    if (isMobile && token) {
+    // MOBILE APP: Todos los clientes usan la experiencia móvil optimizada; Master va a Odoo ERP
+    if (token) {
         const userObj = safeParse(localStorage.getItem('user'));
         const userRole = localStorage.getItem('user_role');
-        // Only divert to MobileApp if user is a client (user_basic only)
-        // Admin Empresa now gets full responsive dashboard for feature parity
-        if (['user_basic'].includes(userRole)) {
+        if (['admin_empresa', 'operador_empresa', 'user_basic'].includes(userRole)) {
             return <MobileApp token={token} userObj={userObj} onLogout={handleLogout} />;
+        }
+        if (userRole === 'admin_master') {
+            return (
+                <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-app)', padding: '1.5rem' }}>
+                    <GlobalStyles />
+                    <div className="glass-card" style={{ padding: '2rem', maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+                        <h2 style={{ marginBottom: '0.75rem' }}>Control Maestro en Odoo ERP</h2>
+                        <p style={{ opacity: 0.75, fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                            La administración maestra se gestiona desde Odoo ERP. Esta app móvil está diseñada para los clientes de VScreenS.
+                        </p>
+                        <a href="https://vscreens-erp.inverpave.com/odoo" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem', textDecoration: 'none' }}>
+                            Abrir Odoo ERP
+                        </a>
+                        <button onClick={handleLogout} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            );
         }
     }
 

@@ -40,9 +40,15 @@ services:
         condition: service_healthy
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/vscreens-entrypoint.sh:ro
-      - ../../odoo-addons:/mnt/extra-addons:rw
+      - ../../odoo-addons:/mnt/extra-addons:ro
       - vscreens_odoo_data:/var/lib/odoo
       - ../../releases:/opt/vscreens/releases:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/diag/status', timeout=5)\""]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
     networks:
       - vscreens-net
     logging:
@@ -66,7 +72,6 @@ services:
       - vscreens-admin
       - vscreens-tv
       - vscreens-mobile
-      - vscreens-landing
     networks:
       - vscreens-net
     logging:
@@ -136,18 +141,6 @@ services:
       resources:
         limits:
           memory: 256M
-
-  vscreens-landing:
-    build: ../../frontend-landing
-    container_name: vscreens-landing
-    restart: unless-stopped
-    networks:
-      - vscreens-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 volumes:
   vscreens_pgdata:

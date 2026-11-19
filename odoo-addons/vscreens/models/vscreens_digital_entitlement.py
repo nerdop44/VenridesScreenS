@@ -15,6 +15,7 @@ Flujo:
 from datetime import timedelta
 import logging
 import secrets
+import string
 
 from odoo import api, fields, models
 
@@ -145,6 +146,8 @@ class SaleOrder(models.Model):
     )
     vscreens_plan_id = fields.Many2one("vscreens.plan", string="Plan aplicado", readonly=True, copy=False)
     vscreens_valid_until = fields.Datetime(string="Vigencia aplicada", readonly=True, copy=False)
+    vscreens_panel_login = fields.Char(string="Usuario panel cliente", readonly=True, copy=False)
+    vscreens_panel_temp_password = fields.Char(string="Contraseña temporal panel", readonly=True, copy=False)
 
     def action_confirm(self):
         res = super().action_confirm()
@@ -161,6 +164,8 @@ class SaleOrder(models.Model):
         self.ensure_one()
         Company = self.env["vscreens.company"].sudo()
         company = Company.search([("partner_id", "=", self.partner_id.id)], limit=1)
+        if not company and self.partner_id.email:
+            company = Company.search([("email", "=", self.partner_id.email)], limit=1)
         if company:
             return company
         free_plan = self.env["vscreens.plan"].sudo().search([("code", "=", "free")], limit=1)
@@ -172,12 +177,46 @@ class SaleOrder(models.Model):
             "name": partner.name or partner.display_name or self.partner_id.name,
             "partner_id": self.partner_id.id,
             "plan_id": fallback_plan.id,
+            "max_screens": 0,  # Hereda el límite del plan (no 2 fijo)
             "email": self.partner_id.email or False,
             "phone": self.partner_id.phone or False,
             "rif": self.partner_id.vat or False,
             "address": self.partner_id.contact_address or False,
             "is_active": True,
         })
+
+    def _vscreens_ensure_client_user(self, company):
+        """Asegura que la empresa tenga un usuario admin_empresa para ingresar al panel web.
+        Retorna (login, temp_password_or_empty)."""
+        self.ensure_one()
+        if not company:
+            return "", ""
+        existing = company.user_ids.filtered(lambda u: u.active and u.vscreens_role == "admin_empresa")[:1]
+        if existing:
+            return existing.login, ""
+        login = (self.partner_id.email or company.email or "").strip().lower()
+        if not login:
+            return "", ""
+        User = self.env["res.users"].sudo()
+        user_by_login = User.with_context(active_test=False).search([("login", "=", login)], limit=1)
+        if user_by_login:
+            vals = {"vscreens_company_id": company.id, "active": True}
+            if not user_by_login.has_group("vscreens.group_vscreens_master"):
+                vals["vscreens_role"] = "admin_empresa"
+            user_by_login.write(vals)
+            return user_by_login.login, ""
+        alphabet = string.ascii_letters + string.digits
+        temp_password = "".join(secrets.choice(alphabet) for _ in range(10))
+        User.create({
+            "name": self.partner_id.name or company.name,
+            "login": login,
+            "email": login,
+            "password": temp_password,
+            "vscreens_role": "admin_empresa",
+            "vscreens_company_id": company.id,
+            "vscreens_must_change_password": True,
+        })
+        return login, temp_password
 
     def _vscreens_fulfill(self):
         self.ensure_one()
@@ -192,6 +231,7 @@ class SaleOrder(models.Model):
 
         plan = plan_lines[:1].product_id.plan_id
         company = self._vscreens_resolve_company(plan=plan)
+        panel_login, temp_password = self._vscreens_ensure_client_user(company)
 
         # --- Productos digitales: una entrega por línea ---
         entitled_products = self.env["product.template"].sudo()
@@ -217,6 +257,7 @@ class SaleOrder(models.Model):
                 ("list_price", "=", 0),
             ]) - entitled_products
             for product in apps:
+                entitled_products |= product
                 Entitlement.create({
                     "partner_id": self.partner_id.id,
                     "product_tmpl_id": product.id,
@@ -228,7 +269,7 @@ class SaleOrder(models.Model):
                     "notes": f"Incluido en el plan — pedido {self.name}",
                 })
 
-        # --- Códigos cortos de descarga (para Downloader en la TV) ---
+        # --- Códigos cortos de descarga (con soporte AFTVnews + /dl/) ---
         if not self.vscreens_download_code_ids:
             Code = self.env["vscreens.download.code"].sudo()
             for product in entitled_products:
@@ -246,12 +287,14 @@ class SaleOrder(models.Model):
             now = fields.Datetime.now()
             base = company.valid_until if company.valid_until and company.valid_until > now else now
             days = sum(
-                (line.product_id.plan_days or 30) * int(max(line.product_uom_qty, 1))
+                (line.product_id.plan_days or (plan.trial_days if plan.code == "free" else 30))
+                * int(max(line.product_uom_qty, 1))
                 for line in plan_lines
             )
             valid_until = base + timedelta(days=days)
             company.sudo().write({
                 "plan_id": plan.id,
+                "max_screens": 0,  # Resetea override para tomar el límite del nuevo plan
                 "valid_until": valid_until,
                 "is_active": True,
                 "plan_activated_at": company.plan_activated_at or now,
@@ -260,12 +303,13 @@ class SaleOrder(models.Model):
                 "vscreens_plan_id": plan.id,
                 "vscreens_valid_until": valid_until,
             })
-            self.env["vscreens.payment"].sudo().create({
+            self.env["vscreens.payment"].sudo().with_context(skip_extend_valid_until=True).create({
                 "company_id": company.id,
                 "amount": self.amount_total,
                 "payment_method": "Ecommerce",
                 "description": f"Pedido {self.name} — {plan.name}",
                 "reference": self.name,
+                "duration_days": days,
                 "state": "confirmed",
                 "notes": "Generado automáticamente desde la tienda en línea.",
             })
@@ -273,6 +317,8 @@ class SaleOrder(models.Model):
         self.sudo().write({
             "vscreens_fulfilled": True,
             "vscreens_company_id": company.id if company else False,
+            "vscreens_panel_login": panel_login or False,
+            "vscreens_panel_temp_password": temp_password or False,
         })
 
         # --- Correo de entrega ---
@@ -284,6 +330,10 @@ class SaleOrder(models.Model):
                 self._vscreens_send_fallback_mail()
         except Exception as error:  # noqa: BLE001 - la venta no debe romperse por el correo
             _logger.warning("VScreenS: no se pudo enviar el correo de entrega del pedido %s: %s", self.name, error)
+        finally:
+            # No dejamos la contraseña temporal almacenada en texto plano tras enviar el correo
+            if temp_password:
+                self.sudo().write({"vscreens_panel_temp_password": False})
 
     def _vscreens_send_fallback_mail(self):
         self.ensure_one()

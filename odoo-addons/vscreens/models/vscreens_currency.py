@@ -32,7 +32,7 @@ def _parse_rate(html):
         return None
 
 
-def get_bcv_rate(env):
+def get_bcv_rate(env, allow_network=False):
     icp = env["ir.config_parameter"].sudo()
     cached = icp.get_str(ICP_RATE, default="")
     updated = icp.get_str(ICP_UPDATED, default="")
@@ -40,6 +40,9 @@ def get_bcv_rate(env):
         cached_rate = float(cached) if cached else 0.0
     except ValueError:
         cached_rate = 0.0
+
+    if not allow_network:
+        return cached_rate or 0.0
 
     if cached_rate and updated:
         try:
@@ -84,10 +87,10 @@ class VScreenSCurrency(models.AbstractModel):
 
     @api.model
     def get_rate(self):
-        return get_bcv_rate(self.env)
+        return get_bcv_rate(self.env, allow_network=False)
 
     @api.model
     def cron_refresh_bcv(self):
-        rate = get_bcv_rate(self.env)
+        rate = get_bcv_rate(self.env, allow_network=True)
         _logger.info("Tasa BCV actualizada: %s", rate)
         return rate

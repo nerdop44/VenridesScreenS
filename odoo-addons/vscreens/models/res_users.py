@@ -62,7 +62,9 @@ class ResUsers(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         users = super().create(vals_list)
-        users._apply_vscreens_role()
+        for user, vals in zip(users, vals_list):
+            if "vscreens_role" in vals or vals.get("vscreens_company_id"):
+                user._apply_vscreens_role()
         return users
 
     def write(self, vals):

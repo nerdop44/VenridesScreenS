@@ -1744,3 +1744,14 @@ input {
     text-align: right;
     opacity: 0.9;
 }
+
+/* Indicadores claros de foco para navegación con control remoto (D-Pad) */
+button:focus-visible,
+.btn-primary:focus-visible,
+.yt-control-btn:focus-visible,
+#sound-toggle:focus-visible,
+input:focus-visible {
+    outline: 3px solid #c8ff00 !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px rgba(200, 255, 0, 0.25) !important;
+}

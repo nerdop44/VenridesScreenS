@@ -16,22 +16,28 @@ set +a
 
 mkdir -p "$DEST"
 
+cleanup() {
+    docker exec vscreens-db rm -f "/tmp/${DB_NAME}-${STAMP}.dump" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
 echo "[$(date -Is)] Iniciando respaldo $STAMP"
 docker exec -e PGPASSWORD="$DB_PASSWORD" vscreens-db \
     pg_dump -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME" -Fc \
     -f "/tmp/${DB_NAME}-${STAMP}.dump"
 docker cp "vscreens-db:/tmp/${DB_NAME}-${STAMP}.dump" "$DEST/${DB_NAME}-${STAMP}.dump"
-docker exec vscreens-db rm -f "/tmp/${DB_NAME}-${STAMP}.dump"
 
 docker run --rm -v vscreens_odoo_data:/data:ro -v "$DEST":/backup alpine \
-    tar czf "/backup/filestore-${STAMP}.tar.gz" -C /data filestore 2>/dev/null || true
+    tar czf "/backup/filestore-${STAMP}.tar.gz" -C /data filestore
 
 find "$DEST" -type f -name '*.dump' -mtime +$DAYS -delete
 find "$DEST" -type f -name 'filestore-*.tar.gz' -mtime +$DAYS -delete
 
 echo "[$(date -Is)] Respaldo OK: $STAMP"
 # Notificar a Uptime Kuma (monitor push "Respaldo diario VScreenS").
-docker exec vscreens-uptime curl -fsS \
-    "http://127.0.0.1:3001/api/push/vscreensBK2026token01?status=up&msg=Respaldo%20OK" \
-    >/dev/null 2>&1 || true
+if [ -n "${UPTIME_BACKUP_TOKEN:-}" ]; then
+    docker exec vscreens-uptime curl -fsS \
+        "http://127.0.0.1:3001/api/push/${UPTIME_BACKUP_TOKEN}?status=up&msg=Respaldo%20OK" \
+        >/dev/null 2>&1 || true
+fi
 ls -lh "$DEST" | tail -4

@@ -4,6 +4,7 @@ from odoo.http import request
 from .api_common import (
     bearer_user,
     can_access_company,
+    client_ip,
     company_or_404,
     device_or_404,
     error,
@@ -26,14 +27,31 @@ class VScreenSDeviceController(http.Controller):
         device.register_ping(request.httprequest.headers.get("X-Forwarded-For", request.httprequest.remote_addr))
         return json_response(device.company_id.device_config(device))
 
+    @http.route("/devices/<string:device_uuid>/ack-alert", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def ack_alert(self, device_uuid, **kwargs):
+        device = device_or_404(device_uuid)
+        if not device or not device.company_id:
+            return error(404, "Dispositivo no registrado")
+        data = payload()
+        alert_id = data.get("alert_id") or request.httprequest.args.get("alert_id")
+        if not alert_id:
+            return error(400, "alert_id requerido")
+        msg = request.env["vscreens.message"].sudo().browse(int(alert_id)).exists()
+        if msg and msg.is_alert and msg.company_id.id == device.company_id.id:
+            msg.sudo().write({"is_read": True})
+        return json_response({"status": "ok"})
+
     @http.route("/devices/validate-code", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def validate_code(self, **kwargs):
+        ip = client_ip()
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "validate_code", 15, 300):
+            return error(429, "Demasiados intentos de vinculación. Espere unos minutos.")
         code = request.httprequest.args.get("code") or payload().get("code")
         device_uuid = request.httprequest.args.get("device_uuid") or payload().get("device_uuid")
         if not code or not device_uuid:
             return error(400, "Código y device_uuid son obligatorios")
         ok, result = request.env["vscreens.registration.code"].sudo().validate_for_device(
-            code, device_uuid, request.httprequest.headers.get("X-Forwarded-For", request.httprequest.remote_addr)
+            code, device_uuid, ip
         )
         if not ok:
             return error(result.get("status", 400), result.get("detail", "Error"))
@@ -59,7 +77,7 @@ class VScreenSDeviceController(http.Controller):
         device = device_or_404(device_uuid)
         if not user or not device:
             return error(404, "Dispositivo no encontrado")
-        if not can_access_company(user, device.company_id):
+        if not can_access_company(user, device.company_id) or not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No autorizado")
         data = payload()
         name = (data.get("name") or "").strip()
@@ -88,7 +106,12 @@ class VScreenSDeviceController(http.Controller):
         if not user:
             return error(401, "No autenticado")
         if request.httprequest.method == "GET":
-            domain = [] if is_master(user) else [("company_id", "=", user.vscreens_company_id.id)]
+            if is_master(user):
+                domain = []
+            elif user.vscreens_company_id:
+                domain = [("company_id", "=", user.vscreens_company_id.id)]
+            else:
+                return json_response([])
             devices = request.env["vscreens.device"].sudo().search(domain)
             return json_response([device.api_dict() for device in devices])
         if not is_master(user):
@@ -135,7 +158,7 @@ class VScreenSDeviceController(http.Controller):
         device = device_or_404(device_uuid)
         if not user or not device:
             return error(404, "Dispositivo no encontrado")
-        if not can_access_company(user, device.company_id):
+        if not can_access_company(user, device.company_id) or not (is_master(user) or role_of(user) == "admin_empresa"):
             return error(403, "No autorizado")
         raw = request.httprequest.args.get("is_active", "true").lower()
         is_active = raw in ("1", "true", "yes")
@@ -158,17 +181,18 @@ class VScreenSDeviceController(http.Controller):
 
     @http.route("/diag/status", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def diag_status(self, **kwargs):
-        Company = request.env["vscreens.company"].sudo()
-        User = request.env["res.users"].sudo()
-        Device = request.env["vscreens.device"].sudo()
-        return json_response({
-            "status": "healthy",
-            "db": {
+        user = bearer_user()
+        res = {"status": "healthy"}
+        if user and is_master(user):
+            Company = request.env["vscreens.company"].sudo()
+            User = request.env["res.users"].sudo()
+            Device = request.env["vscreens.device"].sudo()
+            res["db"] = {
                 "companies": Company.search_count([]),
                 "users": User.search_count([]),
                 "devices": Device.search_count([]),
-            },
-        })
+            }
+        return json_response(res)
 
     @http.route("/support/unread-count", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
     def unread_count(self, **kwargs):

@@ -2,7 +2,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from odoo import http, _
+from odoo import fields, http, _
 from odoo.http import request
 from odoo.exceptions import AccessError
 
@@ -186,7 +186,7 @@ class VScreenSMaintenanceController(http.Controller):
             return error(500, f"Error al actualizar: {str(exc)}")
 
     # ------------------------------------------------------------------
-    # Ejecutar SQL directo (SOLO MASTER)
+    # Ejecutar SQL directo (DESHABILITADO POR SEGURIDAD)
     # ------------------------------------------------------------------
     @http.route("/admin/maintenance/execute-sql", type="http", auth="public",
                 methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
@@ -194,24 +194,8 @@ class VScreenSMaintenanceController(http.Controller):
         user, failure = self._check_master()
         if failure:
             return failure
-        data = payload()
-        sql = data.get("sql")
-        if not sql:
-            return error(400, "SQL faltante")
-        try:
-            request.env.cr.execute(sql)
-            if sql.strip().upper().startswith("SELECT"):
-                cols = [d[0] for d in request.env.cr.description]
-                rows = [dict(zip(cols, r)) for r in request.env.cr.fetchall()]
-                request.env.cr.commit()
-                return json_response({"status": "success", "data": rows})
-            else:
-                request.env.cr.commit()
-                return json_response({"status": "success", "rowcount": request.env.cr.rowcount})
-        except Exception as exc:
-            request.env.cr.rollback()
-            _logger.error("Error SQL: %s", exc)
-            return error(500, f"Error SQL: {str(exc)}")
+        _logger.warning("Intento bloqueado de ejecutar SQL vía API por usuario %s", user.login)
+        return error(403, "La ejecución de SQL directo vía API está deshabilitada por seguridad.")
 
     # ------------------------------------------------------------------
     # Limpieza de dispositivos y códigos expirados
@@ -288,25 +272,30 @@ class VScreenSMaintenanceController(http.Controller):
             cal = request.env["vscreens.calendar.activity"].sudo()
             result = cal.seed_venezuelan_holidays()
 
-            # 3. Verificar cumpleaños y enviar saludos automáticos
+            # 3. Verificar cumpleaños en empresas y enviar saludos automáticos
             today = fields.Date.today()
-            birthday_partners = request.env["res.partner"].sudo().search([
+            birthday_companies = request.env["vscreens.company"].sudo().search([
                 ("birthday", "!=", False),
+                ("email", "!=", False),
+                ("is_active", "=", True),
             ])
             birthday_sent = 0
-            for partner in birthday_partners:
-                if partner.birthday.month == today.month and partner.birthday.day == today.day:
-                    template = request.env["vscreens.email.template"].sudo().search(
-                        [("category", "=", "bienvenida"), ("active", "=", True)], limit=1)
-                    if template and partner.email:
-                        request.env["mail.mail"].sudo().create({
-                            "subject": template.subject or "Feliz cumpleaños",
-                            "body_html": template.body or "",
-                            "email_to": partner.email,
-                            "email_from": request.env["ir.config_parameter"].sudo().get_str(
-                                "vscreens.notification_email", "info.vscreens@inverpave.com"),
-                        }).send()
-                        birthday_sent += 1
+            template = request.env["vscreens.email.template"].sudo().search(
+                [("category", "in", ("cumpleanos", "birthday", "saludo")), ("active", "=", True)], limit=1
+            )
+            for comp in birthday_companies:
+                if comp.birthday.month == today.month and comp.birthday.day == today.day:
+                    contact = comp.contact_person or comp.name
+                    subject = (template.subject if template else "¡Feliz Cumpleaños de parte de VScreenS!").replace("{{contacto}}", contact).replace("{{empresa}}", comp.name)
+                    body_html = (template.body if template else f"<p>¡Feliz cumpleaños, {contact}! Te desea el equipo de VScreenS.</p>").replace("{{contacto}}", contact).replace("{{empresa}}", comp.name)
+                    request.env["mail.mail"].sudo().create({
+                        "subject": subject,
+                        "body_html": body_html,
+                        "email_to": comp.email,
+                        "email_from": request.env["ir.config_parameter"].sudo().get_str(
+                            "vscreens.notification_email", "info.vscreens@inverpave.com"),
+                    }).send()
+                    birthday_sent += 1
 
             request.env.cr.commit()
             return json_response({
