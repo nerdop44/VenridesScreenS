@@ -30,20 +30,23 @@
                 Tu pedido fue confirmado. Aquí tienes tus descargas y las instrucciones para activar el servicio.
             </p>
 
-            <div t-if="object.vscreens_entitlement_ids" style="margin:18px 0;">
+            <div t-if="object.vscreens_download_code_ids" style="margin:18px 0;">
                 <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:8px;">
-                    Tus descargas
+                    Tu código de descarga
                 </div>
-                <div t-foreach="object.vscreens_entitlement_ids" t-as="entitlement"
-                     style="border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
-                    <div style="font-size:15px;font-weight:700;" t-out="entitlement.product_name"/>
-                    <div style="font-size:12px;color:#6b7280;margin:4px 0 10px;">
-                        Descargas ilimitadas · enlace válido hasta <span t-out="entitlement.expires_at"/>
+                <div t-foreach="object.vscreens_download_code_ids" t-as="download_code"
+                     style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:10px;">
+                    <div style="font-size:15px;font-weight:700;" t-out="download_code.product_name"/>
+                    <div style="font-family:monospace;font-size:26px;font-weight:800;letter-spacing:5px;color:#0a0e1a;margin:10px 0;"
+                         t-out="download_code.code"/>
+                    <div style="font-size:12px;color:#6b7280;line-height:1.6;">
+                        Instala <strong>Downloader</strong> desde la tienda de tu Android TV y elige
+                        <strong>Enter URL</strong>. Escribe:
+                        <code style="background:#f3f4f6;padding:3px 6px;border-radius:4px;">vscreens.inverpave.com/d/<span t-out="download_code.code"/></code>
                     </div>
-                    <a t-att-href="entitlement.download_url()"
-                       style="display:inline-block;background:#c8ff00;color:#0a0e1a;text-decoration:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:10px;">
-                        Descargar APK
-                    </a>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">
+                        Alternativa: <a t-att-href="download_code.download_url()" t-out="download_code.download_url()"/>
+                    </div>
                 </div>
             </div>
 

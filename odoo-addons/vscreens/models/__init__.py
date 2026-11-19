@@ -23,3 +23,4 @@ from . import vscreens_birthday
 from . import vscreens_product_digital
 from . import vscreens_content_visual
 from . import vscreens_digital_entitlement
+from . import vscreens_download_code

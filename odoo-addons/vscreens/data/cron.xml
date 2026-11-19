@@ -29,5 +29,15 @@
             <field name="interval_type">minutes</field>
             <field name="active" eval="True"/>
         </record>
+
+        <record id="ir_cron_vscreens_cleanup_request_log" model="ir.cron">
+            <field name="name">VScreenS: limpiar registro de peticiones</field>
+            <field name="model_id" ref="model_vscreens_request_log"/>
+            <field name="state">code</field>
+            <field name="code">model.cleanup_old()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

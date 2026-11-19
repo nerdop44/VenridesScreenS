@@ -138,6 +138,11 @@ class SaleOrder(models.Model):
         "order_id",
         string="Entregas digitales",
     )
+    vscreens_download_code_ids = fields.One2many(
+        "vscreens.download.code",
+        "order_id",
+        string="Códigos de descarga",
+    )
     vscreens_plan_id = fields.Many2one("vscreens.plan", string="Plan aplicado", readonly=True, copy=False)
     vscreens_valid_until = fields.Datetime(string="Vigencia aplicada", readonly=True, copy=False)
 
@@ -223,6 +228,18 @@ class SaleOrder(models.Model):
                     "notes": f"Incluido en el plan — pedido {self.name}",
                 })
 
+        # --- Códigos cortos de descarga (para Downloader en la TV) ---
+        if not self.vscreens_download_code_ids:
+            Code = self.env["vscreens.download.code"].sudo()
+            for product in entitled_products:
+                Code.generate(
+                    product=product,
+                    company=company,
+                    partner=self.partner_id,
+                    order=self,
+                    notes=f"Pedido {self.name}",
+                )
+
         # --- Plan contratado: aplicarlo a la empresa ---
         valid_until = False
         if company and plan_lines:
@@ -271,8 +288,9 @@ class SaleOrder(models.Model):
     def _vscreens_send_fallback_mail(self):
         self.ensure_one()
         lines = "<br/>".join(
-            f"- {ent.product_name}: <a href='{ent.download_url()}'>{ent.download_url()}</a>"
-            for ent in self.vscreens_entitlement_ids
+            f"- {code.product_name}: <strong style='font-size:20px;letter-spacing:3px;'>{code.code}</strong> "
+            f"(<a href='{code.download_url()}'>{code.download_url()}</a>)"
+            for code in self.vscreens_download_code_ids
         )
         body = (
             f"<p>Hola {self.partner_id.name or ''},</p>"

@@ -54,6 +54,7 @@ Incluye:
         "views/email_template_digital_views.xml",
         "views/product_digital_views.xml",
         "views/digital_entitlement_views.xml",
+        "views/download_code_views.xml",
         "views/promotion_views.xml",
         "views/affiliate_views.xml",
         "views/tracking_link_views.xml",

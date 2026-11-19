@@ -1,7 +1,10 @@
+import logging
 import re
 from io import BytesIO
 
 from odoo import fields, http
+
+_logger = logging.getLogger(__name__)
 from odoo.http import request
 
 from .api_common import (
@@ -141,6 +144,10 @@ class VScreenSCompanyController(http.Controller):
                 "vscreens_role": "operador_empresa",
                 "vscreens_company_id": company.id,
             })
+        try:
+            company.sudo().action_send_welcome_email(username, password)
+        except Exception:
+            _logger.exception("No se pudo enviar el correo de bienvenida de %s", company.id)
         return json_response(company.api_dict(), status=201)
 
     @http.route("/companies/<int:company_id>", type="http", auth="public", methods=["GET", "PATCH", "POST", "OPTIONS"], csrf=False, cors="*", save_session=False)

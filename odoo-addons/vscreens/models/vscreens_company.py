@@ -948,6 +948,79 @@ class VScreenSCompany(models.Model):
     # ------------------------------------------------------------------
     # Enlace configurable con el Odoo del cliente
     # ------------------------------------------------------------------
+    def action_send_welcome_email(self, login=None, password=None):
+        """Correo de alta: código de descarga, Downloader, panel y credenciales."""
+        self.ensure_one()
+        Code = self.env["vscreens.download.code"].sudo()
+        apps = self.env["product.template"].sudo().search([
+            ("is_digital", "=", True),
+            ("digital_file", "!=", False),
+        ])
+        codes = []
+        for product in apps:
+            record = Code.generate(
+                product=product,
+                company=self,
+                partner=self.partner_id,
+                notes="Alta / prueba gratuita",
+            )
+            if record:
+                codes.append((product.name, record.code))
+
+        users = self.user_ids.filtered(
+            lambda user: not user.has_group("vscreens.group_vscreens_master")
+        )
+        user_login = login or (users[:1].login if users else (self.email or ""))
+        user_password = password or (
+            "la contraseña que elegiste al registrarte"
+            if user_login
+            else "la que te proporcione el administrador"
+        )
+        panel = "https://vscreens-app.inverpave.com"
+        rows = "".join(
+            f"<tr><td style='padding:8px 12px;border:1px solid #e5e7eb;'>{product}</td>"
+            f"<td style='padding:8px 12px;border:1px solid #e5e7eb;font-family:monospace;"
+            f"font-size:20px;font-weight:bold;letter-spacing:3px;color:#0a0e1a;'>{code}</td></tr>"
+            for product, code in codes
+        )
+        body = f"""
+        <div style="font-family:Arial,sans-serif;color:#1f2937;max-width:640px;margin:auto;">
+          <div style="background:#0a0e1a;color:#fff;border-radius:14px;padding:22px;">
+            <div style="color:#c8ff00;font-weight:bold;letter-spacing:2px;">VSCREENS</div>
+            <div style="font-size:22px;font-weight:bold;margin-top:6px;">Bienvenido a VScreenS</div>
+          </div>
+          <div style="padding:18px 4px;line-height:1.7;font-size:14px;">
+            <p>Hola {self.name}, tu cuenta está lista. Sigue estos pasos para poner tu pantalla en línea.</p>
+            <h3>1. Descarga la app en tu TV</h3>
+            <p>Instala <b>Downloader</b> desde la tienda de tu TV/Android TV y elige
+            <b>Enter URL</b>. En el cuadro escribe:</p>
+            <p style="background:#f3f4f6;padding:10px;border-radius:8px;font-family:monospace;">
+              vscreens.inverpave.com/d/TU-CODIGO
+            </p>
+            <p>O simplemente usa el código de la tabla con esa dirección base.</p>
+            <table style="border-collapse:collapse;margin:10px 0;">{rows}</table>
+            <h3>2. Registra tu pantalla</h3>
+            <p>Descarga e instala el APK. Al abrirlo, genera el código de vinculación desde el panel
+            y registra la pantalla. Sin este paso la app <b>no mostrará contenido</b>.</p>
+            <h3>3. Entra al panel</h3>
+            <p><a href="{panel}">{panel}</a></p>
+            <p>Usuario: <b>{user_login}</b><br/>Contraseña: <b>{user_password}</b></p>
+            <p style="font-size:12px;color:#6b7280;">
+              Soporte: 0414-5694075 · info.vscreens@inverpave.com
+            </p>
+          </div>
+        </div>
+        """
+        mail = self.env["mail.mail"].sudo().create({
+            "subject": f"VScreenS — Instrucciones y código de descarga para {self.name}",
+            "email_to": self.email or (self.partner_id.email if self.partner_id else False),
+            "body_html": body,
+            "model": "vscreens.company",
+            "res_id": self.id,
+        })
+        mail.send()
+        return True
+
     def _odoo_link_session(self):
         """Autentica contra el Odoo del cliente. Devuelve (session, base, error)."""
         self.ensure_one()
@@ -1057,7 +1130,9 @@ class VScreenSCompany(models.Model):
                     value = value[1]
                 if isinstance(value, (dict, list)):
                     continue
-                values.append({"label": label, "value": "" if value is None else str(value)[:80]})
+                if value is None or value is False:
+                    value = ""
+                values.append({"label": label, "value": str(value)[:80]})
             records.append({
                 "id": row.get("id"),
                 "title": str(row.get("name") or row.get("id") or "")[:80],

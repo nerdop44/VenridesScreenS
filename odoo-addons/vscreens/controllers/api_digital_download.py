@@ -3,6 +3,8 @@
 
 from odoo import fields, http
 from odoo.http import request
+
+from .api_common import bearer_user, error, is_master, json_response, payload
 import logging
 import base64
 
@@ -19,6 +21,13 @@ class VscreensDigitalDownload(http.Controller):
         pero el producto solo es operativo si el dispositivo está activado
         en el panel de clientes registrados.
         """
+        ip = request.httprequest.remote_addr or ""
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "apk-free", 20, 60):
+            return request.make_response(
+                '{"error": "Demasiadas descargas. Espere un minuto."}',
+                headers=[("Content-Type", "application/json")],
+                status=429,
+            )
         product = request.env["product.template"].sudo().browse(product_id)
         if not product.exists() or not product.is_digital or not product.digital_file:
             return request.not_found()
@@ -85,6 +94,63 @@ class VscreensDigitalDownload(http.Controller):
             ],
         )
 
+
+    @http.route("/dl/<string:code>", type="http", auth="public", methods=["GET"], csrf=False, save_session=False)
+    def download_by_code(self, code, **kwargs):
+        """Descarga con código corto (para Downloader en la TV)."""
+        ip = request.httprequest.remote_addr or ""
+        Log = request.env["vscreens.request.log"].sudo()
+        if Log.is_limited(ip, "apk-code", 20, 60):
+            return request.make_response(
+                '{"error": "Demasiadas descargas. Espere un minuto."}',
+                headers=[("Content-Type", "application/json")],
+                status=429,
+            )
+        record = request.env["vscreens.download.code"].sudo().search(
+            [("code", "=", (code or "").strip().upper())], limit=1
+        )
+        if not record or not record.is_valid():
+            return request.not_found()
+
+        product = record.product_tmpl_id
+        value = product.digital_file
+        payload = value.content if hasattr(value, "content") else base64.b64decode(value)
+        if not payload:
+            return request.not_found()
+
+        record.sudo().write({"uses": record.uses + 1})
+        request.env["vscreens.download.stat"].sudo().create({
+            "product_id": product.id,
+            "ip_address": ip,
+            "user_agent": (request.httprequest.user_agent or "")[:200] if isinstance(request.httprequest.user_agent, str) else (request.httprequest.user_agent.string[:200] if request.httprequest.user_agent else ""),
+            "company_id": record.company_id.id if record.company_id else False,
+            "device_uuid": "CODE:" + record.code,
+            "is_authorized": True,
+        })
+        filename = product.digital_filename or f"{product.name.replace(' ', '_')}.apk"
+        return request.make_response(
+            payload,
+            headers=[
+                ("Content-Type", "application/vnd.android.package-archive"),
+                ("Content-Disposition", f'attachment; filename="{filename}"'),
+                ("Content-Length", str(len(payload))),
+                ("Access-Control-Allow-Origin", "*"),
+            ],
+        )
+
+    @http.route("/api/download/code", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def create_download_code(self, **kwargs):
+        """Solo master: genera un código de descarga para un producto."""
+        user = bearer_user()
+        if not user or not is_master(user):
+            return json_response({"error": "No autorizado"}, status=403)
+        data = payload()
+        product = request.env["product.template"].sudo().browse(int(data.get("product_id") or 0))
+        if not product.exists() or not product.is_digital:
+            return json_response({"error": "Producto digital no válido"}, status=400)
+        record = request.env["vscreens.download.code"].sudo().generate(product=product, notes=data.get("notes"))
+        return json_response({"code": record.code, "url": record.download_url()})
+
     @http.route("/api/digital/stats", type="http", auth="public", methods=["GET"], csrf=False, cors="*", save_session=False)
     def download_stats(self, **kwargs):
         """Estadísticas de descargas supervisadas (solo para admin/master)."""
@@ -121,10 +187,10 @@ class VscreensDeviceActivationAPI(http.Controller):
 
     @http.route("/api/device/activate", type="json", auth="public", methods=["POST"], csrf=False, cors="*", save_session=False)
     def activate_device(self, **kwargs):
-        """Activar un dispositivo para una empresa.
-        
-        Requiere: device_uuid, device_name, device_type, company_id (o email de empresa)
-        """
+        """Activar un dispositivo. Requiere token de API con permiso sobre la empresa."""
+        user = bearer_user()
+        if not user:
+            return {"error": "No autorizado", "success": False}
         device_uuid = kwargs.get("device_uuid")
         device_name = kwargs.get("device_name", "Dispositivo sin nombre")
         device_type = kwargs.get("device_type", "tv")
@@ -144,6 +210,8 @@ class VscreensDeviceActivationAPI(http.Controller):
 
         if not company:
             return {"error": "Empresa no encontrada", "success": False}
+        if not is_master(user) and user.vscreens_company_id.id != company.id:
+            return {"error": "Sin permiso sobre esta empresa", "success": False}
 
         # Verificar si el dispositivo ya está activado
         existing = request.env["vscreens.device.activation"].sudo().search([("device_uuid", "=", device_uuid)], limit=1)
@@ -199,7 +267,10 @@ class VscreensDeviceActivationAPI(http.Controller):
 
     @http.route("/api/device/deactivate", type="json", auth="public", methods=["POST"], csrf=False, cors="*", save_session=False)
     def deactivate_device(self, **kwargs):
-        """Desactivar un dispositivo (solo admin/master o la empresa propietaria)."""
+        """Desactivar un dispositivo (solo master o la empresa propietaria)."""
+        user = bearer_user()
+        if not user:
+            return {"error": "No autorizado", "success": False}
         device_uuid = kwargs.get("device_uuid")
         if not device_uuid:
             return {"error": "device_uuid es requerido", "success": False}
@@ -207,6 +278,8 @@ class VscreensDeviceActivationAPI(http.Controller):
         activation = request.env["vscreens.device.activation"].sudo().search([("device_uuid", "=", device_uuid)], limit=1)
         if not activation:
             return {"error": "Dispositivo no encontrado", "success": False}
+        if not is_master(user) and user.vscreens_company_id.id != activation.company_id.id:
+            return {"error": "Sin permiso sobre este dispositivo", "success": False}
 
         activation.sudo().write({"is_active": False, "deactivated_at": fields.Datetime.now()})
         return {"success": True, "message": "Dispositivo desactivado"}

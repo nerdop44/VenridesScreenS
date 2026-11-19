@@ -22,6 +22,9 @@ from .api_common import (
 class VScreenSAuthController(http.Controller):
 
     def _login(self):
+        ip = client_ip()
+        if request.env["vscreens.request.log"].sudo().is_limited(ip, "login", 20, 300):
+            return error(429, "Demasiados intentos. Espere unos minutos.")
         data = payload()
         login = (data.get("username") or data.get("login") or "").strip()
         password = data.get("password") or ""
