@@ -175,6 +175,19 @@ class VscreensDesignSettings(models.Model):
         string="Texto Pie Lateral",
         default="VScreenS · Señalización inteligente",
     )
+    side_footer_animation = fields.Selection(
+        [
+            ("marquee", "Desplazamiento (Marquesina)"),
+            ("pulse", "Brillo Suave"),
+            ("fade_slide", "Entrada Suave"),
+            ("none", "Fijo"),
+        ],
+        string="Animación Pie Lateral",
+        default="marquee",
+    )
+    show_card_frame = fields.Boolean(string="Mostrar Marco en Bloques", default=True)
+    show_slide_counter = fields.Boolean(string="Mostrar Contador (01/03)", default=False)
+    safety_margin = fields.Float(string="Margen Overscan (%)", default=2.0)
     show_side_clock = fields.Boolean(string="Reloj en Barra Lateral", default=False)
     # Barra Inferior y Video
     bottom_bar_bg = fields.Char(string="Color de Fondo Barra Inferior", default="#0a0e1a")
@@ -208,6 +221,10 @@ class VscreensDesignSettings(models.Model):
             "side_subtitle": self.side_subtitle if self.side_subtitle is not False else "",
             "show_side_footer": self.show_side_footer,
             "side_footer_text": self.side_footer_text or "",
+            "side_footer_animation": self.side_footer_animation or "marquee",
+            "show_card_frame": self.show_card_frame,
+            "show_slide_counter": self.show_slide_counter,
+            "safety_margin": self.safety_margin if self.safety_margin is not False else 2.0,
             "show_side_clock": self.show_side_clock,
             "bottom_bar_bg": self.bottom_bar_bg,
             "bottom_bar_text": self.bottom_bar_text,

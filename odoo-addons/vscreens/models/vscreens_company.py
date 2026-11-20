@@ -478,7 +478,7 @@ class VScreenSCompany(models.Model):
                 img_url = item.image_url or False
                 if not img_url and item.image:
                     stamp = int(item.write_date.timestamp()) if item.write_date else 0
-                    img_url = f"{base}/web/image/vscreens.sidebar.item/{item.id}/image?unique={stamp}"
+                    img_url = f"https://vscreens-api.inverpave.com/companies/sidebar-item/{item.id}/image?unique={stamp}"
                 result.append({
                     "type": "text",
                     "label": item.label or "",
@@ -850,6 +850,9 @@ class VScreenSCompany(models.Model):
                     effect = data.get("sidebar_effect")
                     if effect not in ("none", "glass_3d", "neon_glow"):
                         effect = "none"
+                    f_anim = data.get("side_footer_animation")
+                    if f_anim not in ("marquee", "pulse", "fade_slide", "none"):
+                        f_anim = "marquee"
                     safe_create(Design, {
                         "company_id": company.id,
                         "title_font": data.get("name_font") or "inherit",
@@ -865,6 +868,10 @@ class VScreenSCompany(models.Model):
                         "side_subtitle": data.get("side_subtitle") if data.get("side_subtitle") is not None else "PANTALLAS PUBLI-INTELIGENTES",
                         "show_side_footer": bool(data.get("show_side_footer", True)),
                         "side_footer_text": data.get("side_footer_text") if data.get("side_footer_text") is not None else "VScreenS · Señalización inteligente",
+                        "side_footer_animation": f_anim,
+                        "show_card_frame": bool(data.get("show_card_frame", True)),
+                        "show_slide_counter": bool(data.get("show_slide_counter", False)),
+                        "safety_margin": float(data.get("safety_margin") if data.get("safety_margin") is not None else 2.0),
                         "show_side_clock": bool(data.get("show_side_clock", False)),
                         "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",
                         "bottom_bar_text": data.get("bottom_bar_text") or "#ffffff",
@@ -952,17 +959,14 @@ class VScreenSCompany(models.Model):
         return active
 
     def _logo_url(self):
-        """URL pública del logo: la configurada o el archivo subido en Odoo."""
+        """URL pública del logo: la configurada o el endpoint público de la empresa."""
         self.ensure_one()
         if self.logo_url:
             return self.logo_url
         if not self.logo:
             return False
-        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
-        if not base or "127.0.0.1" in base or "localhost" in base:
-            base = "https://vscreens-api.inverpave.com"
         stamp = int(self.write_date.timestamp()) if self.write_date else 0
-        return f"{base}/web/image/vscreens.company/{self.id}/logo?unique={stamp}"
+        return f"https://vscreens-api.inverpave.com/companies/{self.id}/logo?unique={stamp}"
 
     def _merged_bottom_bar(self, extra=None):
         """Barra inferior con los mensajes y las redes configuradas en Odoo."""

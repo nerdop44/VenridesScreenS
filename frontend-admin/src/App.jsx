@@ -2539,7 +2539,7 @@ const BrandingEditor = ({ company, onChange }) => {
                 </div>
                 <div>
                     <label>Margen de Seguridad / Overscan (%) <Tooltip text="Aumente si el contenido se corta en los bordes del televisor físico." /></label>
-                    <input type="range" min="0" max="10" step="0.5" value={ds.safety_margin || 0} onChange={e => update('safety_margin', parseFloat(e.target.value))} />
+                    <input type="range" min="0" max="10" step="0.5" value={ds.safety_margin !== undefined ? ds.safety_margin : 2} onChange={e => update('safety_margin', parseFloat(e.target.value))} />
                 </div>
                 <div>
                     <label style={{ fontSize: '0.75rem' }}>Grosor</label>
@@ -2585,15 +2585,34 @@ const BrandingEditor = ({ company, onChange }) => {
                         <input type="checkbox" checked={ds.show_side_footer !== false} onChange={e => update('show_side_footer', e.target.checked)} />
                         Pie de Barra Lateral
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_card_frame !== false} onChange={e => update('show_card_frame', e.target.checked)} />
+                        Marco en Bloques
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_slide_counter === true} onChange={e => update('show_slide_counter', e.target.checked)} />
+                        Contador (01/03)
+                    </label>
                 </div>
                 {ds.show_side_footer !== false && (
-                    <div style={{ marginTop: '0.6rem' }}>
-                        <label style={{ fontSize: '0.72rem' }}>Texto del Pie Lateral</label>
-                        <input
-                            value={ds.side_footer_text !== undefined ? ds.side_footer_text : 'VScreenS · Señalización inteligente'}
-                            onChange={e => update('side_footer_text', e.target.value)}
-                            placeholder="Texto personalizado debajo de los bloques..."
-                        />
+                    <div className="grid-2" style={{ marginTop: '0.6rem', gap: '0.6rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.72rem' }}>Texto del Pie Lateral</label>
+                            <input
+                                value={ds.side_footer_text !== undefined ? ds.side_footer_text : 'VScreenS · Señalización inteligente'}
+                                onChange={e => update('side_footer_text', e.target.value)}
+                                placeholder="Texto personalizado debajo de los bloques..."
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.72rem' }}>Animación del Pie Lateral</label>
+                            <select value={ds.side_footer_animation || 'marquee'} onChange={e => update('side_footer_animation', e.target.value)}>
+                                <option value="marquee">Desplazamiento (Marquesina)</option>
+                                <option value="pulse">Brillo Suave</option>
+                                <option value="fade_slide">Entrada Suave</option>
+                                <option value="none">Fijo</option>
+                            </select>
+                        </div>
                     </div>
                 )}
             </div>

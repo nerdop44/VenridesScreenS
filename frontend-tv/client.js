@@ -357,8 +357,10 @@
             app.className = "tv-app " + (data.layout_type || "layout-a");
         }
 
-        if (design.safety_margin !== undefined && design.safety_margin !== null) {
+        if (design.safety_margin !== undefined && design.safety_margin !== null && design.safety_margin !== "") {
             root.style.setProperty("--safe", Number(design.safety_margin) + "vw");
+        } else {
+            root.style.setProperty("--safe", "clamp(14px, 2vw, 34px)");
         }
 
         if (design.sidebar_width) {
@@ -394,6 +396,7 @@
             nameEl.style.fontSize = design.name_size || "";
             nameEl.style.color = design.name_color || "";
             nameEl.style.fontWeight = design.name_weight || "";
+            window.requestAnimationFrame(function () { fitBrandText(nameEl); });
         }
 
         var kicker = $("side-kicker");
@@ -440,6 +443,8 @@
         var sideFooter = document.querySelector(".side-footer");
         if (sideFooter) {
             sideFooter.classList.toggle("hidden", design.show_side_footer === false);
+            sideFooter.classList.remove("footer-anim-marquee", "footer-anim-pulse", "footer-anim-fade_slide", "footer-anim-none");
+            sideFooter.classList.add("footer-anim-" + (design.side_footer_animation || "marquee"));
         }
         var sideFooterText = document.querySelector(".side-footer-text");
         if (sideFooterText) {
@@ -463,6 +468,23 @@
         var liveBadge = document.querySelector(".live-badge");
         if (liveBadge) {
             liveBadge.classList.toggle("hidden", design.show_live_badge === false);
+        }
+        var sideCounter = $("side-counter");
+        if (sideCounter) {
+            sideCounter.classList.toggle("hidden", design.show_slide_counter !== true);
+        }
+    }
+
+    function fitBrandText(el) {
+        if (!el || !el.parentElement) return;
+        var maxW = el.parentElement.clientWidth;
+        if (!maxW || maxW < 40) return;
+        var computed = window.getComputedStyle(el);
+        var size = parseFloat(computed.fontSize) || 20;
+        var minSize = 11;
+        while (el.scrollWidth > maxW && size > minSize) {
+            size -= 0.8;
+            el.style.fontSize = size + "px";
         }
     }
 
@@ -593,8 +615,10 @@
         if (!slides.length) return;
 
         var slide = slides[state.slideIndex % slides.length];
+        var design = (state.config && parseJson(state.config.design_settings, {})) || {};
+        var noFrame = design.show_card_frame === false ? " no-frame" : "";
         var card = document.createElement("article");
-        card.className = "promo-card" + (initial ? " is-entering" : " is-entering");
+        card.className = "promo-card" + noFrame + (initial ? " is-entering" : " is-entering");
 
         if (slide.kind === "image") {
             var cover = document.createElement("img");
@@ -669,11 +693,6 @@
                 card.appendChild(imgWrap);
             }
         }
-
-        var counter = document.createElement("div");
-        counter.className = "promo-index";
-        counter.textContent = pad2((state.slideIndex % slides.length) + 1) + " / " + pad2(slides.length);
-        card.appendChild(counter);
 
         var previous = stage.querySelector(".promo-card");
         if (previous && !initial) {

@@ -431,3 +431,44 @@ class VScreenSCompanyController(http.Controller):
             return error(403, "Solo el Administrador Maestro puede eliminar empresas")
         company.sudo().unlink()
         return json_response({"message": "Empresa eliminada correctamente"})
+
+    @staticmethod
+    def _serve_binary_image(b64_data, filename=""):
+        if not b64_data:
+            return request.not_found()
+        raw = base64.b64decode(b64_data)
+        name_lower = (filename or "").lower()
+        if raw.startswith(b"\x89PNG"):
+            ctype = "image/png"
+        elif raw.startswith(b"\xff\xd8\xff"):
+            ctype = "image/jpeg"
+        elif raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+            ctype = "image/webp"
+        elif raw.startswith((b"GIF87a", b"GIF89a")):
+            ctype = "image/gif"
+        elif name_lower.endswith(".svg"):
+            ctype = "image/svg+xml"
+        else:
+            ctype = "image/png"
+        return request.make_response(
+            raw,
+            headers=[
+                ("Content-Type", ctype),
+                ("Cache-Control", "public, max-age=3600"),
+                ("Access-Control-Allow-Origin", "*"),
+            ],
+        )
+
+    @http.route("/companies/<int:company_id>/logo", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def public_company_logo(self, company_id, **kwargs):
+        company = request.env["vscreens.company"].sudo().browse(company_id).exists()
+        if not company or not company.logo:
+            return request.not_found()
+        return self._serve_binary_image(company.logo, company.logo_filename)
+
+    @http.route("/companies/sidebar-item/<int:item_id>/image", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def public_sidebar_item_image(self, item_id, **kwargs):
+        item = request.env["vscreens.sidebar.item"].sudo().browse(item_id).exists()
+        if not item or not item.image:
+            return request.not_found()
+        return self._serve_binary_image(item.image, "sidebar_item.png")

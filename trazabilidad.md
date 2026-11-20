@@ -49,6 +49,11 @@
   - `frontend-tv`: audio habilitado por defecto para TV (control de volumen físico del televisor + fallback silencioso solo en navegadores desktop restrictivos); fuentes adaptables sin desbordes ni cortes de palabras; redes sociales movidas a la marquesina en movimiento (`show_social_in_ticker`); soporte de imágenes acompañando bloques de texto (`image_url`); animaciones (`slide_up`, `fade`, `slide_left`, `zoom`, `none`) y escalas de fuente configurables; visibilidad configurable de relojes, fechas, badge EN VIVO, subtítulo y texto de pie lateral.
   - `odoo-addons/vscreens`: nuevos campos en `vscreens.sidebar.item` (`image`, `image_url`) y `vscreens.design.settings`; sincronización bidireccional en `vscreens_company.py`; actualización de `tv_preview.js`; reorganización de `company_views.xml` dejando solo el previsualizador arriba y moviendo `Nombre Comercial`, `Información de la Empresa` y `Contacto y redes sociales` dentro de la pestaña `Perfil de Negocio`.
   - `frontend-admin`: controles añadidos en `BrandingEditor` y `SidebarEditor` para animaciones, escala de fuente, imagen en bloques, subtítulo, texto de pie lateral y toggles de visibilidad en TV.
+- [x] **Ajustes Reales en TV Física (2026-11-20):**
+  - Endpoint público `/companies/<id>/logo` y `/companies/sidebar-item/<id>/image` en `api_companies.py` para servir imágenes reales de Odoo sin caer en `placeholder.png`.
+  - Overscan por defecto (`2vw`) configurable (`safety_margin`) para evitar cortes en los extremos laterales del televisor.
+  - Auto-ajuste dinámico del nombre comercial (`fitBrandText`) + `word-break: keep-all` para evitar cortes como `VenridesCaf / é`.
+  - Nuevas opciones configurables en Odoo y Web: `show_card_frame` (quitar marco de bloques), `show_slide_counter` (ocultar `01/03` por defecto) y `side_footer_animation` (animación del pie lateral).
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

@@ -286,12 +286,16 @@
                                         <field name="sidebar_effect"/>
                                         <field name="sidebar_animation"/>
                                         <field name="sidebar_font_scale"/>
+                                        <field name="show_card_frame" widget="boolean_toggle"/>
+                                        <field name="show_slide_counter" widget="boolean_toggle"/>
                                         <field name="sidebar_bg" widget="color"/>
                                         <field name="sidebar_text" widget="color"/>
                                         <field name="show_side_footer" widget="boolean_toggle"/>
-                                        <field name="side_footer_text" invisible="not show_side_footer"/>
+                                        <field name="side_footer_animation" invisible="not show_side_footer"/>
+                                        <field name="side_footer_text" invisible="not show_side_footer" colspan="4"/>
                                     </group>
-                                    <group string="Elementos Visibles en TV (Relojes, Fechas, Ticker)" col="4">
+                                    <group string="Elementos Visibles en TV y Overscan" col="4">
+                                        <field name="safety_margin"/>
                                         <field name="show_live_badge" widget="boolean_toggle"/>
                                         <field name="show_topbar_date" widget="boolean_toggle"/>
                                         <field name="show_side_clock" widget="boolean_toggle"/>
