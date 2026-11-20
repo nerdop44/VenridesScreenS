@@ -472,7 +472,9 @@ class VScreenSCompanyController(http.Controller):
             limit=1,
         )
         if att and att.raw:
-            return att.raw, att.name or "", att.mimetype or ""
+            raw_val = att.raw
+            raw_bytes = raw_val.read() if hasattr(raw_val, "read") else bytes(raw_val)
+            return raw_bytes, att.name or "", att.mimetype or ""
         return None, "", ""
 
     @http.route("/companies/<int:company_id>/logo", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
