@@ -468,17 +468,26 @@ class VScreenSCompany(models.Model):
                 if item.url and item.is_active
             ]
         if field_name == "sidebar_items":
-            return [
-                {
+            base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
+            if not base or "127.0.0.1" in base or "localhost" in base:
+                base = "https://vscreens-api.inverpave.com"
+            result = []
+            for item in self.sidebar_items:
+                if not ((item.value or item.label) and item.is_active):
+                    continue
+                img_url = item.image_url or False
+                if not img_url and item.image:
+                    stamp = int(item.write_date.timestamp()) if item.write_date else 0
+                    img_url = f"{base}/web/image/vscreens.sidebar.item/{item.id}/image?unique={stamp}"
+                result.append({
                     "type": "text",
                     "label": item.label or "",
                     "value": item.value or item.label or "",
                     "icon": item.icon or False,
                     "color": item.color or "#ffffff",
-                }
-                for item in self.sidebar_items
-                if (item.value or item.label) and item.is_active
-            ]
+                    "image_url": img_url,
+                })
+            return result
         if field_name == "bottom_bar_items":
             content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
             content["messages"] = [
@@ -806,6 +815,7 @@ class VScreenSCompany(models.Model):
                         "value": value,
                         "icon": entry.get("icon") or "fa-tv",
                         "color": entry.get("color") or "#ffffff",
+                        "image_url": entry.get("image_url") or entry.get("image") or False,
                     })
                     sequence += 10
 
@@ -831,6 +841,15 @@ class VScreenSCompany(models.Model):
                 company.design_settings_id.sudo().unlink()
                 data = company.design_settings if isinstance(company.design_settings, dict) else {}
                 if data:
+                    anim = data.get("sidebar_animation")
+                    if anim not in ("slide_up", "fade", "slide_left", "zoom", "none"):
+                        anim = "slide_up"
+                    fscale = data.get("sidebar_font_scale")
+                    if fscale not in ("compact", "normal", "large"):
+                        fscale = "normal"
+                    effect = data.get("sidebar_effect")
+                    if effect not in ("none", "glass_3d", "neon_glow"):
+                        effect = "none"
                     safe_create(Design, {
                         "company_id": company.id,
                         "title_font": data.get("name_font") or "inherit",
@@ -838,11 +857,21 @@ class VScreenSCompany(models.Model):
                         "title_size": data.get("name_size") or "1.2rem",
                         "title_weight": data.get("name_weight") or "bold",
                         "sidebar_width": int(data.get("sidebar_width") or 22),
-                        "sidebar_effect": data.get("sidebar_effect") or "none",
+                        "sidebar_effect": effect,
                         "sidebar_bg": data.get("sidebar_bg") or "#1e293b",
                         "sidebar_text": data.get("sidebar_text") or "#ffffff",
+                        "sidebar_animation": anim,
+                        "sidebar_font_scale": fscale,
+                        "side_subtitle": data.get("side_subtitle") if data.get("side_subtitle") is not None else "PANTALLAS PUBLI-INTELIGENTES",
+                        "show_side_footer": bool(data.get("show_side_footer", True)),
+                        "side_footer_text": data.get("side_footer_text") if data.get("side_footer_text") is not None else "VScreenS · Señalización inteligente",
+                        "show_side_clock": bool(data.get("show_side_clock", False)),
                         "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",
                         "bottom_bar_text": data.get("bottom_bar_text") or "#ffffff",
+                        "show_bottom_clock": bool(data.get("show_bottom_clock", True)),
+                        "show_topbar_date": bool(data.get("show_topbar_date", True)),
+                        "show_live_badge": bool(data.get("show_live_badge", True)),
+                        "show_social_in_ticker": bool(data.get("show_social_in_ticker", True)),
                         "show_bcv": bool(data.get("show_bcv", True)),
                         "bcv_color": data.get("bcv_color") or "#10b981",
                         "bcv_font": data.get("bcv_font") or "inherit",

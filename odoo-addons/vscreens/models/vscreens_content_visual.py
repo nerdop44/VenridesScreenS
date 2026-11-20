@@ -92,6 +92,8 @@ class VscreensSidebarItem(models.Model):
     value = fields.Char(string="Valor", required=True, help="Texto o valor a mostrar")
     icon = fields.Char(string="Icono", default="fa-tv", help="Clase de icono FontAwesome")
     color = fields.Char(string="Color", default="#ffffff", help="Color en formato hex")
+    image_url = fields.Char(string="URL de Imagen", help="Imagen opcional junto al texto")
+    image = fields.Binary(string="Imagen", attachment=True)
     is_active = fields.Boolean(string="Activo", default=True)
 
 
@@ -148,9 +150,39 @@ class VscreensDesignSettings(models.Model):
     )
     sidebar_bg = fields.Char(string="Color de Fondo", default="#1e293b")
     sidebar_text = fields.Char(string="Color de Texto", default="#ffffff")
-    # Barra Inferior
+    sidebar_animation = fields.Selection(
+        [
+            ("slide_up", "Deslizar Arriba"),
+            ("fade", "Desvanecer (Fade)"),
+            ("slide_left", "Deslizar Izquierda"),
+            ("zoom", "Zoom Suave"),
+            ("none", "Sin Animación"),
+        ],
+        string="Animación de Bloques",
+        default="slide_up",
+    )
+    sidebar_font_scale = fields.Selection(
+        [("compact", "Compacta"), ("normal", "Normal"), ("large", "Grande")],
+        string="Tamaño de Fuente en Bloques",
+        default="normal",
+    )
+    side_subtitle = fields.Char(
+        string="Subtítulo bajo Nombre",
+        default="PANTALLAS PUBLI-INTELIGENTES",
+    )
+    show_side_footer = fields.Boolean(string="Mostrar Pie Lateral", default=True)
+    side_footer_text = fields.Char(
+        string="Texto Pie Lateral",
+        default="VScreenS · Señalización inteligente",
+    )
+    show_side_clock = fields.Boolean(string="Reloj en Barra Lateral", default=False)
+    # Barra Inferior y Video
     bottom_bar_bg = fields.Char(string="Color de Fondo Barra Inferior", default="#0a0e1a")
     bottom_bar_text = fields.Char(string="Color de Texto Barra Inferior", default="#ffffff")
+    show_bottom_clock = fields.Boolean(string="Reloj/Fecha en Barra Inferior", default=True)
+    show_topbar_date = fields.Boolean(string="Fecha en Área de Video", default=True)
+    show_live_badge = fields.Boolean(string="Badge EN VIVO", default=True)
+    show_social_in_ticker = fields.Boolean(string="Redes en Marquesina", default=True)
     # BCV
     show_bcv = fields.Boolean(string="Mostrar Tasa BCV", default=True)
     bcv_color = fields.Char(string="Color BCV", default="#10b981")
@@ -171,8 +203,18 @@ class VscreensDesignSettings(models.Model):
             "sidebar_effect": self.sidebar_effect,
             "sidebar_bg": self.sidebar_bg,
             "sidebar_text": self.sidebar_text,
+            "sidebar_animation": self.sidebar_animation or "slide_up",
+            "sidebar_font_scale": self.sidebar_font_scale or "normal",
+            "side_subtitle": self.side_subtitle if self.side_subtitle is not False else "",
+            "show_side_footer": self.show_side_footer,
+            "side_footer_text": self.side_footer_text or "",
+            "show_side_clock": self.show_side_clock,
             "bottom_bar_bg": self.bottom_bar_bg,
             "bottom_bar_text": self.bottom_bar_text,
+            "show_bottom_clock": self.show_bottom_clock,
+            "show_topbar_date": self.show_topbar_date,
+            "show_live_badge": self.show_live_badge,
+            "show_social_in_ticker": self.show_social_in_ticker,
             "show_bcv": self.show_bcv,
             "bcv_color": self.bcv_color,
             "bcv_font": self.bcv_font,

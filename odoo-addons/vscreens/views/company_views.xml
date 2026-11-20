@@ -107,38 +107,36 @@
                     <div class="alert alert-warning" role="status" invisible="is_active">
                         <strong>Servicio suspendido.</strong>
                         Las pantallas de esta empresa no están mostrando contenido.
-                        Activa la empresa en «Información de la Empresa» para reanudar el servicio.
-                    </div>
-                    <div class="oe_title">
-                        <label for="name" string="Nombre Comercial"/>
-                        <h1><field name="name" placeholder="Nombre de la empresa"/></h1>
+                        Activa la empresa en «Perfil de Negocio» para reanudar el servicio.
                     </div>
 
-                    <!-- Vista previa en vivo: flota arriba a la derecha, sobre las pestañas -->
+                    <!-- Vista previa en vivo: centrada arriba, todo el resto en pestañas -->
                     <div class="vs_tv_preview_anchor">
                         <field name="config_version" widget="vscreens_tv_preview"/>
                     </div>
 
-                    <group string="Información de la Empresa" col="4">
-                        <field name="partner_id"/>
-                        <field name="plan_id"/>
-                        <field name="rif"/>
-                        <field name="email"/>
-                        <field name="valid_until"/>
-                        <field name="is_active" widget="boolean_toggle"/>
-                    </group>
-
-                    <group string="Contacto y redes sociales" col="4">
-                        <field name="phone"/>
-                        <field name="whatsapp"/>
-                        <field name="instagram"/>
-                        <field name="facebook"/>
-                        <field name="tiktok"/>
-                    </group>
-
                     <notebook>
                         <page string="📋 Perfil de Negocio" name="profile">
-                            <group col="4">
+                            <div class="oe_title mb-3">
+                                <label for="name" string="Nombre Comercial"/>
+                                <h1><field name="name" placeholder="Nombre de la empresa"/></h1>
+                            </div>
+                            <group string="Información de la Empresa" col="4">
+                                <field name="partner_id"/>
+                                <field name="plan_id"/>
+                                <field name="rif"/>
+                                <field name="email"/>
+                                <field name="valid_until"/>
+                                <field name="is_active" widget="boolean_toggle"/>
+                            </group>
+                            <group string="Contacto y redes sociales" col="4">
+                                <field name="phone"/>
+                                <field name="whatsapp"/>
+                                <field name="instagram"/>
+                                <field name="facebook"/>
+                                <field name="tiktok"/>
+                            </group>
+                            <group string="Datos adicionales" col="4">
                                 <field name="address"/>
                                 <field name="contact_person"/>
                                 <field name="birthday"/>
@@ -234,8 +232,11 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="label"/>
                                     <field name="value"/>
-                                    <field name="icon"/>
+                                    <field name="image" widget="image" options="{'size': [0, 40]}"/>
+                                    <field name="image_url" placeholder="https://..." optional="show"/>
+                                    <field name="icon" optional="hide"/>
                                     <field name="color" widget="color"/>
+                                    <field name="is_active" widget="boolean_toggle"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -260,19 +261,51 @@
 
                         <page string="⚙️ Ajustes de Diseño" name="design">
                             <field name="design_settings_id">
-                                <list string="Ajustes de diseño" editable="bottom">
+                                <list string="Ajustes de diseño">
                                     <field name="title_font"/>
                                     <field name="title_color" widget="color"/>
-                                    <field name="title_size"/>
                                     <field name="sidebar_width"/>
-                                    <field name="sidebar_bg" widget="color"/>
-                                    <field name="sidebar_text" widget="color"/>
-                                    <field name="bottom_bar_bg" widget="color"/>
+                                    <field name="sidebar_animation"/>
+                                    <field name="sidebar_font_scale"/>
                                     <field name="show_bcv" string="BCV"/>
+                                    <field name="show_social_in_ticker" string="Redes en Ticker"/>
+                                    <field name="show_side_clock" string="Reloj Lateral"/>
+                                    <field name="show_bottom_clock" string="Reloj Inferior"/>
+                                    <field name="show_topbar_date" string="Fecha Video"/>
                                 </list>
+                                <form string="Ajustes de Diseño de la Pantalla">
+                                    <group string="Título y Marca" col="4">
+                                        <field name="title_font"/>
+                                        <field name="title_color" widget="color"/>
+                                        <field name="title_size"/>
+                                        <field name="title_weight"/>
+                                        <field name="side_subtitle" colspan="4" placeholder="Vacío para ocultar"/>
+                                    </group>
+                                    <group string="Barra Lateral y Bloques" col="4">
+                                        <field name="sidebar_width"/>
+                                        <field name="sidebar_effect"/>
+                                        <field name="sidebar_animation"/>
+                                        <field name="sidebar_font_scale"/>
+                                        <field name="sidebar_bg" widget="color"/>
+                                        <field name="sidebar_text" widget="color"/>
+                                        <field name="show_side_footer" widget="boolean_toggle"/>
+                                        <field name="side_footer_text" invisible="not show_side_footer"/>
+                                    </group>
+                                    <group string="Elementos Visibles en TV (Relojes, Fechas, Ticker)" col="4">
+                                        <field name="show_live_badge" widget="boolean_toggle"/>
+                                        <field name="show_topbar_date" widget="boolean_toggle"/>
+                                        <field name="show_side_clock" widget="boolean_toggle"/>
+                                        <field name="show_bottom_clock" widget="boolean_toggle"/>
+                                        <field name="show_social_in_ticker" widget="boolean_toggle"/>
+                                        <field name="show_bcv" widget="boolean_toggle"/>
+                                        <field name="bcv_color" widget="color"/>
+                                        <field name="bottom_bar_bg" widget="color"/>
+                                        <field name="bottom_bar_text" widget="color"/>
+                                    </group>
+                                </form>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                Fuentes, colores, efectos y tasa BCV de la pantalla. Se aplica a todas las pantallas de la empresa.
+                                Haz clic en la fila de arriba para configurar animaciones, tamaños, visibilidad de relojes/fechas, texto inferior y colores.
                             </p>
                         </page>
 

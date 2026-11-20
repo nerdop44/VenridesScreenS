@@ -205,6 +205,7 @@ export class VscreensTvPreviewField extends Component {
                 value: row.value || row.label || "",
                 icon: row.icon || false,
                 color: row.color || "#ffffff",
+                image_url: row.image_url || false,
             }));
         }
 
@@ -248,8 +249,18 @@ export class VscreensTvPreviewField extends Component {
                 sidebar_effect: design.sidebar_effect || "none",
                 sidebar_bg: design.sidebar_bg || "#1e293b",
                 sidebar_text: design.sidebar_text || "#ffffff",
+                sidebar_animation: design.sidebar_animation || "slide_up",
+                sidebar_font_scale: design.sidebar_font_scale || "normal",
+                side_subtitle: design.side_subtitle !== undefined && design.side_subtitle !== false ? design.side_subtitle : "",
+                show_side_footer: design.show_side_footer !== false,
+                side_footer_text: design.side_footer_text || "",
+                show_side_clock: design.show_side_clock === true,
                 bottom_bar_bg: design.bottom_bar_bg || "#0a0e1a",
                 bottom_bar_text: design.bottom_bar_text || "#ffffff",
+                show_bottom_clock: design.show_bottom_clock !== false,
+                show_topbar_date: design.show_topbar_date !== false,
+                show_live_badge: design.show_live_badge !== false,
+                show_social_in_ticker: design.show_social_in_ticker !== false,
                 show_bcv: design.show_bcv !== false,
                 bcv_color: design.bcv_color || "#10b981",
                 bcv_font: design.bcv_font || "inherit",

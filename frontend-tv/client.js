@@ -45,7 +45,7 @@
         playerFresh: false,
         currentItem: null,
         currentKind: null,
-        muted: true,
+        muted: false,
         priorityReturnItem: null,
         inPriority: false,
         priorityUrl: null,
@@ -427,6 +427,43 @@
         if (bcvPill) {
             bcvPill.classList.toggle("hidden", design.show_bcv === false || !data.bcv_rate);
         }
+
+        var subEl = document.querySelector(".side-brand-sub");
+        if (subEl) {
+            var subText = design.side_subtitle !== undefined && design.side_subtitle !== null
+                ? String(design.side_subtitle).trim()
+                : "PANTALLAS PUBLI-INTELIGENTES";
+            subEl.textContent = subText;
+            subEl.classList.toggle("hidden", !subText);
+        }
+
+        var sideFooter = document.querySelector(".side-footer");
+        if (sideFooter) {
+            sideFooter.classList.toggle("hidden", design.show_side_footer === false);
+        }
+        var sideFooterText = document.querySelector(".side-footer-text");
+        if (sideFooterText) {
+            var footerTxt = design.side_footer_text !== undefined && design.side_footer_text !== null && String(design.side_footer_text).trim() !== ""
+                ? String(design.side_footer_text)
+                : "VScreenS · Señalización inteligente";
+            sideFooterText.textContent = footerTxt;
+        }
+        var sideClock = $("side-clock");
+        if (sideClock) {
+            sideClock.classList.toggle("hidden", design.show_side_clock !== true);
+        }
+        var bottomClock = document.querySelector(".bottom-clock");
+        if (bottomClock) {
+            bottomClock.classList.toggle("hidden", design.show_bottom_clock === false);
+        }
+        var topDate = $("topbar-date");
+        if (topDate) {
+            topDate.classList.toggle("hidden", design.show_topbar_date === false);
+        }
+        var liveBadge = document.querySelector(".live-badge");
+        if (liveBadge) {
+            liveBadge.classList.toggle("hidden", design.show_live_badge === false);
+        }
     }
 
     /* ---------------------------------------------------------------------
@@ -473,7 +510,8 @@
                 subColor: null,
                 price: "",
                 priceColor: null,
-                eyebrow: item.eyebrow || "",
+                imageUrl: item.image_url || item.image || "",
+                eyebrow: item.eyebrow || (item.label && item.label !== value ? String(item.label) : ""),
                 fontFamily: item.font_family || "",
                 weight: item.weight || "",
                 index: i
@@ -481,6 +519,9 @@
 
             if (next && typeof next === "object" && next.type !== "image" && (next.value || next.text)) {
                 var nextValue = String(next.value !== undefined ? next.value : next.text);
+                if (!slide.imageUrl && (next.image_url || next.image)) {
+                    slide.imageUrl = next.image_url || next.image;
+                }
                 if (isPriceText(nextValue)) {
                     slide.price = nextValue;
                     slide.priceColor = next.color || null;
@@ -525,6 +566,17 @@
                 price: "",
                 index: 0
             }];
+        }
+
+        var stage = $("side-stage");
+        if (stage) {
+            stage.classList.remove("anim-fade", "anim-slide_up", "anim-slide_left", "anim-zoom", "anim-none");
+            var anim = (design && design.sidebar_animation) || "slide_up";
+            if (anim !== "slide_up") stage.classList.add("anim-" + anim);
+
+            stage.classList.remove("font-scale-compact", "font-scale-normal", "font-scale-large");
+            var fscale = (design && design.sidebar_font_scale) || "normal";
+            stage.classList.add("font-scale-" + fscale);
         }
 
         state.slideIndex = 0;
@@ -601,6 +653,20 @@
                 price.textContent = slide.price;
                 if (slide.priceColor) price.style.color = slide.priceColor;
                 card.appendChild(price);
+            }
+
+            if (slide.imageUrl) {
+                var imgWrap = document.createElement("div");
+                imgWrap.className = "promo-inline-image-wrap";
+                var imgEl = document.createElement("img");
+                imgEl.className = "promo-inline-image";
+                imgEl.alt = slide.title || "";
+                imgEl.src = absoluteUrl(driveToImage(slide.imageUrl));
+                imgEl.onerror = function () {
+                    imgWrap.style.display = "none";
+                };
+                imgWrap.appendChild(imgEl);
+                card.appendChild(imgWrap);
             }
         }
 
@@ -745,14 +811,20 @@
             items.push("Tasa BCV: Bs. " + formatNumber(data.bcv_rate, 2));
         }
 
+        var showSocialInTicker = !design || design.show_social_in_ticker !== false;
         var whatsapp = bottom.whatsapp || data.whatsapp;
-        if (whatsapp) items.push("WhatsApp: " + whatsapp);
-
         var instagram = bottom.instagram || data.instagram;
-        if (instagram) items.push("Instagram: @" + String(instagram).replace(/^@/, ""));
+        var facebook = bottom.facebook || data.facebook;
+        var tiktok = bottom.tiktok || data.tiktok;
 
-        var phone = data.phone;
-        if (phone && String(phone) !== String(whatsapp || "")) items.push("Teléfono: " + phone);
+        if (showSocialInTicker) {
+            if (whatsapp) items.push("WhatsApp: " + whatsapp);
+            if (instagram) items.push("Instagram: @" + String(instagram).replace(/^@/, ""));
+            if (facebook) items.push("Facebook: " + facebook);
+            if (tiktok) items.push("TikTok: @" + String(tiktok).replace(/^@/, ""));
+            var phone = data.phone;
+            if (phone && String(phone) !== String(whatsapp || "")) items.push("Teléfono: " + phone);
+        }
 
         var itemStyle = {};
         if (bottom && bottom.color) itemStyle.color = bottom.color;
@@ -795,13 +867,18 @@
             bcv.textContent = data.bcv_rate ? "Bs. " + formatNumber(data.bcv_rate, 2) : "Bs. —";
         }
 
-        buildSocialPills(bottom, data);
+        buildSocialPills(bottom, data, design);
     }
 
-    function buildSocialPills(bottom, data) {
+    function buildSocialPills(bottom, data, design) {
         var container = $("social-pill");
         if (!container) return;
         container.innerHTML = "";
+        if (!design || design.show_social_in_ticker !== false) {
+            container.classList.add("hidden");
+            return;
+        }
+        container.classList.remove("hidden");
 
         var whatsapp = bottom.whatsapp || data.whatsapp;
         var instagram = bottom.instagram || data.instagram;
@@ -1063,12 +1140,28 @@
                         state.playerLoading = false;
                         state.playerFresh = true;
                         try {
-                            event.target.setVolume(70);
-                            event.target.mute();
+                            event.target.setVolume(100);
+                            if (state.muted) {
+                                event.target.mute();
+                            } else {
+                                event.target.unMute();
+                            }
                             event.target.playVideo();
+                            window.setTimeout(function () {
+                                try {
+                                    if (!state.muted && event.target.getPlayerState && event.target.getPlayerState() !== 1) {
+                                        event.target.mute();
+                                        event.target.playVideo();
+                                        state.muted = true;
+                                        syncSoundButtonUI();
+                                        showSoundToggle();
+                                    }
+                                } catch (e) { }
+                            }, 1400);
                         } catch (err) {
                             console.warn("YT ready play error", err);
                         }
+                        syncSoundButtonUI();
                         callback();
                     },
                     onStateChange: function (event) {
@@ -1200,7 +1293,8 @@
         if (!filePlayer) return;
 
         filePlayer.classList.remove("hidden");
-        filePlayer.muted = true;
+        filePlayer.muted = state.muted;
+        filePlayer.volume = 1;
         filePlayer.loop = state.queue.length === 1;
         filePlayer.src = item.url;
         filePlayer.onerror = function () {
@@ -1217,9 +1311,20 @@
         var promise = filePlayer.play();
         if (promise && promise.catch) {
             promise.catch(function () {
-                showFallback();
+                if (!state.muted) {
+                    state.muted = true;
+                    filePlayer.muted = true;
+                    syncSoundButtonUI();
+                    showSoundToggle();
+                    filePlayer.play().catch(function () {
+                        showFallback();
+                    });
+                } else {
+                    showFallback();
+                }
             });
         }
+        syncSoundButtonUI();
         hideFallback();
     }
 
@@ -1277,9 +1382,21 @@
         }, 12000);
     }
 
+    function syncSoundButtonUI() {
+        var button = $("sound-toggle");
+        if (!button) return;
+        var label = button.querySelector(".sound-label");
+        if (state.muted) {
+            button.classList.remove("is-on");
+            if (label) label.textContent = "Activar sonido";
+        } else {
+            button.classList.add("is-on");
+            if (label) label.textContent = "Sonido activo";
+        }
+    }
+
     function toggleSound() {
         var filePlayer = $("file-player");
-        var button = $("sound-toggle");
         try {
             if (state.muted) {
                 if (state.player && state.playerReady) {
@@ -1288,24 +1405,17 @@
                 }
                 if (filePlayer) filePlayer.muted = false;
                 state.muted = false;
-                if (button) {
-                    button.classList.add("is-on");
-                    button.querySelector(".sound-label").textContent = "Sonido activo";
-                }
             } else {
                 if (state.player && state.playerReady) {
                     state.player.mute();
                 }
                 if (filePlayer) filePlayer.muted = true;
                 state.muted = true;
-                if (button) {
-                    button.classList.remove("is-on");
-                    button.querySelector(".sound-label").textContent = "Sonido";
-                }
             }
         } catch (err) {
             console.warn("Sound toggle error", err);
         }
+        syncSoundButtonUI();
         showSoundToggle();
     }
 

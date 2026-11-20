@@ -2550,6 +2550,53 @@ const BrandingEditor = ({ company, onChange }) => {
                     </select>
                 </div>
             </div>
+            <div>
+                <label style={{ fontSize: '0.75rem' }}>Subtítulo bajo Nombre (vacío para ocultar)</label>
+                <input
+                    value={ds.side_subtitle !== undefined ? ds.side_subtitle : 'PANTALLAS PUBLI-INTELIGENTES'}
+                    onChange={e => update('side_subtitle', e.target.value)}
+                    placeholder="Ej: Café y Panadería Artesanal"
+                />
+            </div>
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.8rem', marginTop: '0.2rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>Elementos Visibles en TV</label>
+                <div className="grid-2" style={{ gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_live_badge !== false} onChange={e => update('show_live_badge', e.target.checked)} />
+                        Badge EN VIVO
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_topbar_date !== false} onChange={e => update('show_topbar_date', e.target.checked)} />
+                        Fecha en Video
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_clock === true} onChange={e => update('show_side_clock', e.target.checked)} />
+                        Reloj en Barra Lateral
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_bottom_clock !== false} onChange={e => update('show_bottom_clock', e.target.checked)} />
+                        Reloj/Fecha Inferior
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_social_in_ticker !== false} onChange={e => update('show_social_in_ticker', e.target.checked)} />
+                        Redes en Marquesina
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_footer !== false} onChange={e => update('show_side_footer', e.target.checked)} />
+                        Pie de Barra Lateral
+                    </label>
+                </div>
+                {ds.show_side_footer !== false && (
+                    <div style={{ marginTop: '0.6rem' }}>
+                        <label style={{ fontSize: '0.72rem' }}>Texto del Pie Lateral</label>
+                        <input
+                            value={ds.side_footer_text !== undefined ? ds.side_footer_text : 'VScreenS · Señalización inteligente'}
+                            onChange={e => update('side_footer_text', e.target.value)}
+                            placeholder="Texto personalizado debajo de los bloques..."
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -3911,6 +3958,26 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                     <div><label>Fondo</label><input type="color" value={ds.sidebar_bg || '#1e293b'} onChange={e => updateDesign('sidebar_bg', e.target.value)} /></div>
                     <div><label>Texto</label><input type="color" value={ds.sidebar_text || '#ffffff'} onChange={e => updateDesign('sidebar_text', e.target.value)} /></div>
                 </div>
+                <div className="grid-2" style={{ marginTop: '1rem' }}>
+                    <div>
+                        <label>Animación de Bloques</label>
+                        <select value={ds.sidebar_animation || 'slide_up'} onChange={e => updateDesign('sidebar_animation', e.target.value)}>
+                            <option value="slide_up">Deslizar Arriba</option>
+                            <option value="fade">Desvanecer (Fade)</option>
+                            <option value="slide_left">Deslizar Izquierda</option>
+                            <option value="zoom">Zoom Suave</option>
+                            <option value="none">Sin Animación</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Escala de Fuente en Bloques</label>
+                        <select value={ds.sidebar_font_scale || 'normal'} onChange={e => updateDesign('sidebar_font_scale', e.target.value)}>
+                            <option value="compact">Compacta</option>
+                            <option value="normal">Normal</option>
+                            <option value="large">Grande</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div className="glass-card">
                 <div className="section-title"><Layout size={18} /> Logo y Encabezado <Tooltip text="Configure el logo y el texto fijo superior." /></div>
@@ -3980,22 +4047,32 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                                     />
                                 </div>
                                 {block.type === 'text' && (
-                                    <div className="grid-2" style={{ marginTop: '0.5rem' }}>
-                                        <div>
-                                            <label>Tipografía</label>
-                                            <select value={block.font_family || 'inherit'} onChange={e => updateBlock('font_family', e.target.value)}>
-                                                <option value="inherit">Defecto</option>
-                                                <option value="'Roboto', sans-serif">Roboto</option>
-                                                <option value="'Montserrat', sans-serif">Montserrat</option>
-                                                <option value="'Oswald', sans-serif">Oswald</option>
-                                                <option value="'Playfair Display', serif">Playfair</option>
-                                            </select>
+                                    <>
+                                        <div style={{ marginTop: '0.5rem' }}>
+                                            <label>URL de Imagen acompañante (opcional)</label>
+                                            <input
+                                                value={block.image_url || ''}
+                                                onChange={e => updateBlock('image_url', e.target.value)}
+                                                placeholder="https://... o enlace de Google Drive"
+                                            />
                                         </div>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <div style={{ flex: 1 }}><label>Tamaño</label><input type="range" min="0.8" max="3" step="0.1" value={parseFloat(block.font_size) || 1.2} onChange={e => updateBlock('font_size', `${e.target.value}rem`)} /></div>
-                                            <div style={{ flex: 1 }}><label>Peso</label><select value={block.weight || 'bold'} onChange={e => updateBlock('weight', e.target.value)}><option value="normal">Normal</option><option value="bold">Bold</option></select></div>
+                                        <div className="grid-2" style={{ marginTop: '0.5rem' }}>
+                                            <div>
+                                                <label>Tipografía</label>
+                                                <select value={block.font_family || 'inherit'} onChange={e => updateBlock('font_family', e.target.value)}>
+                                                    <option value="inherit">Defecto</option>
+                                                    <option value="'Roboto', sans-serif">Roboto</option>
+                                                    <option value="'Montserrat', sans-serif">Montserrat</option>
+                                                    <option value="'Oswald', sans-serif">Oswald</option>
+                                                    <option value="'Playfair Display', serif">Playfair</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <div style={{ flex: 1 }}><label>Tamaño</label><input type="range" min="0.8" max="3" step="0.1" value={parseFloat(block.font_size) || 1.2} onChange={e => updateBlock('font_size', `${e.target.value}rem`)} /></div>
+                                                <div style={{ flex: 1 }}><label>Peso</label><select value={block.weight || 'bold'} onChange={e => updateBlock('weight', e.target.value)}><option value="normal">Normal</option><option value="bold">Bold</option></select></div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </>
                                 )}
                             </div>
                         );
