@@ -187,6 +187,16 @@ class VscreensDesignSettings(models.Model):
     )
     show_card_frame = fields.Boolean(string="Mostrar Marco en Bloques", default=True)
     show_slide_counter = fields.Boolean(string="Mostrar Contador (01/03)", default=False)
+    show_side_menu = fields.Boolean(string="Mostrar Menú / Precios", default=True)
+    side_menu_animation = fields.Selection(
+        [
+            ("static", "Lista Fija"),
+            ("rotate", "Rotar con Animación"),
+            ("marquee_vertical", "Desplazamiento Vertical"),
+        ],
+        string="Presentación Menú / Precios",
+        default="rotate",
+    )
     safety_margin = fields.Float(string="Margen Overscan (%)", default=2.0)
     show_side_clock = fields.Boolean(string="Reloj en Barra Lateral", default=False)
     # Barra Inferior y Video
@@ -224,6 +234,8 @@ class VscreensDesignSettings(models.Model):
             "side_footer_animation": self.side_footer_animation or "marquee",
             "show_card_frame": self.show_card_frame,
             "show_slide_counter": self.show_slide_counter,
+            "show_side_menu": self.show_side_menu,
+            "side_menu_animation": self.side_menu_animation or "rotate",
             "safety_margin": self.safety_margin if self.safety_margin is not False else 2.0,
             "show_side_clock": self.show_side_clock,
             "bottom_bar_bg": self.bottom_bar_bg,

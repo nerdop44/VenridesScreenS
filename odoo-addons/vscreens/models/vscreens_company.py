@@ -853,6 +853,9 @@ class VScreenSCompany(models.Model):
                     f_anim = data.get("side_footer_animation")
                     if f_anim not in ("marquee", "pulse", "fade_slide", "none"):
                         f_anim = "marquee"
+                    m_anim = data.get("side_menu_animation")
+                    if m_anim not in ("static", "rotate", "marquee_vertical"):
+                        m_anim = "rotate"
                     safe_create(Design, {
                         "company_id": company.id,
                         "title_font": data.get("name_font") or "inherit",
@@ -871,6 +874,8 @@ class VScreenSCompany(models.Model):
                         "side_footer_animation": f_anim,
                         "show_card_frame": bool(data.get("show_card_frame", True)),
                         "show_slide_counter": bool(data.get("show_slide_counter", False)),
+                        "show_side_menu": bool(data.get("show_side_menu", True)),
+                        "side_menu_animation": m_anim,
                         "safety_margin": float(data.get("safety_margin") if data.get("safety_margin") is not None else 2.0),
                         "show_side_clock": bool(data.get("show_side_clock", False)),
                         "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",

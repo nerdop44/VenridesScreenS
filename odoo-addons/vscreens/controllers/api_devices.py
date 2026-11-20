@@ -204,3 +204,102 @@ class VScreenSDeviceController(http.Controller):
             domain.append(("user_id", "=", user.id))
         count = request.env["vscreens.ticket"].sudo().search_count(domain)
         return json_response({"count": count})
+
+    @staticmethod
+    def _extract_yt_videos(html_text, limit=12):
+        import json
+        import re
+
+        match = re.search(r"var ytInitialData\s*=\s*(\{.*?\});</script>", html_text, re.DOTALL)
+        if not match:
+            return []
+        try:
+            data = json.loads(match.group(1))
+        except Exception:  # noqa: BLE001
+            return []
+
+        results = []
+        seen = set()
+
+        def walk(node):
+            if len(results) >= limit or not isinstance(node, (dict, list)):
+                return
+            if isinstance(node, list):
+                for item in node:
+                    walk(item)
+                return
+            vr = node.get("videoRenderer") or node.get("compactVideoRenderer")
+            if isinstance(vr, dict) and vr.get("videoId"):
+                vid = vr["videoId"]
+                if vid not in seen:
+                    seen.add(vid)
+                    title_obj = vr.get("title") or {}
+                    title = title_obj.get("simpleText") or "".join(
+                        r.get("text", "") for r in (title_obj.get("runs") or [])
+                    )
+                    chan_obj = vr.get("ownerText") or vr.get("shortBylineText") or vr.get("longBylineText") or {}
+                    channel = chan_obj.get("simpleText") or "".join(
+                        r.get("text", "") for r in (chan_obj.get("runs") or [])
+                    )
+                    dur_obj = vr.get("lengthText") or {}
+                    duration = dur_obj.get("simpleText") or ""
+                    results.append({
+                        "videoId": vid,
+                        "title": title or "Video de YouTube",
+                        "channel": channel or "",
+                        "duration": duration,
+                        "thumbnail": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+                    })
+            for val in node.values():
+                if isinstance(val, (dict, list)):
+                    walk(val)
+
+        walk(data)
+        return results
+
+    @http.route("/tv/youtube-search", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def tv_youtube_search(self, **kwargs):
+        import urllib.parse
+        import urllib.request
+
+        q = (request.httprequest.args.get("q") or "").strip()
+        if not q:
+            return json_response({"items": []})
+        url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(q)
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                html_text = resp.read().decode("utf-8", errors="ignore")
+            return json_response({"items": self._extract_yt_videos(html_text, limit=12)})
+        except Exception as exc:  # noqa: BLE001
+            return json_response({"items": [], "error": str(exc)})
+
+    @http.route("/tv/youtube-related", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def tv_youtube_related(self, **kwargs):
+        import urllib.parse
+        import urllib.request
+
+        vid = (request.httprequest.args.get("v") or "").strip()
+        if not vid:
+            return json_response({"items": []})
+        url = "https://www.youtube.com/watch?v=" + urllib.parse.quote_plus(vid)
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                html_text = resp.read().decode("utf-8", errors="ignore")
+            items = [item for item in self._extract_yt_videos(html_text, limit=10) if item["videoId"] != vid]
+            return json_response({"items": items})
+        except Exception as exc:  # noqa: BLE001
+            return json_response({"items": [], "error": str(exc)})

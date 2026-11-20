@@ -266,12 +266,12 @@
                                     <field name="title_color" widget="color"/>
                                     <field name="sidebar_width"/>
                                     <field name="sidebar_animation"/>
-                                    <field name="sidebar_font_scale"/>
+                                    <field name="show_card_frame" string="Marco Bloques"/>
+                                    <field name="show_slide_counter" string="Contador"/>
+                                    <field name="show_side_menu" string="Menú"/>
+                                    <field name="side_menu_animation" string="Anim. Menú"/>
+                                    <field name="safety_margin" string="Overscan %"/>
                                     <field name="show_bcv" string="BCV"/>
-                                    <field name="show_social_in_ticker" string="Redes en Ticker"/>
-                                    <field name="show_side_clock" string="Reloj Lateral"/>
-                                    <field name="show_bottom_clock" string="Reloj Inferior"/>
-                                    <field name="show_topbar_date" string="Fecha Video"/>
                                 </list>
                                 <form string="Ajustes de Diseño de la Pantalla">
                                     <group string="Título y Marca" col="4">
@@ -288,6 +288,8 @@
                                         <field name="sidebar_font_scale"/>
                                         <field name="show_card_frame" widget="boolean_toggle"/>
                                         <field name="show_slide_counter" widget="boolean_toggle"/>
+                                        <field name="show_side_menu" widget="boolean_toggle"/>
+                                        <field name="side_menu_animation" invisible="not show_side_menu"/>
                                         <field name="sidebar_bg" widget="color"/>
                                         <field name="sidebar_text" widget="color"/>
                                         <field name="show_side_footer" widget="boolean_toggle"/>

@@ -257,6 +257,8 @@ export class VscreensTvPreviewField extends Component {
                 side_footer_animation: design.side_footer_animation || "marquee",
                 show_card_frame: design.show_card_frame !== false,
                 show_slide_counter: design.show_slide_counter === true,
+                show_side_menu: design.show_side_menu !== false,
+                side_menu_animation: design.side_menu_animation || "rotate",
                 safety_margin: design.safety_margin !== undefined && design.safety_margin !== false ? Number(design.safety_margin) : 2,
                 show_side_clock: design.show_side_clock === true,
                 bottom_bar_bg: design.bottom_bar_bg || "#0a0e1a",

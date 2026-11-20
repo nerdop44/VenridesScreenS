@@ -54,6 +54,11 @@
   - Overscan por defecto (`2vw`) configurable (`safety_margin`) para evitar cortes en los extremos laterales del televisor.
   - Auto-ajuste dinámico del nombre comercial (`fitBrandText`) + `word-break: keep-all` para evitar cortes como `VenridesCaf / é`.
   - Nuevas opciones configurables en Odoo y Web: `show_card_frame` (quitar marco de bloques), `show_slide_counter` (ocultar `01/03` por defecto) y `side_footer_animation` (animación del pie lateral).
+- [x] **Logo Real, Menú Configurable, Buscador YouTube con Voz y Back x3 en TV (2026-11-20):**
+  - `api_companies.py`: lectura directa desde `ir.attachment` (`att.raw`) en `/companies/<id>/logo` para servir los bytes exactos de la imagen subida en Odoo.
+  - `show_side_menu` y `side_menu_animation` (`static`, `rotate`, `marquee_vertical`) configurables en Odoo y Panel Web.
+  - `api_devices.py` + `frontend-tv`: endpoints `/tv/youtube-search` y `/tv/youtube-related` para buscar videos por texto/voz dentro de la app, reproducir con controles nativos y continuar con videos relacionados sin alterar la playlist configurada.
+  - `app-tv/android/`: `MainActivity.java` requiere 3 pulsaciones consecutivas de `Back` para salir (con aviso en la 2ª pulsación y cierre previo de modales web), y `BootReceiver.java` reforzado para arranque automático al encender el TV.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

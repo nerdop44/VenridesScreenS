@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=3.7">
+    <link rel="stylesheet" href="styles.css?v=3.8">
     <link rel="icon" type="image/png" href="vscreens_icon.png?v=3.4">
 </head>
 
@@ -176,26 +176,30 @@
         </div>
     </div>
 
-    <!-- Control remoto: cambiar temporalmente el video de YouTube -->
+    <!-- Control remoto: buscar y reproducir videos de YouTube sin alterar la playlist -->
     <div id="yt-control" class="yt-control hidden">
-        <div class="yt-control-card">
-            <div class="yt-control-eyebrow">CONTROL REMOTO</div>
-            <h2 class="yt-control-title">Reproducir un video de YouTube</h2>
-            <input id="yt-control-input" class="yt-control-input" type="url"
-                   placeholder="https://www.youtube.com/watch?v=..." />
+        <div class="yt-control-card yt-search-card">
+            <div class="yt-control-eyebrow">YOUTUBE EN PANTALLA</div>
+            <h2 class="yt-control-title">Buscar o dictar video de YouTube</h2>
+            <div class="yt-search-row">
+                <input id="yt-control-input" class="yt-control-input" type="search"
+                       placeholder="Escribe o usa el micrófono del control..." autocomplete="off" />
+                <button id="yt-control-voice" class="yt-control-btn" type="button" title="Buscar por voz">🎤 Voz</button>
+                <button id="yt-control-play" class="yt-control-btn primary" type="button">Buscar</button>
+            </div>
             <div id="yt-control-msg" class="yt-control-msg"></div>
+            <div id="yt-search-results" class="yt-search-results"></div>
             <div class="yt-control-actions">
-                <button id="yt-control-play" class="yt-control-btn primary" type="button">Reproducir</button>
-                <button id="yt-control-back" class="yt-control-btn" type="button">Volver a la lista</button>
+                <button id="yt-control-back" class="yt-control-btn" type="button">Volver a la playlist</button>
+                <button id="yt-control-close" class="yt-control-btn" type="button">Cerrar</button>
             </div>
             <div class="yt-control-hint">
-                La pantalla vuelve a su playlist automáticamente al cumplirse el tiempo
-                o cuando el administrador desactiva el control.
+                Los videos seleccionados se reproducen de forma continua sin modificar la lista configurada.
             </div>
         </div>
     </div>
 
-    <script src="client.js?v=3.7"></script>
+    <script src="client.js?v=3.8"></script>
 </body>
 
 </html>

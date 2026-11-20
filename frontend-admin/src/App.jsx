@@ -2593,7 +2593,21 @@ const BrandingEditor = ({ company, onChange }) => {
                         <input type="checkbox" checked={ds.show_slide_counter === true} onChange={e => update('show_slide_counter', e.target.checked)} />
                         Contador (01/03)
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_menu !== false} onChange={e => update('show_side_menu', e.target.checked)} />
+                        Lista Menú / Precios
+                    </label>
                 </div>
+                {ds.show_side_menu !== false && (
+                    <div style={{ marginTop: '0.6rem' }}>
+                        <label style={{ fontSize: '0.72rem' }}>Presentación del Menú / Precios</label>
+                        <select value={ds.side_menu_animation || 'rotate'} onChange={e => update('side_menu_animation', e.target.value)}>
+                            <option value="rotate">Rotar con Animación</option>
+                            <option value="marquee_vertical">Desplazamiento Vertical</option>
+                            <option value="static">Lista Fija</option>
+                        </select>
+                    </div>
+                )}
                 {ds.show_side_footer !== false && (
                     <div className="grid-2" style={{ marginTop: '0.6rem', gap: '0.6rem' }}>
                         <div>

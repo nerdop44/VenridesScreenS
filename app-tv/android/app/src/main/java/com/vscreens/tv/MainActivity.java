@@ -3,11 +3,16 @@ package com.vscreens.tv;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private int backPressCount = 0;
+    private long lastBackPressMs = 0L;
+    private static final long BACK_RESET_WINDOW_MS = 3500L;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,9 +61,43 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onBackPressed() {
-        // Evitar cierre accidental del kiosco TV con la tecla Atrás del control remoto
-        if (this.bridge != null && this.bridge.getWebView() != null && this.bridge.getWebView().canGoBack()) {
-            this.bridge.getWebView().goBack();
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView wv = this.bridge.getWebView();
+            wv.evaluateJavascript(
+                "(function(){ return (window.__vscreensHandleBack && window.__vscreensHandleBack()) ? '1' : '0'; })()",
+                new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        if ("\"1\"".equals(value) || "1".equals(value)) {
+                            backPressCount = 0;
+                            return;
+                        }
+                        handleExitBackPress();
+                    }
+                }
+            );
+            return;
+        }
+        handleExitBackPress();
+    }
+
+    private void handleExitBackPress() {
+        long now = System.currentTimeMillis();
+        if (now - lastBackPressMs > BACK_RESET_WINDOW_MS) {
+            backPressCount = 0;
+        }
+        backPressCount += 1;
+        lastBackPressMs = now;
+
+        if (backPressCount == 2) {
+            Toast.makeText(
+                this,
+                "Presiona Atrás una vez más para salir de VScreenS",
+                Toast.LENGTH_LONG
+            ).show();
+        } else if (backPressCount >= 3) {
+            backPressCount = 0;
+            finish();
         }
     }
 }
