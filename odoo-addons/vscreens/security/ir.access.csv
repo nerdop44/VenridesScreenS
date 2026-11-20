@@ -109,3 +109,5 @@ access_vscreens_digital_entitlement_admin,access_vscreens_digital_entitlement_ad
 access_vscreens_download_code_master,access_vscreens_download_code_master,vscreens.download.code,vscreens.group_vscreens_master,crud,
 access_vscreens_download_code_admin,access_vscreens_download_code_admin,vscreens.download.code,vscreens.group_vscreens_company_admin,r,"[('company_id','=',user.vscreens_company_id.id)]"
 access_vscreens_request_log_master,access_vscreens_request_log_master,vscreens.request.log,vscreens.group_vscreens_master,crud,
+access_vscreens_odoo_remote_product_master,access_vscreens_odoo_remote_product_master,vscreens.odoo.remote.product,vscreens.group_vscreens_master,crud,
+access_vscreens_odoo_remote_product_admin,access_vscreens_odoo_remote_product_admin,vscreens.odoo.remote.product,vscreens.group_vscreens_company_admin,crud,"[('company_id','=',user.vscreens_company_id.id)]"

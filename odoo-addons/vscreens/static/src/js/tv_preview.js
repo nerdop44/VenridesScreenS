@@ -237,41 +237,44 @@ export class VscreensTvPreviewField extends Component {
             draft.logo_url = `${window.location.origin}/web/image/vscreens.company/${this.companyId}/logo?unique=${this.logoStamp}`;
         }
 
-        const design = this.rowData("design_settings_id")[0];
-        if (design) {
-            draft.design_settings = {
-                ...(this.baseConfig.design_settings || {}),
-                name_font: design.title_font || "inherit",
-                name_color: design.title_color || "#ffffff",
-                name_size: design.title_size || "1.2rem",
-                name_weight: design.title_weight || "bold",
-                sidebar_width: design.sidebar_width || 22,
-                sidebar_effect: design.sidebar_effect || "none",
-                sidebar_bg: design.sidebar_bg || "#1e293b",
-                sidebar_text: design.sidebar_text || "#ffffff",
-                sidebar_animation: design.sidebar_animation || "slide_up",
-                sidebar_font_scale: design.sidebar_font_scale || "normal",
-                side_subtitle: design.side_subtitle !== undefined && design.side_subtitle !== false ? design.side_subtitle : "",
-                show_side_footer: design.show_side_footer !== false,
-                side_footer_text: design.side_footer_text || "",
-                side_footer_animation: design.side_footer_animation || "marquee",
-                show_card_frame: design.show_card_frame !== false,
-                show_slide_counter: design.show_slide_counter === true,
-                show_side_menu: design.show_side_menu !== false,
-                side_menu_animation: design.side_menu_animation || "rotate",
-                safety_margin: design.safety_margin !== undefined && design.safety_margin !== false ? Number(design.safety_margin) : 2,
-                show_side_clock: design.show_side_clock === true,
-                bottom_bar_bg: design.bottom_bar_bg || "#0a0e1a",
-                bottom_bar_text: design.bottom_bar_text || "#ffffff",
-                show_bottom_clock: design.show_bottom_clock !== false,
-                show_topbar_date: design.show_topbar_date !== false,
-                show_live_badge: design.show_live_badge !== false,
-                show_social_in_ticker: design.show_social_in_ticker !== false,
-                show_bcv: design.show_bcv !== false,
-                bcv_color: design.bcv_color || "#10b981",
-                bcv_font: design.bcv_font || "inherit",
-            };
-        }
+        const design = this.rowData("design_settings_id")[0] || {};
+        const pick = (dsKey, legacyKey, fallback) => {
+            if (data[dsKey] !== undefined) return data[dsKey];
+            if (design[legacyKey] !== undefined) return design[legacyKey];
+            return fallback;
+        };
+        draft.design_settings = {
+            ...(this.baseConfig.design_settings || {}),
+            name_font: pick("ds_title_font", "title_font", "inherit") || "inherit",
+            name_color: pick("ds_title_color", "title_color", "#ffffff") || "#ffffff",
+            name_size: pick("ds_title_size", "title_size", "1.2rem") || "1.2rem",
+            name_weight: pick("ds_title_weight", "title_weight", "bold") || "bold",
+            sidebar_width: pick("ds_sidebar_width", "sidebar_width", 22) || 22,
+            sidebar_effect: pick("ds_sidebar_effect", "sidebar_effect", "none") || "none",
+            sidebar_bg: pick("ds_sidebar_bg", "sidebar_bg", "#1e293b") || "#1e293b",
+            sidebar_text: pick("ds_sidebar_text", "sidebar_text", "#ffffff") || "#ffffff",
+            sidebar_animation: pick("ds_sidebar_animation", "sidebar_animation", "slide_up") || "slide_up",
+            sidebar_font_scale: pick("ds_sidebar_font_scale", "sidebar_font_scale", "normal") || "normal",
+            side_subtitle: pick("ds_side_subtitle", "side_subtitle", "") || "",
+            show_side_footer: pick("ds_show_side_footer", "show_side_footer", true) !== false,
+            side_footer_text: pick("ds_side_footer_text", "side_footer_text", "") || "",
+            side_footer_animation: pick("ds_side_footer_animation", "side_footer_animation", "marquee") || "marquee",
+            show_card_frame: pick("ds_show_card_frame", "show_card_frame", true) !== false,
+            show_slide_counter: pick("ds_show_slide_counter", "show_slide_counter", false) === true,
+            show_side_menu: pick("ds_show_side_menu", "show_side_menu", true) !== false,
+            side_menu_animation: pick("ds_side_menu_animation", "side_menu_animation", "rotate") || "rotate",
+            safety_margin: Number(pick("ds_safety_margin", "safety_margin", 2) ?? 2),
+            show_side_clock: pick("ds_show_side_clock", "show_side_clock", false) === true,
+            bottom_bar_bg: pick("ds_bottom_bar_bg", "bottom_bar_bg", "#0a0e1a") || "#0a0e1a",
+            bottom_bar_text: pick("ds_bottom_bar_text", "bottom_bar_text", "#ffffff") || "#ffffff",
+            show_bottom_clock: pick("ds_show_bottom_clock", "show_bottom_clock", true) !== false,
+            show_topbar_date: pick("ds_show_topbar_date", "show_topbar_date", true) !== false,
+            show_live_badge: pick("ds_show_live_badge", "show_live_badge", true) !== false,
+            show_social_in_ticker: pick("ds_show_social_in_ticker", "show_social_in_ticker", true) !== false,
+            show_bcv: pick("ds_show_bcv", "show_bcv", true) !== false,
+            bcv_color: pick("ds_bcv_color", "bcv_color", "#10b981") || "#10b981",
+            bcv_font: design.bcv_font || "inherit",
+        };
 
         return draft;
     }

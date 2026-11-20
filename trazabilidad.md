@@ -59,6 +59,9 @@
   - `show_side_menu` y `side_menu_animation` (`static`, `rotate`, `marquee_vertical`) configurables en Odoo y Panel Web.
   - `api_devices.py` + `frontend-tv`: endpoints `/tv/youtube-search` y `/tv/youtube-related` para buscar videos por texto/voz dentro de la app, reproducir con controles nativos y continuar con videos relacionados sin alterar la playlist configurada.
   - `app-tv/android/`: `MainActivity.java` requiere 3 pulsaciones consecutivas de `Back` para salir (con aviso en la 2ª pulsación y cierre previo de modales web), y `BootReceiver.java` reforzado para arranque automático al encender el TV.
+- [x] **Ordenamiento UX por Pestañas (Odoo y Panel Web) + Importación de Productos Odoo Externo (2026-11-20):**
+  - `odoo-addons/vscreens`: campos `ds_*` (`related` sobre `design_id`) colocados directamente en su pestaña correspondiente (`Diseño y Marca`, `Contenido TV`, `Barra Lateral`, `Barra Inferior`); eliminada pestaña confusa de ajustes sueltos; nueva pestaña `🔌 Integración Odoo (Productos)` con `vscreens.odoo.remote.product`, `action_fetch_odoo_products` (trae foto, nombre y precio) y `action_send_odoo_products_to_sidebar`.
+  - `frontend-admin`: reubicados los controles de Barra Lateral en `SidebarEditor`, los de Barra Inferior en `BottomBarEditor`, y dejados Marca/Overscan/Video en `BrandingEditor`.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

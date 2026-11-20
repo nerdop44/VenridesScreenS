@@ -248,3 +248,22 @@ class VscreensDesignSettings(models.Model):
             "bcv_color": self.bcv_color,
             "bcv_font": self.bcv_font,
         }
+
+
+class VscreensOdooRemoteProduct(models.Model):
+    _name = "vscreens.odoo.remote.product"
+    _description = "Producto importado desde Odoo externo"
+    _order = "selected desc, name, id"
+
+    company_id = fields.Many2one(
+        "vscreens.company",
+        string="Empresa",
+        required=True,
+        ondelete="cascade",
+    )
+    selected = fields.Boolean(string="Mostrar en TV", default=False)
+    remote_id = fields.Integer(string="ID Remoto", readonly=True)
+    name = fields.Char(string="Producto", required=True)
+    list_price = fields.Float(string="Precio")
+    currency_symbol = fields.Char(string="Moneda", default="$")
+    image_128 = fields.Binary(string="Foto", attachment=False)

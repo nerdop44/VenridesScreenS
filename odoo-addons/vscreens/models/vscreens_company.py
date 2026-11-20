@@ -106,6 +106,7 @@ class VScreenSCompany(models.Model):
     odoo_link_password = fields.Char(string="Contraseña / API key", groups="vscreens.group_vscreens_master")
     odoo_link_model = fields.Selection(
         [
+            ("product.template", "Productos (Catálogo)"),
             ("account.move", "Facturas"),
             ("sale.order", "Pedidos"),
             ("purchase.order", "Compras"),
@@ -114,7 +115,7 @@ class VScreenSCompany(models.Model):
             ("res.partner", "Contactos"),
         ],
         string="Modelo a mostrar",
-        default="account.move",
+        default="product.template",
     )
     odoo_link_domain = fields.Char(
         string="Filtro Odoo (domain)",
@@ -168,6 +169,49 @@ class VScreenSCompany(models.Model):
         "company_id",
         string="Ajustes de Diseño",
     )
+    design_id = fields.Many2one(
+        "vscreens.design.settings",
+        string="Diseño Activo",
+        compute="_compute_design_id",
+        store=True,
+    )
+    odoo_remote_product_ids = fields.One2many(
+        "vscreens.odoo.remote.product",
+        "company_id",
+        string="Catálogo Remoto (Odoo)",
+    )
+
+    # Accesos directos editables por pestaña hacia design_id
+    ds_title_font = fields.Selection(related="design_id.title_font", readonly=False)
+    ds_title_color = fields.Char(related="design_id.title_color", readonly=False)
+    ds_title_size = fields.Char(related="design_id.title_size", readonly=False)
+    ds_title_weight = fields.Selection(related="design_id.title_weight", readonly=False)
+    ds_safety_margin = fields.Float(related="design_id.safety_margin", readonly=False)
+    ds_show_live_badge = fields.Boolean(related="design_id.show_live_badge", readonly=False)
+    ds_show_topbar_date = fields.Boolean(related="design_id.show_topbar_date", readonly=False)
+
+    ds_sidebar_width = fields.Integer(related="design_id.sidebar_width", readonly=False)
+    ds_sidebar_effect = fields.Selection(related="design_id.sidebar_effect", readonly=False)
+    ds_sidebar_bg = fields.Char(related="design_id.sidebar_bg", readonly=False)
+    ds_sidebar_text = fields.Char(related="design_id.sidebar_text", readonly=False)
+    ds_sidebar_animation = fields.Selection(related="design_id.sidebar_animation", readonly=False)
+    ds_sidebar_font_scale = fields.Selection(related="design_id.sidebar_font_scale", readonly=False)
+    ds_side_subtitle = fields.Char(related="design_id.side_subtitle", readonly=False)
+    ds_show_card_frame = fields.Boolean(related="design_id.show_card_frame", readonly=False)
+    ds_show_slide_counter = fields.Boolean(related="design_id.show_slide_counter", readonly=False)
+    ds_show_side_menu = fields.Boolean(related="design_id.show_side_menu", readonly=False)
+    ds_side_menu_animation = fields.Selection(related="design_id.side_menu_animation", readonly=False)
+    ds_show_side_footer = fields.Boolean(related="design_id.show_side_footer", readonly=False)
+    ds_side_footer_text = fields.Char(related="design_id.side_footer_text", readonly=False)
+    ds_side_footer_animation = fields.Selection(related="design_id.side_footer_animation", readonly=False)
+    ds_show_side_clock = fields.Boolean(related="design_id.show_side_clock", readonly=False)
+
+    ds_bottom_bar_bg = fields.Char(related="design_id.bottom_bar_bg", readonly=False)
+    ds_bottom_bar_text = fields.Char(related="design_id.bottom_bar_text", readonly=False)
+    ds_show_bottom_clock = fields.Boolean(related="design_id.show_bottom_clock", readonly=False)
+    ds_show_social_in_ticker = fields.Boolean(related="design_id.show_social_in_ticker", readonly=False)
+    ds_show_bcv = fields.Boolean(related="design_id.show_bcv", readonly=False)
+    ds_bcv_color = fields.Char(related="design_id.bcv_color", readonly=False)
     # Campos booleanos para notificaciones (se guardan en auto_notification_settings)
     notification_welcome = fields.Boolean(
         string="Bienvenida",
@@ -916,11 +960,16 @@ class VScreenSCompany(models.Model):
     )
 
     def write(self, vals):
+        ds_touched = any(k.startswith("ds_") for k in vals)
+        if ds_touched:
+            self._ensure_design_record()
         res = super().write(vals)
         json_touched = [f for f in self._JSON_VISUAL_FIELDS if f in vals]
         if json_touched and not self.env.context.get("vscreens_skip_visual_rebuild"):
             self._replace_visuals_from_json(json_touched)
         touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
+        if ds_touched and "design_settings_id" not in touched:
+            touched.append("design_settings_id")
         if touched:
             self._sync_visual_to_json(touched)
         if any(field in vals for field in self._NOTIFICATION_FIELDS):
@@ -1112,6 +1161,19 @@ class VScreenSCompany(models.Model):
             return None, base, f"No se pudo conectar: {str(error)[:120]}"
         return session, base, False
 
+    @api.depends("design_settings_id")
+    def _compute_design_id(self):
+        for rec in self:
+            rec.design_id = rec.design_settings_id[:1]
+
+    def _ensure_design_record(self):
+        Design = self.env["vscreens.design.settings"].sudo()
+        for rec in self:
+            if not rec.design_settings_id:
+                Design.create({"company_id": rec.id})
+            if not rec.design_id and rec.design_settings_id:
+                rec.design_id = rec.design_settings_id[:1]
+
     def action_test_odoo_link(self):
         self.ensure_one()
         session, base, error = self._odoo_link_session()
@@ -1123,6 +1185,123 @@ class VScreenSCompany(models.Model):
                 "title": "Enlace Odoo",
                 "message": message,
                 "type": "success" if not error else "warning",
+            },
+        }
+
+    def action_fetch_odoo_products(self):
+        """Consulta el catálogo de productos (foto, nombre, precio) desde el Odoo del cliente."""
+        self.ensure_one()
+        session, base, error = self._odoo_link_session()
+        if error:
+            self.write({"odoo_link_error": error})
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {"title": "Error de conexión", "message": error, "type": "danger"},
+            }
+        try:
+            domain = ast.literal_eval(self.odoo_link_domain or "[]")
+            if not isinstance(domain, list):
+                domain = []
+        except (ValueError, SyntaxError):
+            domain = []
+        if not domain:
+            domain = [("sale_ok", "=", True), ("active", "=", True)]
+
+        limit = min(max(self.odoo_link_limit or 30, 1), 60)
+        try:
+            resp = session.post(
+                f"{base}/web/dataset/call_kw/product.template/search_read",
+                json={
+                    "jsonrpc": "2.0",
+                    "params": {
+                        "model": "product.template",
+                        "method": "search_read",
+                        "args": [domain],
+                        "kwargs": {
+                            "fields": ["id", "name", "list_price", "image_128"],
+                            "limit": limit,
+                            "order": "name asc",
+                        },
+                    },
+                },
+                timeout=15,
+            )
+            payload = resp.json()
+            if payload.get("error"):
+                raise ValueError(str(payload["error"].get("message") or "Error RPC"))
+            rows = payload.get("result") or []
+        except Exception as exc:  # noqa: BLE001
+            msg = f"No se pudieron obtener productos: {str(exc)[:120]}"
+            self.write({"odoo_link_error": msg})
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {"title": "Error al consultar productos", "message": msg, "type": "danger"},
+            }
+
+        RemoteProd = self.env["vscreens.odoo.remote.product"].sudo()
+        previously_selected = {p.remote_id for p in self.odoo_remote_product_ids if p.selected}
+        self.odoo_remote_product_ids.sudo().unlink()
+        for row in rows:
+            RemoteProd.create({
+                "company_id": self.id,
+                "remote_id": row.get("id") or 0,
+                "name": row.get("name") or "Producto",
+                "list_price": float(row.get("list_price") or 0.0),
+                "image_128": row.get("image_128") or False,
+                "selected": (row.get("id") in previously_selected),
+            })
+        self.write({"odoo_link_error": False, "odoo_link_last_sync": fields.Datetime.now()})
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Catálogo importado",
+                "message": f"Se trajeron {len(rows)} productos desde {base}. Marca los que deseas y pulsa 'Enviar a Barra Lateral'.",
+                "type": "success",
+            },
+        }
+
+    def action_send_odoo_products_to_sidebar(self):
+        """Agrega los productos seleccionados a los bloques de la Barra Lateral (foto, nombre y precio)."""
+        self.ensure_one()
+        selected = self.odoo_remote_product_ids.filtered("selected")
+        if not selected:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": "Sin selección",
+                    "message": "Marca al menos un producto en la lista con 'Mostrar en TV'.",
+                    "type": "warning",
+                },
+            }
+        Sidebar = self.env["vscreens.sidebar.item"].sudo()
+        seq = (max(self.sidebar_items.mapped("sequence") or [0]) + 10)
+        added = 0
+        for prod in selected:
+            price_txt = f"${prod.list_price:,.2f}" if prod.list_price else ""
+            val = f"{prod.name} · {price_txt}" if price_txt else prod.name
+            Sidebar.create({
+                "company_id": self.id,
+                "sequence": seq,
+                "label": prod.name,
+                "value": val,
+                "image": prod.image_128 or False,
+                "color": "#ffffff",
+                "is_active": True,
+            })
+            seq += 10
+            added += 1
+        self._sync_all_visual_to_json()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Productos añadidos",
+                "message": f"Se enviaron {added} productos (con foto, nombre y precio) a la Barra Lateral.",
+                "type": "success",
             },
         }
 

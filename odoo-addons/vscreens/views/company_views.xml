@@ -143,8 +143,8 @@
                             </group>
                         </page>
 
-                        <page string="🎨 Diseño y Branding" name="branding">
-                            <group col="4">
+                        <page string="🎨 Diseño y Marca" name="branding">
+                            <group string="Apariencia y Colores" col="4">
                                 <field name="layout_type"/>
                                 <field name="primary_color" widget="color"/>
                                 <field name="secondary_color" widget="color"/>
@@ -152,14 +152,17 @@
                                 <field name="logo" widget="image" options="{'size': [0, 120]}"/>
                                 <field name="logo_url"/>
                             </group>
-                            <group string="Encabezado de la barra lateral" col="4">
-                                <field name="sidebar_header_type"/>
-                                <field name="sidebar_header_value"/>
+                            <group string="Título y Margen de Pantalla (Overscan)" col="4">
+                                <field name="ds_title_font" string="Fuente del Título"/>
+                                <field name="ds_title_color" widget="color" string="Color del Título"/>
+                                <field name="ds_title_size" string="Tamaño del Título"/>
+                                <field name="ds_title_weight" string="Grosor del Título"/>
+                                <field name="ds_safety_margin" string="Margen Overscan (%)"/>
                             </group>
                         </page>
 
                         <page string="📺 Contenido TV" name="content">
-                            <group col="4">
+                            <group string="Reproducción de Video" col="4">
                                 <field name="video_source"/>
                                 <field name="filler_keywords"/>
                                 <field name="google_drive_link"/>
@@ -167,13 +170,16 @@
                                 <field name="pause_duration"/>
                                 <field name="ad_frequency"/>
                             </group>
-                            <group string="Control desde la TV" col="4">
+                            <group string="Información en Área de Video" col="4">
+                                <field name="ds_show_live_badge" widget="boolean_toggle" string="Mostrar Badge EN VIVO"/>
+                                <field name="ds_show_topbar_date" widget="boolean_toggle" string="Mostrar Fecha en Video"/>
+                            </group>
+                            <group string="Control YouTube desde la TV" col="4">
                                 <field name="allow_tv_youtube_control" widget="boolean_toggle"/>
                                 <field name="tv_youtube_control_minutes"/>
                             </group>
                             <p class="text-muted mb-0" style="font-size: 0.8rem;">
-                                Si se permite, desde el control remoto de la TV se puede buscar un video de YouTube.
-                                Al desactivarlo o al cumplirse el tiempo, la TV vuelve a su playlist habitual.
+                                Si se permite, desde el control remoto de la TV se puede buscar por texto o voz cualquier video de YouTube y reproducirlo sin modificar la playlist configurada.
                             </p>
                         </page>
 
@@ -208,25 +214,30 @@
                         </page>
 
                         <page string="📊 Barra Lateral" name="sidebar">
-                            <group string="Enlace con el Odoo del cliente (opcional)" col="4">
-                                <field name="odoo_link_enabled" widget="boolean_toggle"/>
-                                <field name="odoo_link_label"/>
-                                <field name="odoo_link_url" placeholder="https://odoo.cliente.com"/>
-                                <field name="odoo_link_db"/>
-                                <field name="odoo_link_user"/>
-                                <field name="odoo_link_password" password="True"/>
-                                <field name="odoo_link_model"/>
-                                <field name="odoo_link_domain"/>
-                                <field name="odoo_link_fields"/>
-                                <field name="odoo_link_limit"/>
-                                <field name="odoo_link_refresh"/>
-                                <field name="odoo_link_icon"/>
-                                <field name="odoo_link_color" widget="color"/>
-                                <field name="odoo_link_last_sync" readonly="1"/>
-                                <field name="odoo_link_error" readonly="1" invisible="not odoo_link_error"/>
+                            <group string="Encabezado y Marca en Barra Lateral" col="4">
+                                <field name="sidebar_header_type"/>
+                                <field name="sidebar_header_value"/>
+                                <field name="ds_side_subtitle" string="Subtítulo bajo Nombre" placeholder="Vacío para ocultar"/>
                             </group>
-                            <button name="action_test_odoo_link" type="object"
-                                    string="Probar conexión Odoo" class="btn btn-secondary"/>
+                            <group string="Diseño y Animación de Bloques" col="4">
+                                <field name="ds_sidebar_width" string="Ancho Barra Lateral (%)"/>
+                                <field name="ds_sidebar_effect" string="Efecto Visual"/>
+                                <field name="ds_sidebar_animation" string="Animación de Bloques"/>
+                                <field name="ds_sidebar_font_scale" string="Tamaño de Fuente en Bloques"/>
+                                <field name="ds_show_card_frame" widget="boolean_toggle" string="Mostrar Marco en Bloques"/>
+                                <field name="ds_show_slide_counter" widget="boolean_toggle" string="Mostrar Contador (01/03)"/>
+                                <field name="ds_sidebar_bg" widget="color" string="Color Fondo Lateral"/>
+                                <field name="ds_sidebar_text" widget="color" string="Color Texto Lateral"/>
+                            </group>
+                            <group string="Menú / Precios y Pie Lateral" col="4">
+                                <field name="ds_show_side_menu" widget="boolean_toggle" string="Mostrar Menú / Precios"/>
+                                <field name="ds_side_menu_animation" string="Presentación Menú / Precios" invisible="not ds_show_side_menu"/>
+                                <field name="ds_show_side_footer" widget="boolean_toggle" string="Mostrar Pie Lateral"/>
+                                <field name="ds_side_footer_animation" string="Animación Pie Lateral" invisible="not ds_show_side_footer"/>
+                                <field name="ds_side_footer_text" string="Texto Pie Lateral" invisible="not ds_show_side_footer" colspan="2"/>
+                                <field name="ds_show_side_clock" widget="boolean_toggle" string="Reloj en Barra Lateral"/>
+                            </group>
+                            <separator string="Bloques de Contenido y Promociones"/>
                             <field name="sidebar_items">
                                 <list editable="bottom" string="Ítems de barra lateral">
                                     <field name="sequence" widget="handle"/>
@@ -240,11 +251,20 @@
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                Rotan automáticamente según la pausa configurada. El valor es el texto que se muestra en la TV.
+                                Rotan automáticamente según la pausa configurada. Puedes añadir bloques aquí o importarlos desde la pestaña «🔌 Integración Odoo».
                             </p>
                         </page>
 
                         <page string="🔻 Barra Inferior" name="bottom_bar">
+                            <group string="Apariencia y Elementos de la Barra Inferior" col="4">
+                                <field name="ds_bottom_bar_bg" widget="color" string="Color de Fondo"/>
+                                <field name="ds_bottom_bar_text" widget="color" string="Color de Texto"/>
+                                <field name="ds_show_bcv" widget="boolean_toggle" string="Mostrar Tasa BCV"/>
+                                <field name="ds_bcv_color" widget="color" string="Color BCV" invisible="not ds_show_bcv"/>
+                                <field name="ds_show_social_in_ticker" widget="boolean_toggle" string="Redes Sociales en Marquesina"/>
+                                <field name="ds_show_bottom_clock" widget="boolean_toggle" string="Reloj y Fecha Inferior"/>
+                            </group>
+                            <separator string="Mensajes en Movimiento (Marquesina)"/>
                             <field name="bottom_bar_items">
                                 <list editable="bottom" string="Mensajes del ticker">
                                     <field name="sequence" widget="handle"/>
@@ -254,64 +274,40 @@
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                Cada ítem es un mensaje del ticker inferior. El orden se puede arrastrar.
-                                El WhatsApp e Instagram que aparecen en la TV se editan en «Contacto y redes sociales».
+                                Cada ítem es un mensaje del ticker inferior. El WhatsApp, Instagram, Facebook y TikTok se configuran en «📋 Perfil de Negocio».
                             </p>
                         </page>
 
-                        <page string="⚙️ Ajustes de Diseño" name="design">
-                            <field name="design_settings_id">
-                                <list string="Ajustes de diseño">
-                                    <field name="title_font"/>
-                                    <field name="title_color" widget="color"/>
-                                    <field name="sidebar_width"/>
-                                    <field name="sidebar_animation"/>
-                                    <field name="show_card_frame" string="Marco Bloques"/>
-                                    <field name="show_slide_counter" string="Contador"/>
-                                    <field name="show_side_menu" string="Menú"/>
-                                    <field name="side_menu_animation" string="Anim. Menú"/>
-                                    <field name="safety_margin" string="Overscan %"/>
-                                    <field name="show_bcv" string="BCV"/>
+                        <page string="🔌 Integración Odoo (Productos)" name="odoo_integration">
+                            <group string="Conexión al Odoo del Cliente" col="4">
+                                <field name="odoo_link_url" placeholder="https://cafe.venrides.com"/>
+                                <field name="odoo_link_db" placeholder="vencafedb"/>
+                                <field name="odoo_link_user"/>
+                                <field name="odoo_link_password" password="True"/>
+                                <field name="odoo_link_domain" placeholder="[('sale_ok','=',True)]"/>
+                                <field name="odoo_link_limit"/>
+                                <field name="odoo_link_last_sync" readonly="1"/>
+                                <field name="odoo_link_error" readonly="1" invisible="not odoo_link_error"/>
+                            </group>
+                            <div class="d-flex gap-2 mb-3">
+                                <button name="action_test_odoo_link" type="object"
+                                        string="🔗 Probar Conexión" class="btn btn-secondary"/>
+                                <button name="action_fetch_odoo_products" type="object"
+                                        string="📦 Traer Catálogo de Productos" class="btn btn-primary"/>
+                                <button name="action_send_odoo_products_to_sidebar" type="object"
+                                        string="➕ Enviar Seleccionados a Barra Lateral" class="btn btn-success"/>
+                            </div>
+                            <field name="odoo_remote_product_ids">
+                                <list editable="bottom" create="0" string="Productos del Odoo Externo">
+                                    <field name="selected" widget="boolean_toggle"/>
+                                    <field name="image_128" widget="image" options="{'size': [0, 48]}" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="list_price" readonly="1"/>
+                                    <field name="remote_id" optional="hide" readonly="1"/>
                                 </list>
-                                <form string="Ajustes de Diseño de la Pantalla">
-                                    <group string="Título y Marca" col="4">
-                                        <field name="title_font"/>
-                                        <field name="title_color" widget="color"/>
-                                        <field name="title_size"/>
-                                        <field name="title_weight"/>
-                                        <field name="side_subtitle" colspan="4" placeholder="Vacío para ocultar"/>
-                                    </group>
-                                    <group string="Barra Lateral y Bloques" col="4">
-                                        <field name="sidebar_width"/>
-                                        <field name="sidebar_effect"/>
-                                        <field name="sidebar_animation"/>
-                                        <field name="sidebar_font_scale"/>
-                                        <field name="show_card_frame" widget="boolean_toggle"/>
-                                        <field name="show_slide_counter" widget="boolean_toggle"/>
-                                        <field name="show_side_menu" widget="boolean_toggle"/>
-                                        <field name="side_menu_animation" invisible="not show_side_menu"/>
-                                        <field name="sidebar_bg" widget="color"/>
-                                        <field name="sidebar_text" widget="color"/>
-                                        <field name="show_side_footer" widget="boolean_toggle"/>
-                                        <field name="side_footer_animation" invisible="not show_side_footer"/>
-                                        <field name="side_footer_text" invisible="not show_side_footer" colspan="4"/>
-                                    </group>
-                                    <group string="Elementos Visibles en TV y Overscan" col="4">
-                                        <field name="safety_margin"/>
-                                        <field name="show_live_badge" widget="boolean_toggle"/>
-                                        <field name="show_topbar_date" widget="boolean_toggle"/>
-                                        <field name="show_side_clock" widget="boolean_toggle"/>
-                                        <field name="show_bottom_clock" widget="boolean_toggle"/>
-                                        <field name="show_social_in_ticker" widget="boolean_toggle"/>
-                                        <field name="show_bcv" widget="boolean_toggle"/>
-                                        <field name="bcv_color" widget="color"/>
-                                        <field name="bottom_bar_bg" widget="color"/>
-                                        <field name="bottom_bar_text" widget="color"/>
-                                    </group>
-                                </form>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                Haz clic en la fila de arriba para configurar animaciones, tamaños, visibilidad de relojes/fechas, texto inferior y colores.
+                                Conéctate al Odoo del cliente, pulsa «Traer Catálogo de Productos», marca los que deseas mostrar en pantalla y pulsa «Enviar Seleccionados a Barra Lateral» para agregarlos con su foto, nombre y precio.
                             </p>
                         </page>
 

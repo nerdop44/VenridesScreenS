@@ -2550,16 +2550,8 @@ const BrandingEditor = ({ company, onChange }) => {
                     </select>
                 </div>
             </div>
-            <div>
-                <label style={{ fontSize: '0.75rem' }}>Subtítulo bajo Nombre (vacío para ocultar)</label>
-                <input
-                    value={ds.side_subtitle !== undefined ? ds.side_subtitle : 'PANTALLAS PUBLI-INTELIGENTES'}
-                    onChange={e => update('side_subtitle', e.target.value)}
-                    placeholder="Ej: Café y Panadería Artesanal"
-                />
-            </div>
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.8rem', marginTop: '0.2rem' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>Elementos Visibles en TV</label>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>Elementos sobre Área de Video</label>
                 <div className="grid-2" style={{ gap: '0.5rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ds.show_live_badge !== false} onChange={e => update('show_live_badge', e.target.checked)} />
@@ -2569,66 +2561,7 @@ const BrandingEditor = ({ company, onChange }) => {
                         <input type="checkbox" checked={ds.show_topbar_date !== false} onChange={e => update('show_topbar_date', e.target.checked)} />
                         Fecha en Video
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_side_clock === true} onChange={e => update('show_side_clock', e.target.checked)} />
-                        Reloj en Barra Lateral
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_bottom_clock !== false} onChange={e => update('show_bottom_clock', e.target.checked)} />
-                        Reloj/Fecha Inferior
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_social_in_ticker !== false} onChange={e => update('show_social_in_ticker', e.target.checked)} />
-                        Redes en Marquesina
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_side_footer !== false} onChange={e => update('show_side_footer', e.target.checked)} />
-                        Pie de Barra Lateral
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_card_frame !== false} onChange={e => update('show_card_frame', e.target.checked)} />
-                        Marco en Bloques
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_slide_counter === true} onChange={e => update('show_slide_counter', e.target.checked)} />
-                        Contador (01/03)
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={ds.show_side_menu !== false} onChange={e => update('show_side_menu', e.target.checked)} />
-                        Lista Menú / Precios
-                    </label>
                 </div>
-                {ds.show_side_menu !== false && (
-                    <div style={{ marginTop: '0.6rem' }}>
-                        <label style={{ fontSize: '0.72rem' }}>Presentación del Menú / Precios</label>
-                        <select value={ds.side_menu_animation || 'rotate'} onChange={e => update('side_menu_animation', e.target.value)}>
-                            <option value="rotate">Rotar con Animación</option>
-                            <option value="marquee_vertical">Desplazamiento Vertical</option>
-                            <option value="static">Lista Fija</option>
-                        </select>
-                    </div>
-                )}
-                {ds.show_side_footer !== false && (
-                    <div className="grid-2" style={{ marginTop: '0.6rem', gap: '0.6rem' }}>
-                        <div>
-                            <label style={{ fontSize: '0.72rem' }}>Texto del Pie Lateral</label>
-                            <input
-                                value={ds.side_footer_text !== undefined ? ds.side_footer_text : 'VScreenS · Señalización inteligente'}
-                                onChange={e => update('side_footer_text', e.target.value)}
-                                placeholder="Texto personalizado debajo de los bloques..."
-                            />
-                        </div>
-                        <div>
-                            <label style={{ fontSize: '0.72rem' }}>Animación del Pie Lateral</label>
-                            <select value={ds.side_footer_animation || 'marquee'} onChange={e => update('side_footer_animation', e.target.value)}>
-                                <option value="marquee">Desplazamiento (Marquesina)</option>
-                                <option value="pulse">Brillo Suave</option>
-                                <option value="fade_slide">Entrada Suave</option>
-                                <option value="none">Fijo</option>
-                            </select>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -4011,6 +3944,67 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                         </select>
                     </div>
                 </div>
+                <div style={{ marginTop: '1rem' }}>
+                    <label>Subtítulo bajo Nombre (vacío para ocultar)</label>
+                    <input
+                        value={ds.side_subtitle !== undefined ? ds.side_subtitle : 'PANTALLAS PUBLI-INTELIGENTES'}
+                        onChange={e => updateDesign('side_subtitle', e.target.value)}
+                        placeholder="Ej: Café y Panadería Artesanal"
+                    />
+                </div>
+                <div className="grid-2" style={{ marginTop: '0.9rem', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_card_frame !== false} onChange={e => updateDesign('show_card_frame', e.target.checked)} />
+                        Mostrar Marco en Bloques
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_slide_counter === true} onChange={e => updateDesign('show_slide_counter', e.target.checked)} />
+                        Mostrar Contador (01/03)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_menu !== false} onChange={e => updateDesign('show_side_menu', e.target.checked)} />
+                        Mostrar Menú / Precios
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_clock === true} onChange={e => updateDesign('show_side_clock', e.target.checked)} />
+                        Reloj en Barra Lateral
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_side_footer !== false} onChange={e => updateDesign('show_side_footer', e.target.checked)} />
+                        Mostrar Pie Lateral
+                    </label>
+                </div>
+                {ds.show_side_menu !== false && (
+                    <div style={{ marginTop: '0.7rem' }}>
+                        <label>Presentación del Menú / Precios</label>
+                        <select value={ds.side_menu_animation || 'rotate'} onChange={e => updateDesign('side_menu_animation', e.target.value)}>
+                            <option value="rotate">Rotar con Animación</option>
+                            <option value="marquee_vertical">Desplazamiento Vertical</option>
+                            <option value="static">Lista Fija</option>
+                        </select>
+                    </div>
+                )}
+                {ds.show_side_footer !== false && (
+                    <div className="grid-2" style={{ marginTop: '0.7rem', gap: '0.6rem' }}>
+                        <div>
+                            <label>Texto del Pie Lateral</label>
+                            <input
+                                value={ds.side_footer_text !== undefined ? ds.side_footer_text : 'VScreenS · Señalización inteligente'}
+                                onChange={e => updateDesign('side_footer_text', e.target.value)}
+                                placeholder="Texto debajo de los bloques..."
+                            />
+                        </div>
+                        <div>
+                            <label>Animación del Pie Lateral</label>
+                            <select value={ds.side_footer_animation || 'marquee'} onChange={e => updateDesign('side_footer_animation', e.target.value)}>
+                                <option value="marquee">Desplazamiento (Marquesina)</option>
+                                <option value="pulse">Brillo Suave</option>
+                                <option value="fade_slide">Entrada Suave</option>
+                                <option value="none">Fijo</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
             </div>
             <div className="glass-card">
                 <div className="section-title"><Layout size={18} /> Logo y Encabezado <Tooltip text="Configure el logo y el texto fijo superior." /></div>
@@ -4147,6 +4141,16 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
                         <label style={{ fontSize: '0.75rem' }}>Borde Sup.</label>
                         <div className="toggle-container" onClick={() => updateDesign('bottom_bar_border', !ds.bottom_bar_border)}><div className={`toggle-switch ${ds.bottom_bar_border ? 'on' : 'off'}`}></div></div>
                     </div>
+                </div>
+                <div className="grid-2" style={{ marginTop: '0.8rem', gap: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_social_in_ticker !== false} onChange={e => updateDesign('show_social_in_ticker', e.target.checked)} />
+                        Redes en Marquesina
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.show_bottom_clock !== false} onChange={e => updateDesign('show_bottom_clock', e.target.checked)} />
+                        Reloj y Fecha Inferior
+                    </label>
                 </div>
             </div>
             <div className="glass-card">
