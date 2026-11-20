@@ -208,10 +208,16 @@ class VScreenSCompany(models.Model):
 
     ds_bottom_bar_bg = fields.Char(related="design_id.bottom_bar_bg", readonly=False)
     ds_bottom_bar_text = fields.Char(related="design_id.bottom_bar_text", readonly=False)
+    ds_bottom_bar_height = fields.Integer(related="design_id.bottom_bar_height", readonly=False)
+    ds_bottom_bar_border = fields.Boolean(related="design_id.bottom_bar_border", readonly=False)
+    ds_ticker_speed = fields.Integer(related="design_id.ticker_speed", readonly=False)
+    ds_ticker_color = fields.Char(related="design_id.ticker_color", readonly=False)
+    ds_ticker_font = fields.Selection(related="design_id.ticker_font", readonly=False)
     ds_show_bottom_clock = fields.Boolean(related="design_id.show_bottom_clock", readonly=False)
     ds_show_social_in_ticker = fields.Boolean(related="design_id.show_social_in_ticker", readonly=False)
     ds_show_bcv = fields.Boolean(related="design_id.show_bcv", readonly=False)
     ds_bcv_color = fields.Char(related="design_id.bcv_color", readonly=False)
+    ds_bcv_font = fields.Selection(related="design_id.bcv_font", readonly=False)
     # Campos booleanos para notificaciones (se guardan en auto_notification_settings)
     notification_welcome = fields.Boolean(
         string="Bienvenida",
@@ -924,13 +930,18 @@ class VScreenSCompany(models.Model):
                         "show_side_clock": bool(data.get("show_side_clock", False)),
                         "bottom_bar_bg": data.get("bottom_bar_bg") or "#0a0e1a",
                         "bottom_bar_text": data.get("bottom_bar_text") or "#ffffff",
+                        "bottom_bar_height": int(data.get("bottom_bar_height") or 10),
+                        "bottom_bar_border": bool(data.get("bottom_bar_border", True)),
+                        "ticker_speed": int(data.get("ticker_speed") or 30),
+                        "ticker_color": data.get("ticker_color") or "#ffffff",
+                        "ticker_font": data.get("ticker_font") if data.get("ticker_font") in ("inherit", "'Inter', sans-serif", "'Roboto', sans-serif", "'Montserrat', sans-serif", "'Oswald', sans-serif", "'Playfair Display', serif") else "inherit",
                         "show_bottom_clock": bool(data.get("show_bottom_clock", True)),
                         "show_topbar_date": bool(data.get("show_topbar_date", True)),
                         "show_live_badge": bool(data.get("show_live_badge", True)),
                         "show_social_in_ticker": bool(data.get("show_social_in_ticker", True)),
                         "show_bcv": bool(data.get("show_bcv", True)),
                         "bcv_color": data.get("bcv_color") or "#10b981",
-                        "bcv_font": data.get("bcv_font") or "inherit",
+                        "bcv_font": data.get("bcv_font") if data.get("bcv_font") in ("inherit", "'Roboto Mono', monospace", "'Oswald', sans-serif") else "inherit",
                     })
 
     def _sync_all_visual_to_json(self):

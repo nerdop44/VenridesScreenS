@@ -331,6 +331,10 @@
         handleAlert(data.active_alert);
         handlePing(data);
 
+        var ytTrigger = $("yt-search-trigger");
+        if (ytTrigger) {
+            ytTrigger.classList.toggle("hidden", !data.allow_youtube_control);
+        }
         if (!data.allow_youtube_control) {
             clearYoutubeOverride();
         }
@@ -371,6 +375,13 @@
 
         if (design.bottom_bar_height) {
             root.style.setProperty("--bottom-h", Number(design.bottom_bar_height) + "vh");
+        }
+
+        var bottomBar = $("bottom-bar");
+        if (bottomBar) {
+            bottomBar.style.background = design.bottom_bar_bg || "";
+            bottomBar.style.color = design.bottom_bar_text || "";
+            bottomBar.style.borderTop = design.bottom_bar_border === false ? "none" : "";
         }
 
         var sidebar = $("sidebar");
@@ -2025,6 +2036,8 @@
         if (ytBack) ytBack.addEventListener("click", clearYoutubeOverride);
         var ytClose = $("yt-control-close");
         if (ytClose) ytClose.addEventListener("click", hideYoutubeControl);
+        var ytTrigger = $("yt-search-trigger");
+        if (ytTrigger) ytTrigger.addEventListener("click", showYoutubeControl);
         var ytInput = $("yt-control-input");
         if (ytInput) {
             ytInput.addEventListener("keydown", function (event) {
@@ -2074,7 +2087,7 @@
         function refreshNavItems() {
             var scope = document;
             var regOverlay = $("registration-overlay");
-            var ytModal = $("yt-control-modal");
+            var ytModal = $("yt-control");
             if (regOverlay && !regOverlay.classList.contains("hidden")) {
                 scope = regOverlay;
             } else if (ytModal && !ytModal.classList.contains("hidden")) {
@@ -2103,8 +2116,14 @@
         function activateNav() {
             var el = document.activeElement;
             if (!el || el === document.body) {
-                if (navItems.length === 0 || navIndex < 0) return;
-                el = navItems[navIndex];
+                if (navItems.length > 0 && navIndex >= 0) {
+                    el = navItems[navIndex];
+                } else if (state.config && state.config.allow_youtube_control) {
+                    showYoutubeControl();
+                    return;
+                } else {
+                    return;
+                }
             }
             if (el && typeof el.click === "function") {
                 el.click();
@@ -2143,7 +2162,8 @@
             }
             if (code === "ArrowRight" || key === "arrowright") {
                 e.preventDefault();
-                if (state.player && state.playerReady) {
+                var ytOpenR = $("yt-control") && !$("yt-control").classList.contains("hidden");
+                if (!ytOpenR && state.player && state.playerReady && (!document.activeElement || document.activeElement === document.body)) {
                     nextVideo();
                 } else {
                     navigateNav(1);
@@ -2152,7 +2172,8 @@
             }
             if (code === "ArrowLeft" || key === "arrowleft") {
                 e.preventDefault();
-                if (state.player && state.playerReady) {
+                var ytOpenL = $("yt-control") && !$("yt-control").classList.contains("hidden");
+                if (!ytOpenL && state.player && state.playerReady && (!document.activeElement || document.activeElement === document.body)) {
                     if (state.queue.length) {
                         state.videoIndex = (state.videoIndex - 1 + state.queue.length) % state.queue.length;
                         playCurrent();

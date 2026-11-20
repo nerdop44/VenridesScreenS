@@ -963,6 +963,35 @@ input {
     border-color: rgba(200, 255, 0, 0.45);
 }
 
+.yt-search-trigger {
+    position: absolute;
+    z-index: 7;
+    right: clamp(14px, 1.6vw, 26px);
+    top: clamp(46px, 6vh, 72px);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(5, 9, 16, 0.62);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: clamp(10px, 0.72vw, 13px);
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.yt-search-trigger:hover,
+.yt-search-trigger:focus,
+.yt-search-trigger:focus-visible {
+    outline: 2px solid #c8ff00;
+    border-color: #c8ff00;
+    background: rgba(200, 255, 0, 0.16);
+    transform: translateY(-1px);
+}
+
 /* Etiqueta de video */
 .video-badge {
     position: absolute;

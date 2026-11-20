@@ -62,6 +62,10 @@
 - [x] **Ordenamiento UX por Pestañas (Odoo y Panel Web) + Importación de Productos Odoo Externo (2026-11-20):**
   - `odoo-addons/vscreens`: campos `ds_*` (`related` sobre `design_id`) colocados directamente en su pestaña correspondiente (`Diseño y Marca`, `Contenido TV`, `Barra Lateral`, `Barra Inferior`); eliminada pestaña confusa de ajustes sueltos; nueva pestaña `🔌 Integración Odoo (Productos)` con `vscreens.odoo.remote.product`, `action_fetch_odoo_products` (trae foto, nombre y precio) y `action_send_odoo_products_to_sidebar`.
   - `frontend-admin`: reubicados los controles de Barra Lateral en `SidebarEditor`, los de Barra Inferior en `BottomBarEditor`, y dejados Marca/Overscan/Video en `BrandingEditor`.
+- [x] **Barra Inferior Odoo, Botón Visible YouTube y Arranque/Back Nativo Android 10+ (2026-11-20):**
+  - `odoo-addons/vscreens`: añadidos en pestaña `Barra Inferior` los controles de aspecto (`bottom_bar_height`, `bottom_bar_border`, `ticker_speed`, `ticker_color`, `ticker_font`, `bcv_font`).
+  - `frontend-tv`: botón visible `🔍 Buscar YouTube (OK)` cuando `allow_youtube_control` está activo; apertura con `OK/Enter`; corregido foco D-Pad dentro de `#yt-control` (`refreshNavItems`); aplicados `bottom_bar_bg`/`text`/`border`.
+  - `app-tv/android`: interceptación directa de `KEYCODE_BACK` en `dispatchKeyEvent` + `OnBackPressedCallback` (3 pulsaciones para salir); añadido `BootLaunchService` (`ForegroundService` con `fullScreenIntent`) + `SYSTEM_ALERT_WINDOW` para arranque automático tras encendido en Android 10+.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

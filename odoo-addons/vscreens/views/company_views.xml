@@ -256,11 +256,19 @@
                         </page>
 
                         <page string="🔻 Barra Inferior" name="bottom_bar">
-                            <group string="Apariencia y Elementos de la Barra Inferior" col="4">
+                            <group string="Aspecto, Tamaño y Velocidad de Barra Inferior" col="4">
+                                <field name="ds_bottom_bar_height" string="Alto de Barra (%)"/>
+                                <field name="ds_ticker_speed" string="Velocidad Marquesina (s)"/>
+                                <field name="ds_bottom_bar_border" widget="boolean_toggle" string="Borde Superior"/>
                                 <field name="ds_bottom_bar_bg" widget="color" string="Color de Fondo"/>
                                 <field name="ds_bottom_bar_text" widget="color" string="Color de Texto"/>
+                                <field name="ds_ticker_color" widget="color" string="Color Marquesina"/>
+                                <field name="ds_ticker_font" string="Fuente Marquesina"/>
+                            </group>
+                            <group string="Elementos Visibles y Tasa BCV" col="4">
                                 <field name="ds_show_bcv" widget="boolean_toggle" string="Mostrar Tasa BCV"/>
                                 <field name="ds_bcv_color" widget="color" string="Color BCV" invisible="not ds_show_bcv"/>
+                                <field name="ds_bcv_font" string="Fuente BCV" invisible="not ds_show_bcv"/>
                                 <field name="ds_show_social_in_ticker" widget="boolean_toggle" string="Redes Sociales en Marquesina"/>
                                 <field name="ds_show_bottom_clock" widget="boolean_toggle" string="Reloj y Fecha Inferior"/>
                             </group>

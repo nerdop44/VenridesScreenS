@@ -202,6 +202,22 @@ class VscreensDesignSettings(models.Model):
     # Barra Inferior y Video
     bottom_bar_bg = fields.Char(string="Color de Fondo Barra Inferior", default="#0a0e1a")
     bottom_bar_text = fields.Char(string="Color de Texto Barra Inferior", default="#ffffff")
+    bottom_bar_height = fields.Integer(string="Alto Barra Inferior (%)", default=10)
+    bottom_bar_border = fields.Boolean(string="Borde Superior Barra", default=True)
+    ticker_speed = fields.Integer(string="Velocidad Marquesina (s)", default=30)
+    ticker_color = fields.Char(string="Color Texto Marquesina", default="#ffffff")
+    ticker_font = fields.Selection(
+        [
+            ("inherit", "Defecto"),
+            ("'Inter', sans-serif", "Inter"),
+            ("'Roboto', sans-serif", "Roboto"),
+            ("'Montserrat', sans-serif", "Montserrat"),
+            ("'Oswald', sans-serif", "Oswald"),
+            ("'Playfair Display', serif", "Playfair"),
+        ],
+        string="Fuente Marquesina",
+        default="inherit",
+    )
     show_bottom_clock = fields.Boolean(string="Reloj/Fecha en Barra Inferior", default=True)
     show_topbar_date = fields.Boolean(string="Fecha en Área de Video", default=True)
     show_live_badge = fields.Boolean(string="Badge EN VIVO", default=True)
@@ -209,7 +225,15 @@ class VscreensDesignSettings(models.Model):
     # BCV
     show_bcv = fields.Boolean(string="Mostrar Tasa BCV", default=True)
     bcv_color = fields.Char(string="Color BCV", default="#10b981")
-    bcv_font = fields.Char(string="Fuente BCV", default="inherit")
+    bcv_font = fields.Selection(
+        [
+            ("inherit", "Defecto"),
+            ("'Roboto Mono', monospace", "Mono"),
+            ("'Oswald', sans-serif", "Oswald"),
+        ],
+        string="Fuente BCV",
+        default="inherit",
+    )
 
     _company_uniq = models.Constraint(
         "UNIQUE(company_id)", "Ya existe un ajuste de diseño para esta empresa."
@@ -240,6 +264,11 @@ class VscreensDesignSettings(models.Model):
             "show_side_clock": self.show_side_clock,
             "bottom_bar_bg": self.bottom_bar_bg,
             "bottom_bar_text": self.bottom_bar_text,
+            "bottom_bar_height": self.bottom_bar_height or 10,
+            "bottom_bar_border": self.bottom_bar_border,
+            "ticker_speed": self.ticker_speed or 30,
+            "ticker_color": self.ticker_color or "#ffffff",
+            "ticker_font": self.ticker_font or "inherit",
             "show_bottom_clock": self.show_bottom_clock,
             "show_topbar_date": self.show_topbar_date,
             "show_live_badge": self.show_live_badge,

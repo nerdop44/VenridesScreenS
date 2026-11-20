@@ -1,24 +1,63 @@
 package com.vscreens.tv;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     private int backPressCount = 0;
     private long lastBackPressMs = 0L;
     private static final long BACK_RESET_WINDOW_MS = 3500L;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Mantener pantalla encendida 24/7 en modo señalización comercial
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         enterImmersiveMode();
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                processBackAction();
+            }
+        });
+
+        requestAutoBootOverlayPermissionOnce();
+    }
+
+    private void requestAutoBootOverlayPermissionOnce() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Settings.canDrawOverlays(this)) {
+            SharedPreferences prefs = getSharedPreferences("vscreens_prefs", MODE_PRIVATE);
+            if (!prefs.getBoolean("asked_overlay_perm", false)) {
+                prefs.edit().putBoolean("asked_overlay_perm", true).apply();
+                try {
+                    Toast.makeText(
+                        this,
+                        "Permite 'Mostrar sobre otras apps' para que VScreenS inicie al encender el TV",
+                        Toast.LENGTH_LONG
+                    ).show();
+                    Intent permIntent = new Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName())
+                    );
+                    startActivity(permIntent);
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 
     @Override
@@ -60,7 +99,22 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
+                processBackAction();
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
     public void onBackPressed() {
+        processBackAction();
+    }
+
+    private void processBackAction() {
         if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView wv = this.bridge.getWebView();
             wv.evaluateJavascript(

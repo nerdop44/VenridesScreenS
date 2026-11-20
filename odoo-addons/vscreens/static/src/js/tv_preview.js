@@ -267,13 +267,18 @@ export class VscreensTvPreviewField extends Component {
             show_side_clock: pick("ds_show_side_clock", "show_side_clock", false) === true,
             bottom_bar_bg: pick("ds_bottom_bar_bg", "bottom_bar_bg", "#0a0e1a") || "#0a0e1a",
             bottom_bar_text: pick("ds_bottom_bar_text", "bottom_bar_text", "#ffffff") || "#ffffff",
+            bottom_bar_height: Number(pick("ds_bottom_bar_height", "bottom_bar_height", 10) || 10),
+            bottom_bar_border: pick("ds_bottom_bar_border", "bottom_bar_border", true) !== false,
+            ticker_speed: Number(pick("ds_ticker_speed", "ticker_speed", 30) || 30),
+            ticker_color: pick("ds_ticker_color", "ticker_color", "#ffffff") || "#ffffff",
+            ticker_font: pick("ds_ticker_font", "ticker_font", "inherit") || "inherit",
             show_bottom_clock: pick("ds_show_bottom_clock", "show_bottom_clock", true) !== false,
             show_topbar_date: pick("ds_show_topbar_date", "show_topbar_date", true) !== false,
             show_live_badge: pick("ds_show_live_badge", "show_live_badge", true) !== false,
             show_social_in_ticker: pick("ds_show_social_in_ticker", "show_social_in_ticker", true) !== false,
             show_bcv: pick("ds_show_bcv", "show_bcv", true) !== false,
             bcv_color: pick("ds_bcv_color", "bcv_color", "#10b981") || "#10b981",
-            bcv_font: design.bcv_font || "inherit",
+            bcv_font: pick("ds_bcv_font", "bcv_font", "inherit") || "inherit",
         };
 
         return draft;
