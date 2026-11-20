@@ -247,7 +247,7 @@
         }
         var url = configUrl();
         var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-        var abortTimer = controller ? window.setTimeout(function () { controller.abort(); }, 8500) : null;
+        var abortTimer = controller ? window.setTimeout(function () { controller.abort(); }, 15000) : null;
 
         fetch(url, { cache: "no-store", signal: controller ? controller.signal : undefined })
             .then(function (response) {
@@ -259,6 +259,8 @@
                 if (response.status === 404) {
                     if (!previewCompanyId) {
                         try { localStorage.removeItem(CACHE_KEY); } catch (e) { }
+                        var fallbackSub = $("fallback-sub");
+                        if (fallbackSub) fallbackSub.textContent = "Contenido en reproducción";
                         showRegistration();
                     }
                     return null;
@@ -1513,8 +1515,9 @@
         if (status && message) {
             status.textContent = message;
             status.className = "reg-status";
-        } else if (status && !status.textContent) {
+        } else if (status && (!status.textContent || status.textContent.indexOf("Sin conexión") !== -1 || status.textContent.indexOf("Reconectando") !== -1)) {
             status.textContent = "Esperando vinculación…";
+            status.className = "reg-status";
         }
 
         var splash = $("splash");

@@ -930,6 +930,8 @@ class VScreenSCompany(models.Model):
         if not self.logo:
             return False
         base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "").rstrip("/")
+        if not base or "127.0.0.1" in base or "localhost" in base:
+            base = "https://vscreens-api.inverpave.com"
         stamp = int(self.write_date.timestamp()) if self.write_date else 0
         return f"{base}/web/image/vscreens.company/{self.id}/logo?unique={stamp}"
 
