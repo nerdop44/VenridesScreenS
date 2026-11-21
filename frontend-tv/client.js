@@ -1527,6 +1527,8 @@
         driveFrame.classList.remove("hidden");
         driveFrame.src = item.url;
         hideFallback();
+        syncSoundButtonUI();
+        showSoundToggle();
         scheduleNextPreload();
 
         if (state.queue.length > 1) {
@@ -1624,6 +1626,7 @@
             });
         }
         syncSoundButtonUI();
+        showSoundToggle();
         hideFallback();
         filePlayer.onloadedmetadata = function () {
             scheduleNextPreload();
@@ -1680,9 +1683,11 @@
         if (!button) return;
         button.classList.add("is-visible");
         if (state.soundHideTimer) window.clearTimeout(state.soundHideTimer);
-        state.soundHideTimer = window.setTimeout(function () {
-            button.classList.remove("is-visible");
-        }, 12000);
+        if (!state.muted) {
+            state.soundHideTimer = window.setTimeout(function () {
+                if (!state.muted) button.classList.remove("is-visible");
+            }, 12000);
+        }
     }
 
     function syncSoundButtonUI() {
