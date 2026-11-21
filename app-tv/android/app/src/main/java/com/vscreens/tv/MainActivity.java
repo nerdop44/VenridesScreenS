@@ -1,25 +1,36 @@
 package com.vscreens.tv;
 
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.Uri;
-import android.os.Build;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private static final String SMART_TV_UA =
+        "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) 76.0.3809.146/6.0 TV Safari/537.36";
+
     private int backPressCount = 0;
     private long lastBackPressMs = 0L;
     private static final long BACK_RESET_WINDOW_MS = 3500L;
+
+    private WebView youtubeTvWebView = null;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,33 +42,9 @@ public class MainActivity extends BridgeActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                processBackAction();
+                handleBackInput();
             }
         });
-
-        requestAutoBootOverlayPermissionOnce();
-    }
-
-    private void requestAutoBootOverlayPermissionOnce() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Settings.canDrawOverlays(this)) {
-            SharedPreferences prefs = getSharedPreferences("vscreens_prefs", MODE_PRIVATE);
-            if (!prefs.getBoolean("asked_overlay_perm", false)) {
-                prefs.edit().putBoolean("asked_overlay_perm", true).apply();
-                try {
-                    Toast.makeText(
-                        this,
-                        "Permite 'Mostrar sobre otras apps' para que VScreenS inicie al encender el TV",
-                        Toast.LENGTH_LONG
-                    ).show();
-                    Intent permIntent = new Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName())
-                    );
-                    startActivity(permIntent);
-                } catch (Exception ignored) {
-                }
-            }
-        }
     }
 
     @Override
@@ -69,6 +56,7 @@ public class MainActivity extends BridgeActivity {
             settings.setMediaPlaybackRequiresUserGesture(false);
             settings.setDomStorageEnabled(true);
             settings.setJavaScriptEnabled(true);
+            webView.addJavascriptInterface(new VScreenSNativeBridge(), "VScreenSNative");
         }
     }
 
@@ -102,15 +90,40 @@ public class MainActivity extends BridgeActivity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
-                processBackAction();
+                handleBackInput();
             }
             return true;
+        }
+        if (event != null && (event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getKeyCode() == KeyEvent.KEYCODE_VOICE_ASSIST)) {
+            if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
+                if (youtubeTvWebView == null || youtubeTvWebView.getVisibility() != View.VISIBLE) {
+                    if (this.bridge != null && this.bridge.getWebView() != null) {
+                        this.bridge.getWebView().evaluateJavascript(
+                            "window.__vscreensOpenSearch && window.__vscreensOpenSearch();",
+                            null
+                        );
+                    }
+                    return true;
+                }
+            }
         }
         return super.dispatchKeyEvent(event);
     }
 
     @Override
     public void onBackPressed() {
+        handleBackInput();
+    }
+
+    private void handleBackInput() {
+        if (youtubeTvWebView != null && youtubeTvWebView.getVisibility() == View.VISIBLE) {
+            if (youtubeTvWebView.canGoBack()) {
+                youtubeTvWebView.goBack();
+            } else {
+                closeYouTubeTVInternal(true);
+            }
+            return;
+        }
         processBackAction();
     }
 
@@ -152,6 +165,93 @@ public class MainActivity extends BridgeActivity {
         } else if (backPressCount >= 3) {
             backPressCount = 0;
             finish();
+        }
+    }
+
+    private void openYouTubeTVInternal(final int cssLeft, final int cssTop, final int cssWidth, final int cssHeight) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                ViewGroup root = findViewById(android.R.id.content);
+                if (root == null) return;
+
+                float density = getResources().getDisplayMetrics().density;
+                int pxLeft = Math.max(0, Math.round(cssLeft * density));
+                int pxTop = Math.max(0, Math.round(cssTop * density));
+                int pxWidth = cssWidth > 0 ? Math.round(cssWidth * density) : ViewGroup.LayoutParams.MATCH_PARENT;
+                int pxHeight = cssHeight > 0 ? Math.round(cssHeight * density) : ViewGroup.LayoutParams.MATCH_PARENT;
+
+                if (youtubeTvWebView == null) {
+                    youtubeTvWebView = new WebView(MainActivity.this);
+                    youtubeTvWebView.setBackgroundColor(Color.BLACK);
+                    youtubeTvWebView.setFocusable(true);
+                    youtubeTvWebView.setFocusableInTouchMode(true);
+
+                    WebSettings s = youtubeTvWebView.getSettings();
+                    s.setJavaScriptEnabled(true);
+                    s.setDomStorageEnabled(true);
+                    s.setMediaPlaybackRequiresUserGesture(false);
+                    s.setUserAgentString(SMART_TV_UA);
+                    s.setUseWideViewPort(true);
+                    s.setLoadWithOverviewMode(true);
+
+                    youtubeTvWebView.setWebChromeClient(new WebChromeClient());
+                    youtubeTvWebView.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                            String url = request != null && request.getUrl() != null ? request.getUrl().toString() : "";
+                            if (url.startsWith("https://www.youtube.com") || url.startsWith("https://m.youtube.com") || url.startsWith("https://accounts.google.com")) {
+                                return false;
+                            }
+                            return true;
+                        }
+                    });
+                    root.addView(youtubeTvWebView);
+                }
+
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(pxWidth, pxHeight, Gravity.TOP | Gravity.START);
+                lp.leftMargin = pxLeft;
+                lp.topMargin = pxTop;
+                youtubeTvWebView.setLayoutParams(lp);
+                youtubeTvWebView.setVisibility(View.VISIBLE);
+                youtubeTvWebView.bringToFront();
+                youtubeTvWebView.loadUrl("https://www.youtube.com/tv");
+                youtubeTvWebView.requestFocus();
+                Toast.makeText(MainActivity.this, "YouTube TV activo. Usa Back para regresar.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void closeYouTubeTVInternal(final boolean notifyJs) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (youtubeTvWebView != null) {
+                    youtubeTvWebView.loadUrl("about:blank");
+                    youtubeTvWebView.setVisibility(View.GONE);
+                }
+                if (bridge != null && bridge.getWebView() != null) {
+                    bridge.getWebView().requestFocus();
+                    if (notifyJs) {
+                        bridge.getWebView().evaluateJavascript(
+                            "window.__vscreensOnYouTubeClosed && window.__vscreensOnYouTubeClosed();",
+                            null
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    public class VScreenSNativeBridge {
+        @JavascriptInterface
+        public void openYouTubeTV(int left, int top, int width, int height) {
+            openYouTubeTVInternal(left, top, width, height);
+        }
+
+        @JavascriptInterface
+        public void closeYouTubeTV() {
+            closeYouTubeTVInternal(false);
         }
     }
 }

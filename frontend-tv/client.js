@@ -1794,6 +1794,27 @@
         if (!state.config || !state.config.allow_youtube_control) {
             return;
         }
+        if (window.VScreenSNative && typeof window.VScreenSNative.openYouTubeTV === "function") {
+            try {
+                if (state.player && state.playerReady && typeof state.player.pauseVideo === "function") {
+                    state.player.pauseVideo();
+                }
+                var fp = $("file-player");
+                if (fp) fp.pause();
+            } catch (e) { }
+
+            var stage = $("main-stage");
+            var rect = stage ? stage.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+            state.manualOverride = { kind: "native_yt" };
+            window.VScreenSNative.openYouTubeTV(
+                Math.round(rect.left),
+                Math.round(rect.top),
+                Math.round(rect.width),
+                Math.round(rect.height)
+            );
+            scheduleOverrideTimeout();
+            return;
+        }
         var overlay = $("yt-control");
         if (!overlay) return;
         overlay.classList.remove("hidden");
@@ -1995,12 +2016,30 @@
             window.clearTimeout(state.overrideTimer);
             state.overrideTimer = null;
         }
+        if (window.VScreenSNative && typeof window.VScreenSNative.closeYouTubeTV === "function") {
+            try { window.VScreenSNative.closeYouTubeTV(); } catch (e) { }
+        }
         hideYoutubeControl();
         if (hadOverride && state.config) {
             state.queueSignature = "";
             buildQueue(state.lastPlaylist, state.lastScheduled, state.config);
         }
     }
+
+    window.__vscreensOpenSearch = showYoutubeControl;
+
+    window.__vscreensOnYouTubeClosed = function () {
+        state.manualOverride = null;
+        state.ytRelatedQueue = [];
+        if (state.overrideTimer) {
+            window.clearTimeout(state.overrideTimer);
+            state.overrideTimer = null;
+        }
+        if (state.config) {
+            state.queueSignature = "";
+            buildQueue(state.lastPlaylist, state.lastScheduled, state.config);
+        }
+    };
 
     window.__vscreensHandleBack = function () {
         var ytModal = $("yt-control");

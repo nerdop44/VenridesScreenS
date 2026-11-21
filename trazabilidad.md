@@ -66,6 +66,9 @@
   - `odoo-addons/vscreens`: añadidos en pestaña `Barra Inferior` los controles de aspecto (`bottom_bar_height`, `bottom_bar_border`, `ticker_speed`, `ticker_color`, `ticker_font`, `bcv_font`).
   - `frontend-tv`: botón visible `🔍 Buscar YouTube (OK)` cuando `allow_youtube_control` está activo; apertura con `OK/Enter`; corregido foco D-Pad dentro de `#yt-control` (`refreshNavItems`); aplicados `bottom_bar_bg`/`text`/`border`.
   - `app-tv/android`: interceptación directa de `KEYCODE_BACK` en `dispatchKeyEvent` + `OnBackPressedCallback` (3 pulsaciones para salir); añadido `BootLaunchService` (`ForegroundService` con `fullScreenIntent`) + `SYSTEM_ALERT_WINDOW` para arranque automático tras encendido en Android 10+.
+- [x] **YouTube TV Nativo Embebido y Estabilidad de MainActivity (2026-11-20):**
+  - `MainActivity.java`: eliminada apertura automática de `ACTION_MANAGE_OVERLAY_PERMISSION` en `onCreate()` que sacaba al usuario de la app; integrado `WebView` nativo de `https://www.youtube.com/tv` (`VScreenSNative.openYouTubeTV`) posicionado en el área de video `#main-stage` con User-Agent Smart TV (búsqueda nativa, voz y reproducción continua sin salir de VScreenS), con retorno automático por `Back` o timeout.
+  - `frontend-tv`: conectado `showYoutubeControl()` con `VScreenSNative.openYouTubeTV` en Android TV.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).
