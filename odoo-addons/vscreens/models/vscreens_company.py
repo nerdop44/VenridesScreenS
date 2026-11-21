@@ -196,6 +196,14 @@ class VScreenSCompany(models.Model):
         string="Buscador de Temas",
         help="Exclusivo de Odoo: busca un tema por nombre o motivo (ej. Navidad, Año Nuevo, Café) y aplícalo al instante a la TV y al panel web.",
     )
+    previous_design_snapshot = fields.Json(
+        string="Respaldo de diseño anterior",
+        help="Guarda automáticamente los colores y tema previos antes de aplicar un tema nuevo para poder revertir.",
+    )
+    has_previous_design = fields.Boolean(
+        string="Tiene diseño anterior",
+        compute="_compute_has_previous_design",
+    )
 
     # Accesos directos editables por pestaña hacia design_id
     ds_theme_preset = fields.Selection(related="design_id.theme_preset", readonly=False)
@@ -1030,6 +1038,10 @@ class VScreenSCompany(models.Model):
         ds_touched = any(k.startswith("ds_") for k in vals)
         if ds_touched or "theme_id" in vals:
             self._ensure_design_record()
+        if vals.get("theme_id"):
+            for record in self:
+                if record.theme_id.id != vals.get("theme_id"):
+                    record._save_design_snapshot()
         res = super().write(vals)
         if "theme_id" in vals:
             for record in self:
@@ -1235,6 +1247,69 @@ class VScreenSCompany(models.Model):
             return None, base, f"No se pudo conectar: {str(error)[:120]}"
         return session, base, False
 
+    @api.depends("previous_design_snapshot")
+    def _compute_has_previous_design(self):
+        for rec in self:
+            rec.has_previous_design = bool(rec.previous_design_snapshot)
+
+    def _save_design_snapshot(self):
+        for rec in self:
+            d = rec.design_id
+            snap = {
+                "theme_id": rec.theme_id.id if rec.theme_id else False,
+                "primary_color": rec.primary_color,
+                "secondary_color": rec.secondary_color,
+                "accent_color": rec.accent_color,
+                "theme_preset": d.theme_preset if d else "default",
+                "sidebar_bg": d.sidebar_bg if d else "#1e293b",
+                "sidebar_text": d.sidebar_text if d else "#ffffff",
+                "bottom_bar_bg": d.bottom_bar_bg if d else "#0a0e1a",
+                "bottom_bar_text": d.bottom_bar_text if d else "#ffffff",
+                "sidebar_bg_image": d.sidebar_bg_image if d else "",
+                "bottom_bar_bg_image": d.bottom_bar_bg_image if d else "",
+            }
+            super(VScreenSCompany, rec).write({"previous_design_snapshot": snap})
+
+    def action_restore_previous_design(self):
+        """Regresa al tema o colores personalizados anteriores al último cambio de tema."""
+        self.ensure_one()
+        snap = self.previous_design_snapshot
+        if not isinstance(snap, dict) or not snap:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {"title": "Sin respaldo previo", "message": "No hay un tema o colores anteriores guardados.", "type": "warning"},
+            }
+        self._ensure_design_record()
+        super(VScreenSCompany, self).write({
+            "theme_id": snap.get("theme_id") or False,
+            "primary_color": snap.get("primary_color") or self.primary_color,
+            "secondary_color": snap.get("secondary_color") or self.secondary_color,
+            "accent_color": snap.get("accent_color") or self.accent_color,
+            "previous_design_snapshot": False,
+        })
+        if self.design_id:
+            self.design_id.sudo().write({
+                "theme_preset": snap.get("theme_preset") or "default",
+                "sidebar_bg": snap.get("sidebar_bg") or "#1e293b",
+                "sidebar_text": snap.get("sidebar_text") or "#ffffff",
+                "bottom_bar_bg": snap.get("bottom_bar_bg") or "#0a0e1a",
+                "bottom_bar_text": snap.get("bottom_bar_text") or "#ffffff",
+                "sidebar_bg_image": snap.get("sidebar_bg_image") or "",
+                "bottom_bar_bg_image": snap.get("bottom_bar_bg_image") or "",
+            })
+        self._sync_all_visual_to_json()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Diseño restaurado",
+                "message": "Se restauraron los colores/tema anteriores.",
+                "type": "success",
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
+
     @api.onchange("theme_id")
     def _onchange_theme_id(self):
         for rec in self:
@@ -1322,7 +1397,7 @@ class VScreenSCompany(models.Model):
         if not domain:
             domain = [("sale_ok", "=", True), ("active", "=", True)]
 
-        limit = min(max(self.odoo_link_limit or 30, 1), 60)
+        limit = min(max(self.odoo_link_limit or 100, 1), 250)
         try:
             resp = session.post(
                 f"{base}/web/dataset/call_kw/product.template/search_read",
@@ -1333,13 +1408,13 @@ class VScreenSCompany(models.Model):
                         "method": "search_read",
                         "args": [domain],
                         "kwargs": {
-                            "fields": ["id", "name", "list_price", "image_128"],
+                            "fields": ["id", "name", "list_price", "image_128", "write_date"],
                             "limit": limit,
-                            "order": "name asc",
+                            "order": "write_date desc, name asc",
                         },
                     },
                 },
-                timeout=15,
+                timeout=20,
             )
             payload = resp.json()
             if payload.get("error"):
@@ -1354,61 +1429,63 @@ class VScreenSCompany(models.Model):
                 "params": {"title": "Error al consultar productos", "message": msg, "type": "danger"},
             }
 
-        RemoteProd = self.env["vscreens.odoo.remote.product"].sudo()
         existing_by_remote = {p.remote_id: p for p in self.odoo_remote_product_ids if p.remote_id}
-        Sidebar = self.env["vscreens.sidebar.item"].sudo()
-        sidebar_by_label = {
-            item.label: item
-            for item in self.sidebar_items
-            if item.is_odoo_product and item.label
-        }
-
-        created_count = 0
-        updated_count = 0
+        line_vals = []
+        new_cnt = 0
+        upd_cnt = 0
+        same_cnt = 0
         for row in rows:
             rid = row.get("id") or 0
             rname = row.get("name") or "Producto"
             rprice = float(row.get("list_price") or 0.0)
             rimg = row.get("image_128") or False
-            if rid and rid in existing_by_remote:
-                prod_rec = existing_by_remote[rid]
-                old_name = prod_rec.name
-                prod_rec.write({
-                    "name": rname,
-                    "list_price": rprice,
-                    "image_128": rimg,
-                })
-                updated_count += 1
-                sb = sidebar_by_label.get(old_name) or sidebar_by_label.get(rname)
-                if sb:
-                    price_txt = f"${rprice:,.2f}" if rprice else ""
-                    sb.write({
-                        "label": rname,
-                        "value": f"{rname} · {price_txt}" if price_txt else rname,
-                        "image": rimg,
-                    })
+            rwdate = str(row.get("write_date") or "")
+            existing = existing_by_remote.get(rid)
+            if not existing:
+                status = "new"
+                import_sel = True
+                cur_price = 0.0
+                new_cnt += 1
             else:
-                RemoteProd.create({
-                    "company_id": self.id,
-                    "remote_id": rid,
-                    "name": rname,
-                    "list_price": rprice,
-                    "image_128": rimg,
-                    "selected": False,
-                })
-                created_count += 1
+                changed = (
+                    (existing.name or "") != rname
+                    or abs((existing.list_price or 0.0) - rprice) > 0.001
+                    or (rwdate and (existing.remote_write_date or "") != rwdate)
+                )
+                cur_price = existing.list_price or 0.0
+                if changed:
+                    status = "updated"
+                    import_sel = True
+                    upd_cnt += 1
+                else:
+                    status = "existing"
+                    import_sel = False
+                    same_cnt += 1
+            line_vals.append((0, 0, {
+                "import_selected": import_sel,
+                "sync_status": status,
+                "remote_id": rid,
+                "image_128": rimg,
+                "name": rname,
+                "current_price": cur_price,
+                "new_price": rprice,
+                "remote_write_date": rwdate,
+            }))
 
         self.write({"odoo_link_error": False, "odoo_link_last_sync": fields.Datetime.now()})
-        self._sync_all_visual_to_json()
+        wizard = self.env["vscreens.odoo.sync.wizard"].create({
+            "company_id": self.id,
+            "source_url": base,
+            "summary_text": f"Encontrados {len(rows)} productos: {new_cnt} nuevos, {upd_cnt} actualizados, {same_cnt} sin cambios.",
+            "line_ids": line_vals,
+        })
         return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "Catálogo sincronizado",
-                "message": f"{created_count} nuevos y {updated_count} actualizados desde {base} (sin alterar tu orden ni switches).",
-                "type": "success",
-                "next": {"type": "ir.actions.client", "tag": "reload"},
-            },
+            "type": "ir.actions.act_window",
+            "name": "Asistente de Catálogo Odoo Externo",
+            "res_model": "vscreens.odoo.sync.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
         }
 
     def action_send_odoo_products_to_sidebar(self):
@@ -1928,6 +2005,7 @@ class VScreenSCompany(models.Model):
         nueva sin necesidad de reiniciarse (y sin mostrar el banner de ping).
         """
         self.ensure_one()
+        self._sync_all_visual_to_json()
         if device_ids:
             devices = self.env["vscreens.device"].browse(device_ids).filtered(
                 lambda device: device.company_id == self

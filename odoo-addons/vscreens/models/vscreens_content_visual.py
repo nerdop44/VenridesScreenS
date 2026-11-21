@@ -343,6 +343,7 @@ class VscreensOdooRemoteProduct(models.Model):
     list_price = fields.Float(string="Precio")
     currency_symbol = fields.Char(string="Moneda", default="$")
     image_128 = fields.Binary(string="Foto", attachment=False)
+    remote_write_date = fields.Char(string="Actualizado en Odoo Externo", readonly=True)
 
 
 class VscreensTheme(models.Model):
@@ -374,6 +375,146 @@ class VscreensTheme(models.Model):
     sidebar_text = fields.Char(string="Texto Barra Lateral", default="#ffffff")
     bottom_bar_bg = fields.Char(string="Fondo Barra Inferior", default="#0a0e1a")
     bottom_bar_text = fields.Char(string="Texto Barra Inferior", default="#ffffff")
-    sidebar_bg_image = fields.Char(string="Imagen / Textura Lateral (URL)")
-    bottom_bar_bg_image = fields.Char(string="Imagen / Textura Inferior (URL)")
+    sidebar_bg_image = fields.Char(string="Imagen / Textura Lateral (URL)", help="URL de textura o imagen para la barra lateral.")
+    bottom_bar_bg_image = fields.Char(string="Imagen / Textura Inferior (URL)", help="URL de textura o imagen para la barra inferior.")
+    texture_preset = fields.Selection(
+        [
+            ("none", "Sin textura (color sólido)"),
+            ("wood_warm", "Madera / Café Artesanal"),
+            ("marble_dark", "Mármol Oscuro / Lujo"),
+            ("carbon_fiber", "Fibra de Carbono / Oscuro"),
+            ("christmas_snow", "Navidad / Destellos"),
+            ("fireworks_gold", "Año Nuevo / Dorado"),
+            ("confetti_party", "Carnaval / Confeti"),
+            ("neon_grid", "Neón / Tecnológico"),
+            ("custom_url", "URL Personalizada"),
+        ],
+        string="Buscador de Texturas",
+        default="none",
+        help="Selecciona una textura predefinida para rellenar automáticamente los fondos o elige URL personalizada.",
+    )
     is_active = fields.Boolean(string="Disponible", default=True)
+
+    _TEXTURE_URLS = {
+        "wood_warm": "https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?auto=format&fit=crop&w=900&q=70",
+        "marble_dark": "https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?auto=format&fit=crop&w=900&q=70",
+        "carbon_fiber": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=900&q=70",
+        "christmas_snow": "https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=900&q=70",
+        "fireworks_gold": "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?auto=format&fit=crop&w=900&q=70",
+        "confetti_party": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=70",
+        "neon_grid": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=900&q=70",
+    }
+
+    @api.onchange("texture_preset")
+    def _onchange_texture_preset(self):
+        for rec in self:
+            if rec.texture_preset == "none":
+                rec.sidebar_bg_image = False
+                rec.bottom_bar_bg_image = False
+            elif rec.texture_preset in self._TEXTURE_URLS:
+                url = self._TEXTURE_URLS[rec.texture_preset]
+                rec.sidebar_bg_image = url
+                rec.bottom_bar_bg_image = url
+
+
+class VscreensOdooSyncWizard(models.TransientModel):
+    _name = "vscreens.odoo.sync.wizard"
+    _description = "Asistente de Sincronización de Catálogo Odoo"
+
+    company_id = fields.Many2one("vscreens.company", string="Empresa", required=True)
+    source_url = fields.Char(string="Odoo Origen", readonly=True)
+    summary_text = fields.Char(string="Resumen", readonly=True)
+    line_ids = fields.One2many("vscreens.odoo.sync.wizard.line", "wizard_id", string="Productos")
+
+    def action_select_new_and_updated(self):
+        self.ensure_one()
+        for line in self.line_ids:
+            line.import_selected = line.sync_status in ("new", "updated")
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_apply_selection(self):
+        self.ensure_one()
+        company = self.company_id
+        RemoteProd = self.env["vscreens.odoo.remote.product"].sudo()
+        Sidebar = self.env["vscreens.sidebar.item"].sudo()
+        existing_by_remote = {p.remote_id: p for p in company.odoo_remote_product_ids if p.remote_id}
+        sidebar_by_label = {
+            item.label: item
+            for item in company.sidebar_items
+            if item.is_odoo_product and item.label
+        }
+
+        created_count = 0
+        updated_count = 0
+        for line in self.line_ids.filtered("import_selected"):
+            if line.sync_status == "updated" and line.remote_id in existing_by_remote:
+                prod_rec = existing_by_remote[line.remote_id]
+                old_name = prod_rec.name
+                prod_rec.write({
+                    "name": line.name,
+                    "list_price": line.new_price,
+                    "image_128": line.image_128 or False,
+                    "remote_write_date": line.remote_write_date or False,
+                })
+                updated_count += 1
+                sb = sidebar_by_label.get(old_name) or sidebar_by_label.get(line.name)
+                if sb:
+                    price_txt = f"${line.new_price:,.2f}" if line.new_price else ""
+                    sb.write({
+                        "label": line.name,
+                        "value": f"{line.name} · {price_txt}" if price_txt else line.name,
+                        "image": line.image_128 or False,
+                    })
+            elif line.remote_id not in existing_by_remote:
+                RemoteProd.create({
+                    "company_id": company.id,
+                    "remote_id": line.remote_id,
+                    "name": line.name,
+                    "list_price": line.new_price,
+                    "image_128": line.image_128 or False,
+                    "remote_write_date": line.remote_write_date or False,
+                    "selected": False,
+                })
+                created_count += 1
+
+        company._sync_all_visual_to_json()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Catálogo actualizado",
+                "message": f"Se agregaron {created_count} productos nuevos y se actualizaron {updated_count} sin alterar tu orden ni switches.",
+                "type": "success",
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
+
+
+class VscreensOdooSyncWizardLine(models.TransientModel):
+    _name = "vscreens.odoo.sync.wizard.line"
+    _description = "Línea de Asistente de Sincronización Odoo"
+    _order = "sync_status asc, name asc"
+
+    wizard_id = fields.Many2one("vscreens.odoo.sync.wizard", required=True, ondelete="cascade")
+    import_selected = fields.Boolean(string="Aplicar", default=True)
+    sync_status = fields.Selection(
+        [
+            ("new", "🆕 Nuevo en Odoo externo"),
+            ("updated", "🔄 Actualizado recientemente"),
+            ("existing", "✅ Ya importado (sin cambios)"),
+        ],
+        string="Estado",
+        readonly=True,
+    )
+    remote_id = fields.Integer(string="ID Remoto", readonly=True)
+    image_128 = fields.Binary(string="Foto", attachment=False, readonly=True)
+    name = fields.Char(string="Producto Remoto", readonly=True)
+    current_price = fields.Float(string="Precio Actual Aquí", readonly=True)
+    new_price = fields.Float(string="Precio en Odoo Externo", readonly=True)
+    remote_write_date = fields.Char(string="Modificado Remoto", readonly=True)
