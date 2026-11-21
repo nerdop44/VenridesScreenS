@@ -169,16 +169,11 @@
                         </page>
 
                         <page string="📺 Contenido TV" name="content">
-                            <div class="alert alert-info py-2 mb-3" role="status" style="font-size: 0.84rem;">
-                                <strong>Guía rápida:</strong> Elige si el video principal viene de <em>YouTube</em> (usa la pestaña Playlist) o de <em>Google Drive</em> (pega el enlace compartido público del video). El <em>Contenido prioritario</em> interrumpe la lista para mostrar un anuncio puntual.
-                            </div>
                             <group string="Reproducción de Video" col="4">
                                 <field name="video_source"/>
                                 <field name="filler_keywords"/>
                                 <field name="google_drive_link"/>
                                 <field name="priority_content_url"/>
-                                <field name="pause_duration"/>
-                                <field name="ad_frequency"/>
                             </group>
                             <group string="Información en Área de Video" col="4">
                                 <field name="ds_show_live_badge" widget="boolean_toggle" string="Mostrar Badge EN VIVO"/>
@@ -200,17 +195,20 @@
                                     <field name="title"/>
                                     <field name="url" widget="url" placeholder="https://www.youtube.com/watch?v=..."/>
                                     <field name="youtube_id" readonly="1" optional="hide"/>
+                                    <field name="is_active" widget="boolean_toggle"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-                                Los videos se reproducen en secuencia en la TV. Pega la URL completa de YouTube.
+                                Los videos se reproducen en secuencia en la TV. Usa el switch para activar o desactivar cada video sin borrarlo.
                             </p>
                         </page>
 
                         <page string="📅 Videos Programados" name="scheduled">
-                            <div class="alert alert-info py-2 mb-3" role="status" style="font-size: 0.84rem;">
-                                <strong>Guía rápida:</strong> Programa videos de <em>YouTube</em> o <em>Google Drive</em> para que se reproduzcan automáticamente dentro de un rango de fecha y hora específico por encima de la playlist habitual.
-                            </div>
+                            <group string="Orden y Frecuencia de Reproducción" col="4">
+                                <field name="scheduled_play_mode"/>
+                                <field name="ad_frequency"/>
+                                <field name="pause_duration"/>
+                            </group>
                             <field name="scheduled_video_items">
                                 <list editable="bottom" string="Videos programados">
                                     <field name="sequence" widget="handle"/>
@@ -219,6 +217,8 @@
                                     <field name="start_datetime"/>
                                     <field name="end_datetime"/>
                                     <field name="duration"/>
+                                    <field name="interval_minutes"/>
+                                    <field name="is_active" widget="boolean_toggle"/>
                                 </list>
                             </field>
                             <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
@@ -227,9 +227,6 @@
                         </page>
 
                         <page string="📊 Barra Lateral" name="sidebar">
-                            <div class="alert alert-info py-2 mb-3" role="status" style="font-size: 0.84rem;">
-                                <strong>Guía rápida:</strong> Configura el ancho, colores, textura de fondo, animaciones y qué secciones se muestran (marco, contador, menú/precios o pie). Abajo puedes crear bloques manuales o activar/desactivar los productos traídos desde el Odoo del cliente.
-                            </div>
                             <group string="Encabezado y Marca en Barra Lateral" col="4">
                                 <field name="sidebar_header_type"/>
                                 <field name="sidebar_header_value"/>
@@ -275,11 +272,9 @@
                         </page>
 
                         <page string="🔻 Barra Inferior" name="bottom_bar">
-                            <div class="alert alert-info py-2 mb-3" role="status" style="font-size: 0.84rem;">
-                                <strong>Guía rápida:</strong> Controla la altura, colores, textura de fondo, velocidad del texto en movimiento, Tasa BCV y reloj inferior. En la lista inferior puedes activar o desactivar cada mensaje individualmente con su switch.
-                            </div>
                             <group string="Aspecto, Tamaño y Velocidad de Barra Inferior" col="4">
                                 <field name="ds_bottom_bar_height" string="Alto de Barra (%)"/>
+                                <field name="ds_bottom_bar_auto_font" widget="boolean_toggle" string="Ajustar Fuente al Alto"/>
                                 <field name="ds_ticker_speed" string="Velocidad Marquesina (s)"/>
                                 <field name="ds_bottom_bar_border" widget="boolean_toggle" string="Borde Superior"/>
                                 <field name="ds_bottom_bar_bg" widget="color" string="Color de Fondo"/>
@@ -299,6 +294,7 @@
                             <field name="bottom_bar_items">
                                 <list editable="bottom" string="Mensajes del ticker">
                                     <field name="sequence" widget="handle"/>
+                                    <field name="item_type" optional="show"/>
                                     <field name="label"/>
                                     <field name="value"/>
                                     <field name="color" widget="color"/>
@@ -311,9 +307,6 @@
                         </page>
 
                         <page string="🔌 Integración Odoo (Productos)" name="odoo_integration">
-                            <div class="alert alert-info py-2 mb-3" role="status" style="font-size: 0.84rem;">
-                                <strong>Guía rápida:</strong> Conéctate al Odoo del cliente, pulsa <em>Traer Catálogo de Productos</em>, marca los productos que deseas y pulsa <em>Enviar Seleccionados a Barra Lateral</em>. Luego podrás activar o desactivar su visualización desde la pestaña <em>📊 Barra Lateral</em>.
-                            </div>
                             <group string="Conexión al Odoo del Cliente" col="4">
                                 <field name="odoo_link_url" placeholder="https://cafe.venrides.com"/>
                                 <field name="odoo_link_db" placeholder="vencafedb"/>

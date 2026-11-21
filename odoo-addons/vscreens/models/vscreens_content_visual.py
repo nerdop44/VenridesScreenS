@@ -61,8 +61,13 @@ class VscreensScheduledVideoItem(models.Model):
     youtube_id = fields.Char(string="ID de YouTube", compute="_compute_youtube_id", store=True)
     start_datetime = fields.Datetime(string="Fecha y Hora de Inicio", required=True)
     end_datetime = fields.Datetime(string="Fecha y Hora de Fin")
-    duration = fields.Integer(string="Duración (segundos)", default=300)
-    is_active = fields.Boolean(string="Activo", default=True)
+    duration = fields.Integer(string="Duración (segundos)", default=300, help="Duración máxima en segundos para videos de Google Drive o clips sin duración fija.")
+    interval_minutes = fields.Integer(
+        string="Repetir cada (min)",
+        default=0,
+        help="Minutos mínimos de espera tras reproducir este video antes de volver a intercalarlo (0 = en cada ciclo).",
+    )
+    is_active = fields.Boolean(string="Activo", default=True, help="Activa o desactiva este video programado sin eliminarlo.")
 
     @api.depends("url")
     def _compute_youtube_id(self):
@@ -111,10 +116,23 @@ class VscreensBottomBarItem(models.Model):
         ondelete="cascade",
     )
     sequence = fields.Integer(string="Secuencia", default=10)
+    item_type = fields.Selection(
+        [
+            ("message", "Mensaje"),
+            ("whatsapp", "WhatsApp"),
+            ("instagram", "Instagram"),
+            ("facebook", "Facebook"),
+            ("tiktok", "TikTok"),
+            ("phone", "Teléfono"),
+        ],
+        string="Tipo",
+        default="message",
+        help="Tipo de elemento mostrado en la barra inferior.",
+    )
     label = fields.Char(string="Etiqueta", required=True)
     value = fields.Char(string="Valor", required=True)
     color = fields.Char(string="Color", default="#c8ff00", help="Color en formato hex")
-    is_active = fields.Boolean(string="Activo", default=True)
+    is_active = fields.Boolean(string="Activo", default=True, help="Activa o desactiva este elemento en la barra inferior.")
 
 
 class VscreensDesignSettings(models.Model):
@@ -223,6 +241,11 @@ class VscreensDesignSettings(models.Model):
     bottom_bar_bg = fields.Char(string="Color de Fondo Barra Inferior", default="#0a0e1a")
     bottom_bar_text = fields.Char(string="Color de Texto Barra Inferior", default="#ffffff")
     bottom_bar_height = fields.Integer(string="Alto Barra Inferior (%)", default=10)
+    bottom_bar_auto_font = fields.Boolean(
+        string="Ajustar fuente al alto de barra",
+        default=True,
+        help="Redimensiona automáticamente fuentes y reloj de la barra inferior al cambiar su alto; desactiva para mantener tamaño fijo.",
+    )
     bottom_bar_border = fields.Boolean(string="Borde Superior Barra", default=True)
     ticker_speed = fields.Integer(string="Velocidad Marquesina (s)", default=30)
     ticker_color = fields.Char(string="Color Texto Marquesina", default="#ffffff")
@@ -288,6 +311,7 @@ class VscreensDesignSettings(models.Model):
             "bottom_bar_bg": self.bottom_bar_bg,
             "bottom_bar_text": self.bottom_bar_text,
             "bottom_bar_height": self.bottom_bar_height or 10,
+            "bottom_bar_auto_font": self.bottom_bar_auto_font,
             "bottom_bar_border": self.bottom_bar_border,
             "ticker_speed": self.ticker_speed or 30,
             "ticker_color": self.ticker_color or "#ffffff",

@@ -335,6 +335,10 @@ input {
 }
 
 .promo-card.is-leaving {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
     animation: cardOut 0.34s ease-in both;
 }
 
@@ -725,7 +729,12 @@ input {
 
 .file-player {
     object-fit: cover;
-    display: none;
+    background: #000;
+}
+
+#drive-frame:not(.hidden) {
+    display: block;
+    z-index: 3;
     background: #000;
 }
 
@@ -1170,22 +1179,24 @@ input {
     flex: 0 0 auto;
     padding-left: clamp(8px, 1vw, 16px);
     border-left: 1px solid rgba(255, 255, 255, 0.12);
+    white-space: nowrap;
 }
 
 .bottom-time {
-    font-size: clamp(17px, 1.45vw, 28px);
+    font-size: calc(clamp(16px, 1.4vw, 26px) * var(--bottom-font-scale, 1));
     font-weight: 800;
     letter-spacing: 0.01em;
     line-height: 1;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .bottom-day {
-    margin-top: 4px;
-    font-size: clamp(7px, 0.52vw, 9px);
+    margin-top: 3px;
+    font-size: calc(clamp(7px, 0.52vw, 9px) * var(--bottom-font-scale, 1));
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     color: rgba(255, 255, 255, 0.42);
     white-space: nowrap;
 }

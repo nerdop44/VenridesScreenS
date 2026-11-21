@@ -213,7 +213,7 @@ class VScreenSCompanyController(http.Controller):
             "contact_person", "email", "client_editable_fields", "sidebar_header_type",
             "sidebar_header_value", "priority_content_url", "ad_frequency",
             "sidebar_content", "bottom_bar_content", "design_settings", "pause_duration",
-            "logo_url",
+            "logo_url", "scheduled_videos", "scheduled_play_mode", "show_odoo_products_in_sidebar",
         }
         vals = {}
         for key, value in data.items():

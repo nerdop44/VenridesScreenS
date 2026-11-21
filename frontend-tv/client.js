@@ -39,6 +39,8 @@
         cuedId: null,
         driveTimer: null,
         preloadTimer: null,
+        scheduledLastPlayed: {},
+        sidebarSignature: "",
         lastPlaylist: [],
         lastScheduled: [],
         videoIndex: 0,
@@ -384,7 +386,16 @@
         }
 
         if (design.bottom_bar_height) {
-            root.style.setProperty("--bottom-h", Number(design.bottom_bar_height) + "vh");
+            var bbHeight = Number(design.bottom_bar_height);
+            root.style.setProperty("--bottom-h", bbHeight + "vh");
+            if (design.bottom_bar_auto_font !== false) {
+                var bbScale = Math.max(0.65, Math.min(1.35, bbHeight / 10));
+                root.style.setProperty("--bottom-font-scale", bbScale.toFixed(3));
+            } else {
+                root.style.setProperty("--bottom-font-scale", "1");
+            }
+        } else {
+            root.style.setProperty("--bottom-font-scale", "1");
         }
 
         var bottomBar = $("bottom-bar");
@@ -607,9 +618,9 @@
     }
 
     function buildSidebar(items, menus, design) {
-        state.sidebarSlides = buildSlides(items);
-        if (!state.sidebarSlides.length) {
-            state.sidebarSlides = [{
+        var nextSlides = buildSlides(items);
+        if (!nextSlides.length) {
+            nextSlides = [{
                 kind: "text",
                 title: "Bienvenidos",
                 titleColor: null,
@@ -621,14 +632,23 @@
             }];
         }
 
+        var anim = (design && design.sidebar_animation) || "slide_up";
+        var fscale = (design && design.sidebar_font_scale) || "normal";
+        var noFrame = design && design.show_card_frame === false ? "0" : "1";
+        var sig = JSON.stringify([nextSlides, anim, fscale, noFrame]);
+        if (sig === state.sidebarSignature && state.sidebarSlides.length) {
+            buildMenu(menus, design);
+            return;
+        }
+        state.sidebarSignature = sig;
+        state.sidebarSlides = nextSlides;
+
         var stage = $("side-stage");
         if (stage) {
             stage.classList.remove("anim-fade", "anim-slide_up", "anim-slide_left", "anim-zoom", "anim-none");
-            var anim = (design && design.sidebar_animation) || "slide_up";
             if (anim !== "slide_up") stage.classList.add("anim-" + anim);
 
             stage.classList.remove("font-scale-compact", "font-scale-normal", "font-scale-large");
-            var fscale = (design && design.sidebar_font_scale) || "normal";
             stage.classList.add("font-scale-" + fscale);
         }
 
@@ -725,14 +745,22 @@
             }
         }
 
-        var previous = stage.querySelector(".promo-card");
-        if (previous && !initial) {
-            previous.classList.add("is-leaving");
-            window.setTimeout(function () {
-                if (previous.parentNode) previous.parentNode.removeChild(previous);
-            }, 340);
-        } else if (previous) {
-            stage.removeChild(previous);
+        var existing = stage.querySelectorAll(".promo-card");
+        if (initial) {
+            for (var p = 0; p < existing.length; p++) {
+                if (existing[p].parentNode) existing[p].parentNode.removeChild(existing[p]);
+            }
+        } else if (existing.length) {
+            for (var q = 0; q < existing.length; q++) {
+                (function (prev) {
+                    if (!prev.classList.contains("is-leaving")) {
+                        prev.classList.add("is-leaving");
+                        window.setTimeout(function () {
+                            if (prev.parentNode) prev.parentNode.removeChild(prev);
+                        }, 340);
+                    }
+                })(existing[q]);
+            }
         }
 
         stage.appendChild(card);
@@ -911,17 +939,17 @@
         }
 
         var showSocialInTicker = !design || design.show_social_in_ticker !== false;
-        var whatsapp = bottom.whatsapp || data.whatsapp;
-        var instagram = bottom.instagram || data.instagram;
-        var facebook = bottom.facebook || data.facebook;
-        var tiktok = bottom.tiktok || data.tiktok;
+        var whatsapp = bottom.whatsapp_active === false ? "" : (bottom.whatsapp || data.whatsapp);
+        var instagram = bottom.instagram_active === false ? "" : (bottom.instagram || data.instagram);
+        var facebook = bottom.facebook_active === false ? "" : (bottom.facebook || data.facebook);
+        var tiktok = bottom.tiktok_active === false ? "" : (bottom.tiktok || data.tiktok);
+        var phone = bottom.phone_active === false ? "" : data.phone;
 
         if (showSocialInTicker) {
             if (whatsapp) items.push("WhatsApp: " + whatsapp);
             if (instagram) items.push("Instagram: @" + String(instagram).replace(/^@/, ""));
             if (facebook) items.push("Facebook: " + facebook);
             if (tiktok) items.push("TikTok: @" + String(tiktok).replace(/^@/, ""));
-            var phone = data.phone;
             if (phone && String(phone) !== String(whatsapp || "")) items.push("Teléfono: " + phone);
         }
 
@@ -979,10 +1007,10 @@
         }
         container.classList.remove("hidden");
 
-        var whatsapp = bottom.whatsapp || data.whatsapp;
-        var instagram = bottom.instagram || data.instagram;
-        var facebook = bottom.facebook || data.facebook;
-        var tiktok = bottom.tiktok || data.tiktok;
+        var whatsapp = bottom.whatsapp_active === false ? "" : (bottom.whatsapp || data.whatsapp);
+        var instagram = bottom.instagram_active === false ? "" : (bottom.instagram || data.instagram);
+        var facebook = bottom.facebook_active === false ? "" : (bottom.facebook || data.facebook);
+        var tiktok = bottom.tiktok_active === false ? "" : (bottom.tiktok || data.tiktok);
 
         if (whatsapp) {
             var wa = document.createElement("span");
@@ -1033,10 +1061,17 @@
         var url = value;
         var title = "";
         var duration = 0;
+        var intervalSeconds = 0;
         if (value && typeof value === "object") {
+            if (value.is_active === false) return null;
             url = value.url || value.src || value.value || "";
             title = value.title || value.name || "";
             duration = Number(value.duration || value.duration_seconds || 0) || 0;
+            if (value.interval_seconds) {
+                intervalSeconds = Number(value.interval_seconds) || 0;
+            } else if (value.interval_minutes) {
+                intervalSeconds = (Number(value.interval_minutes) || 0) * 60;
+            }
         }
         if (!url) return null;
         var raw = String(url).trim();
@@ -1049,6 +1084,7 @@
                 id: youtubeId,
                 title: title,
                 duration: duration,
+                intervalSeconds: intervalSeconds,
                 scheduled: !!scheduled
             };
         }
@@ -1061,6 +1097,7 @@
                 id: driveId,
                 title: title || "Google Drive",
                 duration: duration,
+                intervalSeconds: intervalSeconds,
                 scheduled: !!scheduled
             };
         }
@@ -1071,6 +1108,7 @@
             id: null,
             title: title,
             duration: duration,
+            intervalSeconds: intervalSeconds,
             scheduled: !!scheduled
         };
     }
@@ -1101,10 +1139,20 @@
 
         var queue = [];
 
+        var scheduledItems = [];
         state.lastScheduled.forEach(function (entry) {
             var item = normalizeVideoItem(entry, true);
-            if (item) queue.push(item);
+            if (item) scheduledItems.push(item);
         });
+        if (data && data.scheduled_play_mode === "random" && scheduledItems.length > 1) {
+            for (var s = scheduledItems.length - 1; s > 0; s--) {
+                var r = Math.floor(Math.random() * (s + 1));
+                var tmp = scheduledItems[s];
+                scheduledItems[s] = scheduledItems[r];
+                scheduledItems[r] = tmp;
+            }
+        }
+        scheduledItems.forEach(function (item) { queue.push(item); });
 
         if (data && data.video_source === "drive" && data.google_drive_link) {
             var primaryDrive = normalizeVideoItem(data.google_drive_link, false);
@@ -1169,6 +1217,9 @@
 
         state.currentItem = item;
         state.currentKind = item.kind;
+        if (item.scheduled) {
+            state.scheduledLastPlayed[item.kind + ":" + (item.id || item.url)] = Date.now();
+        }
         updateVideoBadge(item);
 
         if (item.kind === "youtube") {
@@ -1204,11 +1255,27 @@
             attempts += 1;
             var candidate = state.queue[state.videoIndex];
             if (!candidate) break;
-            if (!state.failedVideos[candidate.kind + ":" + (candidate.id || candidate.url)]) {
+            var candKey = candidate.kind + ":" + (candidate.id || candidate.url);
+            if (state.failedVideos[candKey]) continue;
+            if (candidate.scheduled && candidate.intervalSeconds > 0 && state.queue.length > 1) {
+                var lastTs = state.scheduledLastPlayed[candKey] || 0;
+                if (lastTs && (Date.now() - lastTs) < candidate.intervalSeconds * 1000) {
+                    continue;
+                }
+            }
+            playCurrent();
+            return;
+        } while (attempts < state.queue.length);
+
+        // Si todos fueron omitidos por intervalo, reproducir el siguiente no fallido.
+        for (var k = 0; k < state.queue.length; k++) {
+            var fallbackCand = state.queue[(state.videoIndex + k) % state.queue.length];
+            if (fallbackCand && !state.failedVideos[fallbackCand.kind + ":" + (fallbackCand.id || fallbackCand.url)]) {
+                state.videoIndex = (state.videoIndex + k) % state.queue.length;
                 playCurrent();
                 return;
             }
-        } while (attempts < state.queue.length);
+        }
 
         showFallback();
     }

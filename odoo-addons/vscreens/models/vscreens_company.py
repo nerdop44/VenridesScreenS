@@ -79,6 +79,12 @@ class VScreenSCompany(models.Model):
         default=list,
         help="Lista de objetos: {url, title, start, end, days}. start/end en formato YYYY-MM-DD HH:MM y days como lista de días (0=lunes … 6=domingo). Si se omiten, aplica siempre.",
     )
+    scheduled_play_mode = fields.Selection(
+        [("sequence", "En orden de lista"), ("random", "Aleatorio")],
+        string="Orden de Videos Programados",
+        default="sequence",
+        help="Define si los videos programados se reproducen en el orden de la lista o aleatoriamente.",
+    )
     sidebar_content = fields.Json(string="Contenido de barra lateral", default=list)
     bottom_bar_content = fields.Json(string="Contenido de barra inferior", default=dict)
     design_settings = fields.Json(string="Ajustes de diseño", default=dict)
@@ -222,6 +228,7 @@ class VScreenSCompany(models.Model):
     ds_bottom_bar_bg = fields.Char(related="design_id.bottom_bar_bg", readonly=False)
     ds_bottom_bar_text = fields.Char(related="design_id.bottom_bar_text", readonly=False)
     ds_bottom_bar_height = fields.Integer(related="design_id.bottom_bar_height", readonly=False)
+    ds_bottom_bar_auto_font = fields.Boolean(related="design_id.bottom_bar_auto_font", readonly=False)
     ds_bottom_bar_border = fields.Boolean(related="design_id.bottom_bar_border", readonly=False)
     ds_ticker_speed = fields.Integer(related="design_id.ticker_speed", readonly=False)
     ds_ticker_color = fields.Char(related="design_id.ticker_color", readonly=False)
@@ -525,6 +532,7 @@ class VScreenSCompany(models.Model):
                     "start": fields.Datetime.to_string(item.start_datetime) if item.start_datetime else False,
                     "end": fields.Datetime.to_string(item.end_datetime) if item.end_datetime else False,
                     "duration": item.duration or 300,
+                    "interval_minutes": item.interval_minutes or 0,
                     "scheduled": True,
                 }
                 for item in self.scheduled_video_items
@@ -558,8 +566,15 @@ class VScreenSCompany(models.Model):
             content["messages"] = [
                 item.value or item.label
                 for item in self.bottom_bar_items
-                if (item.value or item.label) and item.is_active
+                if (not item.item_type or item.item_type == "message") and (item.value or item.label) and item.is_active
             ]
+            for social_type in ("whatsapp", "instagram", "facebook", "tiktok", "phone"):
+                social_items = self.bottom_bar_items.filtered(lambda it, t=social_type: it.item_type == t)
+                if social_items:
+                    first_it = social_items[0]
+                    content[f"{social_type}_active"] = bool(first_it.is_active)
+                    if first_it.value:
+                        content[social_type] = first_it.value
             return content
         if field_name == "design_settings_id":
             settings = dict(self.design_settings) if isinstance(self.design_settings, dict) else {}
@@ -861,6 +876,7 @@ class VScreenSCompany(models.Model):
                         "start_datetime": entry.get("start"),
                         "end_datetime": entry.get("end") or False,
                         "duration": entry.get("duration") or 300,
+                        "interval_minutes": int(entry.get("interval_minutes") or 0),
                     })
                     sequence += 10
 
@@ -890,17 +906,39 @@ class VScreenSCompany(models.Model):
                 messages = data.get("messages") or ([data.get("static")] if data.get("static") else [])
                 sequence = 10
                 for message in messages:
-                    text = message if isinstance(message, str) else str(message)
-                    if not text.strip():
+                    text = message if isinstance(message, str) else (message.get("text") if isinstance(message, dict) else str(message))
+                    is_act = True if not isinstance(message, dict) else (message.get("is_active") is not False)
+                    if not text or not str(text).strip():
                         continue
                     safe_create(Bottom, {
                         "company_id": company.id,
                         "sequence": sequence,
-                        "label": text[:40],
-                        "value": text,
+                        "item_type": "message",
+                        "label": str(text)[:40],
+                        "value": str(text),
                         "color": data.get("color") or "#c8ff00",
+                        "is_active": is_act,
                     })
                     sequence += 10
+                for social_type, social_label in (
+                    ("whatsapp", "WhatsApp"),
+                    ("instagram", "Instagram"),
+                    ("facebook", "Facebook"),
+                    ("tiktok", "TikTok"),
+                    ("phone", "Teléfono"),
+                ):
+                    sval = data.get(social_type) or getattr(company, social_type, False)
+                    if sval:
+                        safe_create(Bottom, {
+                            "company_id": company.id,
+                            "sequence": sequence,
+                            "item_type": social_type,
+                            "label": social_label,
+                            "value": str(sval),
+                            "color": data.get("color") or "#c8ff00",
+                            "is_active": data.get(f"{social_type}_active") is not False,
+                        })
+                        sequence += 10
 
             if "design_settings" in field_names:
                 company.design_settings_id.sudo().unlink()
@@ -1043,6 +1081,7 @@ class VScreenSCompany(models.Model):
                 "start": fields.Datetime.to_string(item.start_datetime) if item.start_datetime else False,
                 "end": fields.Datetime.to_string(item.end_datetime) if item.end_datetime else False,
                 "duration": item.duration or 300,
+                "interval_minutes": item.interval_minutes or 0,
                 "scheduled": True,
             })
         return active
@@ -1316,25 +1355,59 @@ class VScreenSCompany(models.Model):
             }
 
         RemoteProd = self.env["vscreens.odoo.remote.product"].sudo()
-        previously_selected = {p.remote_id for p in self.odoo_remote_product_ids if p.selected}
-        self.odoo_remote_product_ids.sudo().unlink()
+        existing_by_remote = {p.remote_id: p for p in self.odoo_remote_product_ids if p.remote_id}
+        Sidebar = self.env["vscreens.sidebar.item"].sudo()
+        sidebar_by_label = {
+            item.label: item
+            for item in self.sidebar_items
+            if item.is_odoo_product and item.label
+        }
+
+        created_count = 0
+        updated_count = 0
         for row in rows:
-            RemoteProd.create({
-                "company_id": self.id,
-                "remote_id": row.get("id") or 0,
-                "name": row.get("name") or "Producto",
-                "list_price": float(row.get("list_price") or 0.0),
-                "image_128": row.get("image_128") or False,
-                "selected": (row.get("id") in previously_selected),
-            })
+            rid = row.get("id") or 0
+            rname = row.get("name") or "Producto"
+            rprice = float(row.get("list_price") or 0.0)
+            rimg = row.get("image_128") or False
+            if rid and rid in existing_by_remote:
+                prod_rec = existing_by_remote[rid]
+                old_name = prod_rec.name
+                prod_rec.write({
+                    "name": rname,
+                    "list_price": rprice,
+                    "image_128": rimg,
+                })
+                updated_count += 1
+                sb = sidebar_by_label.get(old_name) or sidebar_by_label.get(rname)
+                if sb:
+                    price_txt = f"${rprice:,.2f}" if rprice else ""
+                    sb.write({
+                        "label": rname,
+                        "value": f"{rname} · {price_txt}" if price_txt else rname,
+                        "image": rimg,
+                    })
+            else:
+                RemoteProd.create({
+                    "company_id": self.id,
+                    "remote_id": rid,
+                    "name": rname,
+                    "list_price": rprice,
+                    "image_128": rimg,
+                    "selected": False,
+                })
+                created_count += 1
+
         self.write({"odoo_link_error": False, "odoo_link_last_sync": fields.Datetime.now()})
+        self._sync_all_visual_to_json()
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": "Catálogo importado",
-                "message": f"Se trajeron {len(rows)} productos desde {base}. Marca los que deseas y pulsa 'Enviar a Barra Lateral'.",
+                "title": "Catálogo sincronizado",
+                "message": f"{created_count} nuevos y {updated_count} actualizados desde {base} (sin alterar tu orden ni switches).",
                 "type": "success",
+                "next": {"type": "ir.actions.client", "tag": "reload"},
             },
         }
 
@@ -1533,6 +1606,7 @@ class VScreenSCompany(models.Model):
                 self._active_scheduled_from_visual()
                 if visual else self._active_scheduled_videos()
             ),
+            "scheduled_play_mode": self.scheduled_play_mode or "sequence",
             "sidebar_content": (
                 self._dump_visual_field("sidebar_items")
                 if visual else (self.sidebar_content or [])
@@ -1717,6 +1791,17 @@ class VScreenSCompany(models.Model):
             "priority_content_url": self.priority_content_url,
             "video_playlist": self.video_playlist or [],
             "scheduled_videos": self._active_scheduled_videos(),
+            "scheduled_play_mode": self.scheduled_play_mode or "sequence",
+            "show_odoo_products_in_sidebar": bool(self.show_odoo_products_in_sidebar),
+            "odoo_remote_products": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "list_price": p.list_price,
+                    "selected": bool(p.selected),
+                }
+                for p in self.odoo_remote_product_ids.filtered("selected")
+            ],
             "sidebar_content": self.sidebar_content or [],
             "bottom_bar_content": self.bottom_bar_content or {},
             "design_settings": self.design_settings or {},

@@ -4265,6 +4265,26 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                     <div><label>Visibilidad</label><div className="toggle-container" onClick={() => updateDesign('show_bottom_logo', !ds.show_bottom_logo)}><div className={`toggle-switch ${ds.show_bottom_logo ? 'on' : 'off'}`}></div></div></div>
                 </div>
             </div>
+
+            {Array.isArray(company?.odoo_remote_products) && company.odoo_remote_products.length > 0 && (
+                <div className="glass-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                    <div className="section-title"><ShoppingCart size={18} /> Productos del Catálogo <FieldHelp text="Productos habilitados por el administrador desde tu catálogo. Puedes activar o desactivar su visualización en la barra lateral de tus pantallas." /></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                        <label style={{ fontSize: '0.8rem' }}>Mostrar Productos en Barra Lateral</label>
+                        <div className="toggle-container" onClick={() => !disabled && onChange({ show_odoo_products_in_sidebar: !company?.show_odoo_products_in_sidebar })}>
+                            <div className={`toggle-switch ${company?.show_odoo_products_in_sidebar !== false ? 'on' : 'off'}`}></div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {company.odoo_remote_products.map(p => (
+                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                                <span>{p.name}</span>
+                                <span style={{ color: '#fbbf24', fontWeight: 700 }}>${Number(p.list_price || 0).toFixed(2)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -4318,6 +4338,10 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
                 </div>
                 <div className="grid-2" style={{ marginTop: '0.8rem', gap: '0.5rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={ds.bottom_bar_auto_font !== false} onChange={e => updateDesign('bottom_bar_auto_font', e.target.checked)} />
+                        Ajustar Fuente al Alto <FieldHelp text="Redimensiona automáticamente el tamaño de fuente y reloj al cambiar el alto de la barra inferior; desactiva para mantener tamaño fijo." />
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ds.show_social_in_ticker !== false} onChange={e => updateDesign('show_social_in_ticker', e.target.checked)} />
                         Redes en Marquesina <FieldHelp text="Incluye WhatsApp e Instagram dentro del texto en movimiento en lugar de fijarlos." />
                     </label>
@@ -4351,6 +4375,32 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
                                         <div className={`toggle-switch ${active ? 'on' : 'off'}`}></div>
                                     </div>
                                     <button type="button" onClick={() => removeTickerMsg(idx)} style={{ border: 'none', background: 'none', color: '#f43f5e', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '1px solid var(--border-color)' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '0.5rem' }}>
+                        Redes y Contacto en Barra Inferior (Activar/Desactivar aquí)
+                        <FieldHelp text="Controla directamente qué redes o teléfonos configurados en tu perfil aparecen en la barra inferior." />
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {[
+                            { key: 'whatsapp', label: 'WhatsApp', val: data.whatsapp || company?.whatsapp },
+                            { key: 'instagram', label: 'Instagram', val: data.instagram || company?.instagram },
+                            { key: 'facebook', label: 'Facebook', val: data.facebook || company?.facebook },
+                            { key: 'tiktok', label: 'TikTok', val: data.tiktok || company?.tiktok },
+                            { key: 'phone', label: 'Teléfono', val: company?.phone }
+                        ].filter(ch => ch.val).map(ch => {
+                            const active = data[`${ch.key}_active`] !== false;
+                            return (
+                                <div key={ch.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', background: 'rgba(255,255,255,0.04)', padding: '0.45rem 0.65rem', borderRadius: '8px', opacity: active ? 1 : 0.55 }}>
+                                    <span style={{ fontSize: '0.8rem' }}><strong>{ch.label}:</strong> {ch.val}</span>
+                                    <div className="toggle-container" onClick={() => update(`${ch.key}_active`, !active)}>
+                                        <div className={`toggle-switch ${active ? 'on' : 'off'}`}></div>
+                                    </div>
                                 </div>
                             );
                         })}
@@ -4405,22 +4455,44 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
 };
 
 const VideoEditor = ({ company, onChange }) => {
-    const playlist = Array.isArray(company?.video_playlist) ? company.video_playlist : ['', '', ''];
-    const updatePlaylist = (i, v) => {
-        const next = [...playlist];
-        while (next.length < 3) next.push('');
-        next[i] = v;
-        onChange({ video_playlist: next.slice(0, 3) });
+    const rawPlaylist = Array.isArray(company?.video_playlist) ? company.video_playlist : ['', '', ''];
+    const normPlaylist = [0, 1, 2].map(i => {
+        const entry = rawPlaylist[i];
+        if (!entry) return { url: '', is_active: true };
+        if (typeof entry === 'string') return { url: entry, is_active: true };
+        return { url: entry.url || '', is_active: entry.is_active !== false };
+    });
+    const updatePlaylist = (i, patch) => {
+        const next = normPlaylist.map((item, idx) => idx === i ? { ...item, ...patch } : item);
+        onChange({ video_playlist: next });
+    };
+
+    const scheduled = Array.isArray(company?.scheduled_videos) ? company.scheduled_videos : [];
+    const addScheduled = () => {
+        onChange({
+            scheduled_videos: [
+                ...scheduled,
+                { title: 'Video Programado', url: '', duration: 60, interval_minutes: 0, is_active: true }
+            ]
+        });
+    };
+    const updateScheduled = (idx, patch) => {
+        onChange({
+            scheduled_videos: scheduled.map((s, i) => i === idx ? { ...s, ...patch } : s)
+        });
+    };
+    const removeScheduled = (idx) => {
+        onChange({ scheduled_videos: scheduled.filter((_, i) => i !== idx) });
     };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <SectionGuide
-                title="Guía de Contenido TV"
-                text="Elige la fuente principal de video (Playlist de YouTube o Video Promocional en Google Drive). Los videos se precargan automáticamente antes de finalizar el actual para evitar pausas."
+                title="Guía de Contenido TV, Playlist y Programados"
+                text="Activa o desactiva cada video de tu playlist con su switch, configura tu enlace de Google Drive o programa videos con intervalo de repetición y orden secuencial o aleatorio."
             />
             <div className="glass-card" style={{ borderLeft: '4px solid #ef4444' }}>
-                <div className="section-title"><PlaySquare size={18} /> Fuente y Playlist de Video <FieldHelp text="Selecciona si el TV reproducirá tu playlist de YouTube o tu video promocional alojado en Google Drive." /></div>
+                <div className="section-title"><PlaySquare size={18} /> Fuente y Playlist (Switch Activo/Inactivo) <FieldHelp text="Selecciona si el TV reproducirá tu playlist de YouTube o tu video promocional en Google Drive. Cada video tiene su propio switch." /></div>
                 <div style={{ marginBottom: '1rem' }}>
                     <label>Fuente Principal</label>
                     <select value={company?.video_source || 'youtube'} onChange={e => onChange({ video_source: e.target.value })}>
@@ -4428,25 +4500,65 @@ const VideoEditor = ({ company, onChange }) => {
                         <option value="drive">Google Drive (Video Promocional)</option>
                     </select>
                 </div>
-                {[0, 1, 2].map(i => (
-                    <div key={i} style={{ marginBottom: '0.8rem' }}>
+                {normPlaylist.map((item, i) => (
+                    <div key={i} style={{ marginBottom: '0.8rem', padding: '0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', opacity: item.is_active ? 1 : 0.55 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>VIDEO {i + 1}</span>
+                            <div className="toggle-container" onClick={() => updatePlaylist(i, { is_active: !item.is_active })} title={item.is_active ? 'Activo en TV' : 'Pausado en TV'}>
+                                <div className={`toggle-switch ${item.is_active ? 'on' : 'off'}`}></div>
+                            </div>
+                        </div>
                         <YouTubeInput
-                            label={`VIDEO ${i + 1}`}
-                            value={playlist[i] || ''}
-                            onChange={v => updatePlaylist(i, v)}
+                            label=""
+                            value={item.url}
+                            onChange={v => updatePlaylist(i, { url: v })}
                             placeholder="https://youtube.com/watch?v=... o Google Drive"
                         />
                     </div>
                 ))}
-            </div>
-            <div className="glass-card">
-                <div className="section-title"><Bell size={18} /> Video Propio (Google Drive) y Publicidad</div>
-                <label>Frecuencia de Ads (Cada X videos) <FieldHelp text="Cantidad de videos propios antes de intercalar un anuncio o pausa." /></label>
-                <input type="number" min="1" max="10" value={company?.ad_frequency || 3} onChange={e => onChange({ ad_frequency: parseInt(e.target.value) })} />
                 <div style={{ marginTop: '1rem' }}>
                     <label>Enlace de Google Drive <FieldHelp text="Pega el enlace compartido de Google Drive (ej. https://drive.google.com/file/d/.../view). Asegúrate de que esté compartido como 'Cualquier persona con el enlace'." /></label>
                     <input value={company?.google_drive_link || ''} onChange={e => onChange({ google_drive_link: e.target.value })} placeholder="https://drive.google.com/file/d/.../view" />
                 </div>
+            </div>
+
+            <div className="glass-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+                <div className="section-title"><Calendar size={18} /> Videos Programados (YouTube o Drive) <FieldHelp text="Define el orden (secuencial o aleatorio), cada cuántos minutos se repite un video tras el anterior y activa/desactiva cada uno." /></div>
+                <div className="grid-2" style={{ marginBottom: '1rem' }}>
+                    <div>
+                        <label>Orden de Reproducción <FieldHelp text="Secuencial reproduce en el orden de la lista; Aleatorio mezcla los videos programados." /></label>
+                        <select value={company?.scheduled_play_mode || 'sequence'} onChange={e => onChange({ scheduled_play_mode: e.target.value })}>
+                            <option value="sequence">En orden de lista</option>
+                            <option value="random">Aleatorio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Frecuencia de Ads (Cada X videos) <FieldHelp text="Cantidad de videos antes de intercalar un anuncio." /></label>
+                        <input type="number" min="1" max="10" value={company?.ad_frequency || 3} onChange={e => onChange({ ad_frequency: parseInt(e.target.value) || 3 })} />
+                    </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {scheduled.map((sv, idx) => {
+                        const active = sv.is_active !== false;
+                        return (
+                            <div key={idx} style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', opacity: active ? 1 : 0.55 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <input value={sv.title || ''} onChange={e => updateScheduled(idx, { title: e.target.value })} placeholder="Título del video..." style={{ marginBottom: 0, flex: 1, marginRight: '0.5rem' }} />
+                                    <div className="toggle-container" onClick={() => updateScheduled(idx, { is_active: !active })} title={active ? 'Activo' : 'Desactivado'}>
+                                        <div className={`toggle-switch ${active ? 'on' : 'off'}`}></div>
+                                    </div>
+                                    <button type="button" onClick={() => removeScheduled(idx)} style={{ border: 'none', background: 'none', color: '#f43f5e', cursor: 'pointer', marginLeft: '0.4rem' }}><Trash2 size={15} /></button>
+                                </div>
+                                <input value={sv.url || ''} onChange={e => updateScheduled(idx, { url: e.target.value })} placeholder="URL de YouTube o Google Drive..." style={{ marginBottom: '0.5rem' }} />
+                                <div className="grid-2">
+                                    <div><label style={{ fontSize: '0.72rem' }}>Duración (seg)</label><input type="number" min="10" value={sv.duration || 60} onChange={e => updateScheduled(idx, { duration: parseInt(e.target.value) || 60 })} /></div>
+                                    <div><label style={{ fontSize: '0.72rem' }}>Repetir cada (min)</label><input type="number" min="0" value={sv.interval_minutes || 0} onChange={e => updateScheduled(idx, { interval_minutes: parseInt(e.target.value) || 0 })} /></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+                <button type="button" onClick={addScheduled} className="btn" style={{ marginTop: '0.8rem', width: '100%' }}>+ Agregar Video Programado</button>
             </div>
         </div>
     );
