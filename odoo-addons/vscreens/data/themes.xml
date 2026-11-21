@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="theme_classic" model="vscreens.theme">
+            <field name="name">VScreenS Clásico</field>
+            <field name="code">default</field>
+            <field name="category">generic</field>
+            <field name="description">Diseño estándar oscuro y elegante con alto contraste.</field>
+            <field name="primary_color">#12233d</field>
+            <field name="secondary_color">#c8ff00</field>
+            <field name="accent_color">#ff6b35</field>
+            <field name="sidebar_bg">#12233d</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#0a0e1a</field>
+            <field name="bottom_bar_text">#ffffff</field>
+        </record>
+        <record id="theme_christmas" model="vscreens.theme">
+            <field name="name">🎄 Navidad</field>
+            <field name="code">christmas</field>
+            <field name="category">festive</field>
+            <field name="description">Motivo navideño rojo, pino y dorado con marco festivo.</field>
+            <field name="primary_color">#6b0f1a</field>
+            <field name="secondary_color">#ffd166</field>
+            <field name="accent_color">#e63946</field>
+            <field name="sidebar_bg">#143627</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#7f1d1d</field>
+            <field name="bottom_bar_text">#ffffff</field>
+        </record>
+        <record id="theme_new_year" model="vscreens.theme">
+            <field name="name">🎆 Año Nuevo / Nochevieja</field>
+            <field name="code">new_year</field>
+            <field name="category">festive</field>
+            <field name="description">Negro gala con destellos y bordes dorados champagne.</field>
+            <field name="primary_color">#18181b</field>
+            <field name="secondary_color">#facc15</field>
+            <field name="accent_color">#eab308</field>
+            <field name="sidebar_bg">#18181b</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#09090b</field>
+            <field name="bottom_bar_text">#fef08a</field>
+        </record>
+        <record id="theme_carnival" model="vscreens.theme">
+            <field name="name">🎭 Carnavales</field>
+            <field name="code">carnival</field>
+            <field name="category">festive</field>
+            <field name="description">Colores vibrantes festivos con destellos magenta y turquesa.</field>
+            <field name="primary_color">#4c1d95</field>
+            <field name="secondary_color">#fde047</field>
+            <field name="accent_color">#ec4899</field>
+            <field name="sidebar_bg">#1e1b4b</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#701a75</field>
+            <field name="bottom_bar_text">#ffffff</field>
+        </record>
+        <record id="theme_easter" model="vscreens.theme">
+            <field name="name">✝️ Semana Santa</field>
+            <field name="code">easter</field>
+            <field name="category">festive</field>
+            <field name="description">Tonos sobrios morado y lila suave para temporada religiosa.</field>
+            <field name="primary_color">#3b0764</field>
+            <field name="secondary_color">#e9d5ff</field>
+            <field name="accent_color">#c084fc</field>
+            <field name="sidebar_bg">#1f1235</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#2e1065</field>
+            <field name="bottom_bar_text">#f3e8ff</field>
+        </record>
+        <record id="theme_valentine" model="vscreens.theme">
+            <field name="name">❤️ San Valentín</field>
+            <field name="code">valentine</field>
+            <field name="category">festive</field>
+            <field name="description">Tonos carmesí y rosa romántico para campañas de amor y amistad.</field>
+            <field name="primary_color">#881337</field>
+            <field name="secondary_color">#fda4af</field>
+            <field name="accent_color">#fb7185</field>
+            <field name="sidebar_bg">#4c0519</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#9f1239</field>
+            <field name="bottom_bar_text">#ffffff</field>
+        </record>
+        <record id="theme_halloween" model="vscreens.theme">
+            <field name="name">🎃 Halloween</field>
+            <field name="code">halloween</field>
+            <field name="category">festive</field>
+            <field name="description">Naranja intenso y púrpura nocturno para octubre.</field>
+            <field name="primary_color">#431407</field>
+            <field name="secondary_color">#fb923c</field>
+            <field name="accent_color">#f97316</field>
+            <field name="sidebar_bg">#2e1065</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#7c2d12</field>
+            <field name="bottom_bar_text">#ffedd5</field>
+        </record>
+        <record id="theme_black_friday" model="vscreens.theme">
+            <field name="name">🏷️ Black Friday / Ofertas</field>
+            <field name="code">black_friday</field>
+            <field name="category">business</field>
+            <field name="description">Alto impacto promocional en negro mate, rojo y amarillo.</field>
+            <field name="primary_color">#18181b</field>
+            <field name="secondary_color">#facc15</field>
+            <field name="accent_color">#ef4444</field>
+            <field name="sidebar_bg">#09090b</field>
+            <field name="sidebar_text">#ffffff</field>
+            <field name="bottom_bar_bg">#7f1d1d</field>
+            <field name="bottom_bar_text">#ffffff</field>
+        </record>
+        <record id="theme_cafe_wood" model="vscreens.theme">
+            <field name="name">☕ Madera / Café Artesanal</field>
+            <field name="code">cafe_wood</field>
+            <field name="category">business</field>
+            <field name="description">Textura cálida amaderada ideal para cafeterías y restaurantes.</field>
+            <field name="primary_color">#451a03</field>
+            <field name="secondary_color">#fbbf24</field>
+            <field name="accent_color">#d97706</field>
+            <field name="sidebar_bg">#291206</field>
+            <field name="sidebar_text">#fef3c7</field>
+            <field name="bottom_bar_bg">#271107</field>
+            <field name="bottom_bar_text">#fef3c7</field>
+        </record>
+        <record id="theme_marble_luxury" model="vscreens.theme">
+            <field name="name">✨ Mármol / Lujo</field>
+            <field name="code">marble_luxury</field>
+            <field name="category">generic</field>
+            <field name="description">Acabado oscuro sofisticado con vetas doradas.</field>
+            <field name="primary_color">#1e293b</field>
+            <field name="secondary_color">#eab308</field>
+            <field name="accent_color">#e2e8f0</field>
+            <field name="sidebar_bg">#0f172a</field>
+            <field name="sidebar_text">#f8fafc</field>
+            <field name="bottom_bar_bg">#020617</field>
+            <field name="bottom_bar_text">#fef08a</field>
+        </record>
+        <record id="theme_neon_tech" model="vscreens.theme">
+            <field name="name">⚡ Neón / Tecnológico</field>
+            <field name="code">neon_tech</field>
+            <field name="category">generic</field>
+            <field name="description">Retícula futurista en cian y magenta neón.</field>
+            <field name="primary_color">#0f172a</field>
+            <field name="secondary_color">#22d3ee</field>
+            <field name="accent_color">#e879f9</field>
+            <field name="sidebar_bg">#090d1a</field>
+            <field name="sidebar_text">#ecfeff</field>
+            <field name="bottom_bar_bg">#083344</field>
+            <field name="bottom_bar_text">#cffafe</field>
+        </record>
+    </data>
+</odoo>

@@ -73,6 +73,11 @@
   - `frontend-tv` + `odoo-addons` + `frontend-admin`: 10 temas visuales con texturas y marcos en barras y área de video (`christmas`, `new_year`, `carnival`, `easter`, `valentine`, `halloween`, `black_friday`, `cafe_wood`, `marble_luxury`, `neon_tech`) + `sidebar_bg_image` y `bottom_bar_bg_image`.
   - `odoo-addons`: switch `show_odoo_products_in_sidebar` + endpoint `/companies/odoo-product/<id>/image` para mostrar/ocultar los productos de `odoo_remote_product_ids` sin mezclarlos con la lista manual `sidebar_items`.
   - `app-tv/android`: `MainActivity.java` envía `Escape` / `history.back()` dentro de la SPA de YouTube TV con 1 pulsación de `Back` (volviendo al buscador/lista) y sale a la playlist con doble `Back` rápido.
+- [x] **Guarda NPM, Google Drive Preview/Programados, Precarga, Ayuda en Pantalla, Buscador de Temas y Voz en TV (2026-11-20):**
+  - **VPS NPM:** `/data/nginx/proxy_host/vscreens.conf` actualizado con `resolver 127.0.0.11 valid=10s ipv6=off;` + `$vs_gw` dinámico para evitar cruce de IP con `vscreens-admin` al recrear contenedores.
+  - **Google Drive & Precarga (`frontend-tv`):** soporte nativo de Drive (`/preview?autoplay=1` en `<iframe id="drive-frame">`) en `Contenido TV` (`video_source="drive"`) y `Videos Programados`, más precarga del siguiente video antes de finalizar (`scheduleNextPreload()` con `#file-preloader`).
+  - **Odoo & Panel Web:** ayuda contextual (`help="..."` + alertas informativas en Odoo; `<FieldHelp />` + `<SectionGuide />` en `frontend-admin`), modelo `vscreens.theme` (11 temas + `GET /themes`), productos Odoo enviados a `sidebar_items` (`is_odoo_product`) con switch `show_odoo_products_in_sidebar` en Barra Lateral, e `is_active` por elemento en Barra Inferior.
+  - **Android TV (`app-tv/android`):** `AndroidManifest.xml` + `MainActivity.java` capturan `MEDIA_PLAY_FROM_SEARCH` / `SEARCH_ACTION` / `ACTION_SEARCH` para abrir búsquedas por voz dentro del YouTube TV embebido y conceden `RESOURCE_AUDIO_CAPTURE` en WebView.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

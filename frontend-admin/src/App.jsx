@@ -33,6 +33,81 @@ const Tooltip = ({ text, children }) => (
     </div>
 );
 
+const FieldHelp = ({ text }) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: '0.35rem', verticalAlign: 'middle' }}>
+            <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(o => !o); }}
+                onMouseEnter={() => setOpen(true)}
+                onMouseLeave={() => setOpen(false)}
+                aria-label="Ayuda del campo"
+                style={{
+                    background: 'rgba(59, 130, 246, 0.18)',
+                    color: '#93c5fd',
+                    border: '1px solid rgba(59, 130, 246, 0.35)',
+                    borderRadius: '999px',
+                    width: '17px',
+                    height: '17px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    lineHeight: '15px',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >?</button>
+            {open && (
+                <span style={{
+                    position: 'absolute',
+                    bottom: 'calc(100% + 6px)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '240px',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    border: '1px solid rgba(148, 163, 184, 0.35)',
+                    borderRadius: '8px',
+                    padding: '0.55rem 0.7rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 400,
+                    lineHeight: 1.35,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.45)',
+                    zIndex: 9999,
+                    pointerEvents: 'none',
+                    textTransform: 'none'
+                }}>
+                    {text}
+                </span>
+            )}
+        </span>
+    );
+};
+
+const SectionGuide = ({ title, text }) => (
+    <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.6rem',
+        padding: '0.75rem 0.9rem',
+        borderRadius: '10px',
+        background: 'rgba(59, 130, 246, 0.1)',
+        border: '1px solid rgba(59, 130, 246, 0.28)',
+        fontSize: '0.78rem',
+        lineHeight: 1.4,
+        color: '#dbeafe'
+    }}>
+        <Info size={16} style={{ flexShrink: 0, marginTop: '2px', color: '#60a5fa' }} />
+        <div>
+            {title && <strong style={{ display: 'block', marginBottom: '0.15rem', color: '#ffffff' }}>{title}</strong>}
+            <span style={{ opacity: 0.9 }}>{text}</span>
+        </div>
+    </div>
+);
+
 const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return (
@@ -2512,28 +2587,75 @@ const ThemeSwitch = ({ theme, toggle }) => (
 const BrandingEditor = ({ company, onChange }) => {
     const ds = company?.design_settings || {};
     const update = (k, v) => onChange({ design_settings: { ...ds, [k]: v } });
+    const [themes, setThemes] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/themes`)
+            .then(r => r.ok ? r.json() : [])
+            .then(list => { if (Array.isArray(list) && list.length) setThemes(list); })
+            .catch(() => {});
+    }, []);
+
+    const handleThemeSelect = (code) => {
+        const found = themes.find(t => t.code === code);
+        if (found) {
+            onChange({
+                design_settings: {
+                    ...ds,
+                    theme_preset: found.code,
+                    primary_color: found.primary_color || ds.primary_color,
+                    secondary_color: found.secondary_color || ds.secondary_color,
+                    accent_color: found.accent_color || ds.accent_color,
+                    sidebar_bg: found.sidebar_bg || ds.sidebar_bg,
+                    sidebar_text: found.sidebar_text || ds.sidebar_text,
+                    bottom_bar_bg: found.bottom_bar_bg || ds.bottom_bar_bg,
+                    bottom_bar_text: found.bottom_bar_text || ds.bottom_bar_text,
+                    sidebar_bg_image: found.sidebar_bg_image || '',
+                    bottom_bar_bg_image: found.bottom_bar_bg_image || ''
+                }
+            });
+        } else {
+            update('theme_preset', code);
+        }
+    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <SectionGuide
+                title="Guía de Diseño y Marca"
+                text="Personaliza el tema visual (Navidad, Año Nuevo, etc.), tipografía del nombre comercial, margen de seguridad para evitar cortes en televisores y qué indicadores aparecen sobre el video."
+            />
             <div>
-                <label style={{ fontSize: '0.75rem' }}>Tema Visual / Motivo Alegórico</label>
-                <select value={ds.theme_preset || 'default'} onChange={e => update('theme_preset', e.target.value)}>
-                    <option value="default">VScreenS Clásico</option>
-                    <option value="christmas">🎄 Navidad</option>
-                    <option value="new_year">🎆 Año Nuevo / Nochevieja</option>
-                    <option value="carnival">🎭 Carnavales</option>
-                    <option value="easter">✝️ Semana Santa</option>
-                    <option value="valentine">❤️ San Valentín</option>
-                    <option value="halloween">🎃 Halloween</option>
-                    <option value="black_friday">🏷️ Black Friday / Ofertas</option>
-                    <option value="cafe_wood">☕ Madera / Café Artesanal</option>
-                    <option value="marble_luxury">✨ Mármol / Lujo</option>
-                    <option value="neon_tech">⚡ Neón / Tecnológico</option>
+                <label style={{ fontSize: '0.75rem' }}>
+                    Tema Visual / Motivo Alegórico
+                    <FieldHelp text="Aplica automáticamente colores, texturas y ambientación temática en las barras lateral e inferior de tus pantallas." />
+                </label>
+                <select value={ds.theme_preset || 'default'} onChange={e => handleThemeSelect(e.target.value)}>
+                    {themes.length > 0 ? themes.map(t => (
+                        <option key={t.code} value={t.code}>{t.name}</option>
+                    )) : (
+                        <>
+                            <option value="default">VScreenS Clásico</option>
+                            <option value="christmas">🎄 Navidad</option>
+                            <option value="new_year">🎆 Año Nuevo / Nochevieja</option>
+                            <option value="carnival">🎭 Carnavales</option>
+                            <option value="easter">✝️ Semana Santa</option>
+                            <option value="valentine">❤️ San Valentín</option>
+                            <option value="halloween">🎃 Halloween</option>
+                            <option value="black_friday">🏷️ Black Friday / Ofertas</option>
+                            <option value="cafe_wood">☕ Madera / Café Artesanal</option>
+                            <option value="marble_luxury">✨ Mármol / Lujo</option>
+                            <option value="neon_tech">⚡ Neón / Tecnológico</option>
+                        </>
+                    )}
                 </select>
             </div>
             <div className="grid-2">
                 <div>
-                    <label style={{ fontSize: '0.75rem' }}>Fuente del Título</label>
+                    <label style={{ fontSize: '0.75rem' }}>
+                        Fuente del Título
+                        <FieldHelp text="Tipografía usada para el nombre comercial en la barra lateral del TV." />
+                    </label>
                     <select value={ds.name_font || 'inherit'} onChange={e => update('name_font', e.target.value)}>
                         <option value="inherit">Inherit</option>
                         <option value="'Inter', sans-serif">Inter</option>
@@ -2544,7 +2666,10 @@ const BrandingEditor = ({ company, onChange }) => {
                     </select>
                 </div>
                 <div>
-                    <label style={{ fontSize: '0.75rem' }}>Color del Título</label>
+                    <label style={{ fontSize: '0.75rem' }}>
+                        Color del Título
+                        <FieldHelp text="Color principal del nombre comercial en la cabecera lateral." />
+                    </label>
                     <input type="color" value={ds.name_color || '#ffffff'} onChange={e => update('name_color', e.target.value)} />
                 </div>
             </div>
@@ -3829,10 +3954,10 @@ const MasterAdManager = ({ token }) => {
                         {[0, 1, 2].map(idx => (
                             <div key={idx}>
                                 <YouTubeInput
-                                    label={`URL Video ${idx + 1}`}
+                                    label={`URL Video ${idx + 1} (YouTube o Google Drive)`}
                                     value={ad.video_playlist[idx] || ''}
                                     onChange={v => updateVideo(idx, v)}
-                                    placeholder="https://youtube.com/watch?v=..."
+                                    placeholder="https://youtube.com/... o https://drive.google.com/file/d/.../view"
                                 />
                             </div>
                         ))}
@@ -3930,23 +4055,27 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', opacity: disabled ? 0.6 : 1 }}>
+            <SectionGuide
+                title="Guía de Barra Lateral"
+                text="Configura el ancho de la columna lateral, colores o imagen de textura de fondo, animación de los bloques promocionales y el listado de productos o promociones."
+            />
             <div className="glass-card" style={{ borderLeft: '4px solid var(--primary-color)' }}>
-                <div className="section-title"><Palette size={18} /> Diseño Lateral <Tooltip text="Ajuste el ancho y estilo visual de la barra lateral." /></div>
+                <div className="section-title"><Palette size={18} /> Diseño Lateral <FieldHelp text="Ajusta el ancho (%), efectos visuales, colores y textura de fondo de la barra lateral." /></div>
                 <div className="grid-2">
-                    <div><label>Ancho (%)</label><input type="range" min="15" max="45" value={ds.sidebar_width || 22} onChange={e => updateDesign('sidebar_width', parseInt(e.target.value))} /></div>
-                    <div><label>Efecto</label><select value={ds.sidebar_effect || 'none'} onChange={e => updateDesign('sidebar_effect', e.target.value)}><option value="none">Normal</option><option value="glass_3d">Cristal</option><option value="neon_glow">Neón</option></select></div>
+                    <div><label>Ancho (%) <FieldHelp text="Porcentaje del ancho total de la pantalla ocupado por la barra lateral (recomendado 20% - 28%)." /></label><input type="range" min="15" max="45" value={ds.sidebar_width || 22} onChange={e => updateDesign('sidebar_width', parseInt(e.target.value))} /></div>
+                    <div><label>Efecto <FieldHelp text="Estilo visual del panel lateral: Normal, Cristal 3D o Neón." /></label><select value={ds.sidebar_effect || 'none'} onChange={e => updateDesign('sidebar_effect', e.target.value)}><option value="none">Normal</option><option value="glass_3d">Cristal</option><option value="neon_glow">Neón</option></select></div>
                 </div>
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>Fondo</label><input type="color" value={ds.sidebar_bg || '#1e293b'} onChange={e => updateDesign('sidebar_bg', e.target.value)} /></div>
                     <div><label>Texto</label><input type="color" value={ds.sidebar_text || '#ffffff'} onChange={e => updateDesign('sidebar_text', e.target.value)} /></div>
                 </div>
                 <div style={{ marginTop: '0.8rem' }}>
-                    <label>Imagen / Textura de Fondo (URL)</label>
+                    <label>Imagen / Textura de Fondo (URL) <FieldHelp text="Pega una URL de imagen o enlace de Google Drive para usar una textura personalizada en la barra lateral." /></label>
                     <input value={ds.sidebar_bg_image || ''} onChange={e => updateDesign('sidebar_bg_image', e.target.value)} placeholder="https://... (opcional)" />
                 </div>
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div>
-                        <label>Animación de Bloques</label>
+                        <label>Animación de Bloques <FieldHelp text="Transición visual al cambiar entre bloques de promociones o productos." /></label>
                         <select value={ds.sidebar_animation || 'slide_up'} onChange={e => updateDesign('sidebar_animation', e.target.value)}>
                             <option value="slide_up">Deslizar Arriba</option>
                             <option value="fade">Desvanecer (Fade)</option>
@@ -4143,44 +4272,91 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
 const BottomBarEditor = ({ company, onChange, disabled }) => {
     const data = (typeof company?.bottom_bar_content === 'string' ? safeParse(company.bottom_bar_content) : company?.bottom_bar_content) || {};
     const ds = (typeof company?.design_settings === 'string' ? safeParse(company.design_settings) : company?.design_settings) || {};
+    const [newMsgText, setNewMsgText] = useState('');
 
     const update = (k, v) => !disabled && onChange({ bottom_bar_content: { ...data, [k]: v } });
     const updateDesign = (k, v) => !disabled && onChange({ design_settings: { ...ds, [k]: v } });
 
+    const messagesList = Array.isArray(data.messages) ? data.messages : [];
+    const addTickerMsg = () => {
+        if (disabled || !newMsgText.trim()) return;
+        update('messages', [...messagesList, { text: newMsgText.trim(), is_active: true }]);
+        setNewMsgText('');
+    };
+    const toggleTickerMsg = (idx) => {
+        if (disabled) return;
+        const next = messagesList.map((m, i) => i === idx ? { ...m, is_active: m.is_active === false } : m);
+        update('messages', next);
+    };
+    const removeTickerMsg = (idx) => {
+        if (disabled) return;
+        update('messages', messagesList.filter((_, i) => i !== idx));
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', opacity: disabled ? 0.6 : 1 }}>
+            <SectionGuide
+                title="Guía de Barra Inferior"
+                text="Controla la altura, velocidad de desplazamiento del cintillo, redes sociales en marquesina, reloj inferior, tasa BCV y activa o desactiva mensajes individuales."
+            />
             <div className="glass-card" style={{ borderLeft: '4px solid #10b981' }}>
-                <div className="section-title"><Clock size={18} /> Ajustes Barra Inferior <Tooltip text="Ajuste la velocidad del texto y la altura de la franja informativa." /></div>
+                <div className="section-title"><Clock size={18} /> Ajustes Barra Inferior <FieldHelp text="Ajusta la velocidad de desplazamiento del texto, la altura de la franja y su textura de fondo." /></div>
                 <div className="grid-2">
                     <div><label>Fondo Barra</label><input type="color" value={ds.bottom_bar_bg || '#8d6e63'} onChange={e => updateDesign('bottom_bar_bg', e.target.value)} /></div>
-                    <div><label>Alto (%)</label><input type="range" min="5" max="25" value={ds.bottom_bar_height || 10} onChange={e => updateDesign('bottom_bar_height', parseInt(e.target.value))} /></div>
+                    <div><label>Alto (%) <FieldHelp text="Porcentaje de altura de la pantalla que ocupa la barra inferior (recomendado 8% - 12%)." /></label><input type="range" min="5" max="25" value={ds.bottom_bar_height || 10} onChange={e => updateDesign('bottom_bar_height', parseInt(e.target.value))} /></div>
                 </div>
                 <div className="grid-2" style={{ marginTop: '0.8rem' }}>
-                    <div><label>Velocidad (Seg)</label><input type="range" min="5" max="120" value={ds.ticker_speed || 30} onChange={e => updateDesign('ticker_speed', parseInt(e.target.value))} /></div>
+                    <div><label>Velocidad (Seg) <FieldHelp text="Duración del ciclo de la marquesina en segundos. Menor número = más rápido." /></label><input type="range" min="5" max="120" value={ds.ticker_speed || 30} onChange={e => updateDesign('ticker_speed', parseInt(e.target.value))} /></div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '1.5rem' }}>
                         <label style={{ fontSize: '0.75rem' }}>Borde Sup.</label>
                         <div className="toggle-container" onClick={() => updateDesign('bottom_bar_border', !ds.bottom_bar_border)}><div className={`toggle-switch ${ds.bottom_bar_border ? 'on' : 'off'}`}></div></div>
                     </div>
                 </div>
                 <div style={{ marginTop: '0.8rem' }}>
-                    <label>Imagen / Textura de Fondo Barra Inferior (URL)</label>
+                    <label>Imagen / Textura de Fondo Barra Inferior (URL) <FieldHelp text="URL de imagen o textura para el fondo del cintillo inferior." /></label>
                     <input value={ds.bottom_bar_bg_image || ''} onChange={e => updateDesign('bottom_bar_bg_image', e.target.value)} placeholder="https://... (opcional)" />
                 </div>
                 <div className="grid-2" style={{ marginTop: '0.8rem', gap: '0.5rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ds.show_social_in_ticker !== false} onChange={e => updateDesign('show_social_in_ticker', e.target.checked)} />
-                        Redes en Marquesina
+                        Redes en Marquesina <FieldHelp text="Incluye WhatsApp e Instagram dentro del texto en movimiento en lugar de fijarlos." />
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
                         <input type="checkbox" checked={ds.show_bottom_clock !== false} onChange={e => updateDesign('show_bottom_clock', e.target.checked)} />
-                        Reloj y Fecha Inferior
+                        Reloj y Fecha Inferior <FieldHelp text="Muestra la hora y fecha en la esquina derecha de la barra inferior." />
                     </label>
                 </div>
             </div>
             <div className="glass-card">
-                <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <Tooltip text="Mensaje que aparece en el texto corrido inferior." /></div>
-                <label>Mensaje del Cintillo (Animado)</label>
+                <div className="section-title"><MessageSquare size={18} /> Contenido Cintillo <FieldHelp text="Agrega mensajes animados y enciende o apaga cada elemento individualmente con su switch." /></div>
+                <label>Mensaje Principal del Cintillo (Animado)</label>
                 <input value={data.static || ''} onChange={e => update('static', e.target.value)} placeholder="Ej: Bienvenidos a VScreenS" />
+
+                <div style={{ marginTop: '0.9rem', paddingTop: '0.8rem', borderTop: '1px solid var(--border-color)' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
+                        Mensajes Individuales (Switch Activo/Inactivo)
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                        <input value={newMsgText} onChange={e => setNewMsgText(e.target.value)} placeholder="Nuevo aviso para la barra inferior..." style={{ marginBottom: 0 }} />
+                        <button type="button" className="btn btn-primary" onClick={addTickerMsg}><Plus size={16} /></button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {messagesList.map((m, idx) => {
+                            const text = typeof m === 'string' ? m : (m.text || '');
+                            const active = typeof m === 'string' ? true : m.is_active !== false;
+                            return (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', background: 'rgba(255,255,255,0.04)', padding: '0.45rem 0.65rem', borderRadius: '8px', opacity: active ? 1 : 0.55 }}>
+                                    <span style={{ fontSize: '0.8rem', flex: 1 }}>{text}</span>
+                                    <div className="toggle-container" onClick={() => toggleTickerMsg(idx)} title={active ? 'Visible en barra inferior' : 'Oculto en barra inferior'}>
+                                        <div className={`toggle-switch ${active ? 'on' : 'off'}`}></div>
+                                    </div>
+                                    <button type="button" onClick={() => removeTickerMsg(idx)} style={{ border: 'none', background: 'none', color: '#f43f5e', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div><label>WhatsApp</label><input value={data.whatsapp || ''} onChange={e => update('whatsapp', e.target.value)} /></div>
                     <div><label>Instagram</label><input value={data.instagram || ''} onChange={e => update('instagram', e.target.value)} /></div>
@@ -4239,24 +4415,38 @@ const VideoEditor = ({ company, onChange }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <SectionGuide
+                title="Guía de Contenido TV"
+                text="Elige la fuente principal de video (Playlist de YouTube o Video Promocional en Google Drive). Los videos se precargan automáticamente antes de finalizar el actual para evitar pausas."
+            />
             <div className="glass-card" style={{ borderLeft: '4px solid #ef4444' }}>
-                <div className="section-title"><PlaySquare size={18} /> Playlist (3 URLs)</div>
+                <div className="section-title"><PlaySquare size={18} /> Fuente y Playlist de Video <FieldHelp text="Selecciona si el TV reproducirá tu playlist de YouTube o tu video promocional alojado en Google Drive." /></div>
+                <div style={{ marginBottom: '1rem' }}>
+                    <label>Fuente Principal</label>
+                    <select value={company?.video_source || 'youtube'} onChange={e => onChange({ video_source: e.target.value })}>
+                        <option value="youtube">Playlist YouTube</option>
+                        <option value="drive">Google Drive (Video Promocional)</option>
+                    </select>
+                </div>
                 {[0, 1, 2].map(i => (
                     <div key={i} style={{ marginBottom: '0.8rem' }}>
                         <YouTubeInput
                             label={`VIDEO ${i + 1}`}
                             value={playlist[i] || ''}
                             onChange={v => updatePlaylist(i, v)}
-                            placeholder="https://youtube.com/watch?v=..."
+                            placeholder="https://youtube.com/watch?v=... o Google Drive"
                         />
                     </div>
                 ))}
             </div>
             <div className="glass-card">
-                <div className="section-title"><Bell size={18} /> Publicidad</div>
-                <label>Frecuencia de Ads (Cada X videos)</label>
+                <div className="section-title"><Bell size={18} /> Video Propio (Google Drive) y Publicidad</div>
+                <label>Frecuencia de Ads (Cada X videos) <FieldHelp text="Cantidad de videos propios antes de intercalar un anuncio o pausa." /></label>
                 <input type="number" min="1" max="10" value={company?.ad_frequency || 3} onChange={e => onChange({ ad_frequency: parseInt(e.target.value) })} />
-                <div style={{ marginTop: '1rem' }}><label>Video Propio (Drive)</label><input value={company?.google_drive_link || ''} onChange={e => onChange({ google_drive_link: e.target.value })} /></div>
+                <div style={{ marginTop: '1rem' }}>
+                    <label>Enlace de Google Drive <FieldHelp text="Pega el enlace compartido de Google Drive (ej. https://drive.google.com/file/d/.../view). Asegúrate de que esté compartido como 'Cualquier persona con el enlace'." /></label>
+                    <input value={company?.google_drive_link || ''} onChange={e => onChange({ google_drive_link: e.target.value })} placeholder="https://drive.google.com/file/d/.../view" />
+                </div>
             </div>
         </div>
     );

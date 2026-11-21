@@ -94,7 +94,8 @@ class VscreensSidebarItem(models.Model):
     color = fields.Char(string="Color", default="#ffffff", help="Color en formato hex")
     image_url = fields.Char(string="URL de Imagen", help="Imagen opcional junto al texto")
     image = fields.Binary(string="Imagen", attachment=True)
-    is_active = fields.Boolean(string="Activo", default=True)
+    is_odoo_product = fields.Boolean(string="Importado de Odoo", default=False, help="Indica si el bloque proviene del catálogo remoto de Odoo.")
+    is_active = fields.Boolean(string="Activo", default=True, help="Activa o desactiva este bloque en la TV sin borrarlo.")
 
 
 class VscreensBottomBarItem(models.Model):
@@ -318,3 +319,37 @@ class VscreensOdooRemoteProduct(models.Model):
     list_price = fields.Float(string="Precio")
     currency_symbol = fields.Char(string="Moneda", default="$")
     image_128 = fields.Binary(string="Foto", attachment=False)
+
+
+class VscreensTheme(models.Model):
+    _name = "vscreens.theme"
+    _description = "Tema Visual y Motivo Alegórico VScreenS"
+    _order = "category, name"
+
+    name = fields.Char(string="Nombre del Tema", required=True)
+    code = fields.Char(
+        string="Código CSS",
+        required=True,
+        default="default",
+        help="Identificador de tema (ej: christmas, new_year, carnival, easter, cafe_wood, default).",
+    )
+    category = fields.Selection(
+        [
+            ("festive", "Festivo / Alegórico"),
+            ("business", "Negocios / Gastronomía"),
+            ("generic", "Genérico / Moderno"),
+        ],
+        string="Categoría",
+        default="festive",
+    )
+    description = fields.Char(string="Descripción", help="Describe cuándo o en qué tipo de pantalla usar este tema.")
+    primary_color = fields.Char(string="Color Primario", default="#12233d")
+    secondary_color = fields.Char(string="Color Secundario", default="#c8ff00")
+    accent_color = fields.Char(string="Color Acento", default="#ff6b35")
+    sidebar_bg = fields.Char(string="Fondo Barra Lateral", default="#1e293b")
+    sidebar_text = fields.Char(string="Texto Barra Lateral", default="#ffffff")
+    bottom_bar_bg = fields.Char(string="Fondo Barra Inferior", default="#0a0e1a")
+    bottom_bar_text = fields.Char(string="Texto Barra Inferior", default="#ffffff")
+    sidebar_bg_image = fields.Char(string="Imagen / Textura Lateral (URL)")
+    bottom_bar_bg_image = fields.Char(string="Imagen / Textura Inferior (URL)")
+    is_active = fields.Boolean(string="Disponible", default=True)

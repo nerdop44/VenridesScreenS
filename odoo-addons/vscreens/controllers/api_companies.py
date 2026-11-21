@@ -505,3 +505,26 @@ class VScreenSCompanyController(http.Controller):
         if not prod or not prod.image_128:
             return request.not_found()
         return self._serve_binary_image(base64.b64decode(prod.image_128), "product.png")
+
+    @http.route("/themes", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def public_themes(self, **kwargs):
+        themes = request.env["vscreens.theme"].sudo().search([("is_active", "=", True)])
+        return json_response([
+            {
+                "id": t.id,
+                "name": t.name,
+                "code": t.code,
+                "category": t.category,
+                "description": t.description or "",
+                "primary_color": t.primary_color,
+                "secondary_color": t.secondary_color,
+                "accent_color": t.accent_color,
+                "sidebar_bg": t.sidebar_bg,
+                "sidebar_text": t.sidebar_text,
+                "bottom_bar_bg": t.bottom_bar_bg,
+                "bottom_bar_text": t.bottom_bar_text,
+                "sidebar_bg_image": t.sidebar_bg_image or "",
+                "bottom_bar_bg_image": t.bottom_bar_bg_image or "",
+            }
+            for t in themes
+        ])

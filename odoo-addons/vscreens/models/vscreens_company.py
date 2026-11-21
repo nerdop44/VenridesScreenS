@@ -181,8 +181,14 @@ class VScreenSCompany(models.Model):
         string="Catálogo Remoto (Odoo)",
     )
     show_odoo_products_in_sidebar = fields.Boolean(
-        string="Mostrar Productos Odoo en Barra Lateral",
-        default=False,
+        string="Mostrar Productos de Odoo en Barra Lateral",
+        default=True,
+        help="Activa o desactiva la visualización en TV de los productos importados desde el Odoo del cliente sin borrar tus bloques manuales.",
+    )
+    theme_id = fields.Many2one(
+        "vscreens.theme",
+        string="Buscador de Temas",
+        help="Exclusivo de Odoo: busca un tema por nombre o motivo (ej. Navidad, Año Nuevo, Café) y aplícalo al instante a la TV y al panel web.",
     )
 
     # Accesos directos editables por pestaña hacia design_id
@@ -532,6 +538,8 @@ class VScreenSCompany(models.Model):
             for item in self.sidebar_items:
                 if not ((item.value or item.label) and item.is_active):
                     continue
+                if item.is_odoo_product and not self.show_odoo_products_in_sidebar:
+                    continue
                 img_url = item.image_url or False
                 if not img_url and item.image:
                     stamp = int(item.write_date.timestamp()) if item.write_date else 0
@@ -544,20 +552,6 @@ class VScreenSCompany(models.Model):
                     "color": item.color or "#ffffff",
                     "image_url": img_url,
                 })
-            if self.show_odoo_products_in_sidebar:
-                for prod in self.odoo_remote_product_ids.filtered("selected"):
-                    price_txt = f"${prod.list_price:,.2f}" if prod.list_price else ""
-                    prod_img = False
-                    if prod.image_128:
-                        prod_img = f"https://vscreens-api.inverpave.com/companies/odoo-product/{prod.id}/image"
-                    result.append({
-                        "type": "text",
-                        "label": prod.name or "Producto",
-                        "value": f"{prod.name} · {price_txt}" if price_txt else (prod.name or "Producto"),
-                        "icon": False,
-                        "color": "#ffffff",
-                        "image_url": prod_img,
-                    })
             return result
         if field_name == "bottom_bar_items":
             content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
@@ -996,14 +990,18 @@ class VScreenSCompany(models.Model):
 
     def write(self, vals):
         ds_touched = any(k.startswith("ds_") for k in vals)
-        if ds_touched:
+        if ds_touched or "theme_id" in vals:
             self._ensure_design_record()
         res = super().write(vals)
+        if "theme_id" in vals:
+            for record in self:
+                if record.theme_id:
+                    record._apply_theme_record(record.theme_id)
         json_touched = [f for f in self._JSON_VISUAL_FIELDS if f in vals]
         if json_touched and not self.env.context.get("vscreens_skip_visual_rebuild"):
             self._replace_visuals_from_json(json_touched)
         touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
-        if ds_touched and "design_settings_id" not in touched:
+        if (ds_touched or "theme_id" in vals) and "design_settings_id" not in touched:
             touched.append("design_settings_id")
         if ("show_odoo_products_in_sidebar" in vals or "odoo_remote_product_ids" in vals) and "sidebar_items" not in touched:
             touched.append("sidebar_items")
@@ -1198,6 +1196,46 @@ class VScreenSCompany(models.Model):
             return None, base, f"No se pudo conectar: {str(error)[:120]}"
         return session, base, False
 
+    @api.onchange("theme_id")
+    def _onchange_theme_id(self):
+        for rec in self:
+            if not rec.theme_id:
+                continue
+            t = rec.theme_id
+            rec.primary_color = t.primary_color or rec.primary_color
+            rec.secondary_color = t.secondary_color or rec.secondary_color
+            rec.accent_color = t.accent_color or rec.accent_color
+            rec.ds_theme_preset = t.code or "default"
+            rec.ds_sidebar_bg = t.sidebar_bg or rec.ds_sidebar_bg
+            rec.ds_sidebar_text = t.sidebar_text or rec.ds_sidebar_text
+            rec.ds_bottom_bar_bg = t.bottom_bar_bg or rec.ds_bottom_bar_bg
+            rec.ds_bottom_bar_text = t.bottom_bar_text or rec.ds_bottom_bar_text
+            rec.ds_sidebar_bg_image = t.sidebar_bg_image or ""
+            rec.ds_bottom_bar_bg_image = t.bottom_bar_bg_image or ""
+
+    def _apply_theme_record(self, theme):
+        self.ensure_one()
+        if not theme:
+            return
+        self._ensure_design_record()
+        valid_codes = ("default", "christmas", "new_year", "carnival", "easter", "valentine", "halloween", "black_friday", "cafe_wood", "marble_luxury", "neon_tech")
+        preset_code = theme.code if theme.code in valid_codes else "default"
+        super(VScreenSCompany, self).write({
+            "primary_color": theme.primary_color or self.primary_color,
+            "secondary_color": theme.secondary_color or self.secondary_color,
+            "accent_color": theme.accent_color or self.accent_color,
+        })
+        if self.design_id:
+            self.design_id.sudo().write({
+                "theme_preset": preset_code,
+                "sidebar_bg": theme.sidebar_bg or self.design_id.sidebar_bg,
+                "sidebar_text": theme.sidebar_text or self.design_id.sidebar_text,
+                "bottom_bar_bg": theme.bottom_bar_bg or self.design_id.bottom_bar_bg,
+                "bottom_bar_text": theme.bottom_bar_text or self.design_id.bottom_bar_text,
+                "sidebar_bg_image": theme.sidebar_bg_image or "",
+                "bottom_bar_bg_image": theme.bottom_bar_bg_image or "",
+            })
+
     @api.depends("design_settings_id")
     def _compute_design_id(self):
         for rec in self:
@@ -1315,9 +1353,12 @@ class VScreenSCompany(models.Model):
                 },
             }
         Sidebar = self.env["vscreens.sidebar.item"].sudo()
+        existing_labels = {item.label for item in self.sidebar_items if item.is_odoo_product and item.label}
         seq = (max(self.sidebar_items.mapped("sequence") or [0]) + 10)
         added = 0
         for prod in selected:
+            if prod.name in existing_labels:
+                continue
             price_txt = f"${prod.list_price:,.2f}" if prod.list_price else ""
             val = f"{prod.name} · {price_txt}" if price_txt else prod.name
             Sidebar.create({
@@ -1327,8 +1368,10 @@ class VScreenSCompany(models.Model):
                 "value": val,
                 "image": prod.image_128 or False,
                 "color": "#ffffff",
+                "is_odoo_product": True,
                 "is_active": True,
             })
+            existing_labels.add(prod.name)
             seq += 10
             added += 1
         self._sync_all_visual_to_json()
@@ -1336,8 +1379,8 @@ class VScreenSCompany(models.Model):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": "Productos añadidos",
-                "message": f"Se enviaron {added} productos (con foto, nombre y precio) a la Barra Lateral.",
+                "title": "Productos enviados a Barra Lateral",
+                "message": f"Se agregaron {added} productos a la pestaña 'Barra Lateral'. Puedes activar o desactivar su visualización con el switch en esa pestaña.",
                 "type": "success",
             },
         }

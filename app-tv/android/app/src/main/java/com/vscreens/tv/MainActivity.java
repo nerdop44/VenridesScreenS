@@ -1,6 +1,9 @@
 package com.vscreens.tv;
 
+import android.app.SearchManager;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -47,6 +51,42 @@ public class MainActivity extends BridgeActivity {
                 handleBackInput();
             }
         });
+
+        handleSearchIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleSearchIntent(intent);
+    }
+
+    private void handleSearchIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        if (Intent.ACTION_SEARCH.equals(action)
+                || "android.media.action.MEDIA_PLAY_FROM_SEARCH".equals(action)
+                || "com.google.android.gms.actions.SEARCH_ACTION".equals(action)) {
+            String query = intent.getStringExtra(SearchManager.QUERY);
+            if (query == null) {
+                query = intent.getStringExtra("query");
+            }
+            if (query != null && !query.trim().isEmpty()) {
+                final String targetUrl = "https://www.youtube.com/tv#/results?search_query=" + Uri.encode(query.trim());
+                mainHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (MainActivity.this.bridge != null && MainActivity.this.bridge.getWebView() != null) {
+                            MainActivity.this.bridge.getWebView().evaluateJavascript(
+                                "window.dispatchEvent(new CustomEvent('vscreens:pause_for_search'))", null
+                            );
+                        }
+                        openYouTubeTVInternal(0, 0, 0, 0, targetUrl);
+                    }
+                }, 400);
+            }
+        }
     }
 
     @Override
@@ -184,6 +224,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void openYouTubeTVInternal(final int cssLeft, final int cssTop, final int cssWidth, final int cssHeight) {
+        openYouTubeTVInternal(cssLeft, cssTop, cssWidth, cssHeight, "https://www.youtube.com/tv");
+    }
+
+    private void openYouTubeTVInternal(final int cssLeft, final int cssTop, final int cssWidth, final int cssHeight, final String targetUrl) {
         mainHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -210,7 +254,19 @@ public class MainActivity extends BridgeActivity {
                     s.setUseWideViewPort(true);
                     s.setLoadWithOverviewMode(true);
 
-                    youtubeTvWebView.setWebChromeClient(new WebChromeClient());
+                    youtubeTvWebView.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public void onPermissionRequest(final PermissionRequest request) {
+                            mainHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (request != null) {
+                                        request.grant(request.getResources());
+                                    }
+                                }
+                            });
+                        }
+                    });
                     youtubeTvWebView.setWebViewClient(new WebViewClient() {
                         @Override
                         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -230,7 +286,7 @@ public class MainActivity extends BridgeActivity {
                 youtubeTvWebView.setLayoutParams(lp);
                 youtubeTvWebView.setVisibility(View.VISIBLE);
                 youtubeTvWebView.bringToFront();
-                youtubeTvWebView.loadUrl("https://www.youtube.com/tv");
+                youtubeTvWebView.loadUrl(targetUrl != null ? targetUrl : "https://www.youtube.com/tv");
                 youtubeTvWebView.requestFocus();
                 Toast.makeText(MainActivity.this, "YouTube TV activo. Usa Back para regresar.", Toast.LENGTH_SHORT).show();
             }
