@@ -128,6 +128,25 @@ class VscreensDesignSettings(models.Model):
         required=True,
         ondelete="cascade",
     )
+    theme_preset = fields.Selection(
+        [
+            ("default", "VScreenS Clásico"),
+            ("christmas", "🎄 Navidad"),
+            ("new_year", "🎆 Año Nuevo / Nochevieja"),
+            ("carnival", "🎭 Carnavales"),
+            ("easter", "✝️ Semana Santa"),
+            ("valentine", "❤️ San Valentín"),
+            ("halloween", "🎃 Halloween"),
+            ("black_friday", "🏷️ Black Friday / Ofertas"),
+            ("cafe_wood", "☕ Madera / Café Artesanal"),
+            ("marble_luxury", "✨ Mármol / Lujo"),
+            ("neon_tech", "⚡ Neón / Tecnológico"),
+        ],
+        string="Tema / Motivo Alegórico",
+        default="default",
+    )
+    sidebar_bg_image = fields.Char(string="Imagen/Textura Barra Lateral (URL)")
+    bottom_bar_bg_image = fields.Char(string="Imagen/Textura Barra Inferior (URL)")
     # Título
     title_font = fields.Selection(
         [("inherit", "Heredar"), ("'Inter', sans-serif", "Inter"), ("'Roboto', sans-serif", "Roboto"), ("'Outfit', sans-serif", "Outfit"), ("serif", "Serif"), ("monospace", "Monospace")],
@@ -242,6 +261,9 @@ class VscreensDesignSettings(models.Model):
     def get_design_dict(self):
         self.ensure_one()
         return {
+            "theme_preset": self.theme_preset or "default",
+            "sidebar_bg_image": self.sidebar_bg_image or "",
+            "bottom_bar_bg_image": self.bottom_bar_bg_image or "",
             "name_font": self.title_font,
             "name_color": self.title_color,
             "name_size": self.title_size,

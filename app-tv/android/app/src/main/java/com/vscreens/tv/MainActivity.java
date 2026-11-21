@@ -27,7 +27,9 @@ public class MainActivity extends BridgeActivity {
 
     private int backPressCount = 0;
     private long lastBackPressMs = 0L;
+    private long lastYtBackMs = 0L;
     private static final long BACK_RESET_WINDOW_MS = 3500L;
+    private static final long YT_EXIT_DOUBLE_BACK_MS = 900L;
 
     private WebView youtubeTvWebView = null;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -117,11 +119,24 @@ public class MainActivity extends BridgeActivity {
 
     private void handleBackInput() {
         if (youtubeTvWebView != null && youtubeTvWebView.getVisibility() == View.VISIBLE) {
-            if (youtubeTvWebView.canGoBack()) {
-                youtubeTvWebView.goBack();
-            } else {
+            long now = System.currentTimeMillis();
+            if (now - lastYtBackMs < YT_EXIT_DOUBLE_BACK_MS) {
+                lastYtBackMs = 0L;
                 closeYouTubeTVInternal(true);
+                return;
             }
+            lastYtBackMs = now;
+            // Enviar Escape/Back a la SPA de YouTube TV para regresar a la búsqueda o lista anterior
+            youtubeTvWebView.evaluateJavascript(
+                "(function(){" +
+                "var ev = new KeyboardEvent('keydown',{key:'Escape',code:'Escape',keyCode:27,which:27,bubbles:true,cancelable:true});" +
+                "document.dispatchEvent(ev);" +
+                "if (document.activeElement) document.activeElement.dispatchEvent(ev);" +
+                "if (window.history && window.history.length > 1) { window.history.back(); }" +
+                "})()",
+                null
+            );
+            Toast.makeText(this, "Presiona Atrás 2 veces rápido para volver a tu playlist", Toast.LENGTH_SHORT).show();
             return;
         }
         processBackAction();

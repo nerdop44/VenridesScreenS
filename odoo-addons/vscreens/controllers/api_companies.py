@@ -498,3 +498,10 @@ class VScreenSCompanyController(http.Controller):
             raw = base64.b64decode(item.image)
             fname = "sidebar_item.png"
         return self._serve_binary_image(raw, fname, mime)
+
+    @http.route("/companies/odoo-product/<int:prod_id>/image", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*", save_session=False)
+    def public_odoo_product_image(self, prod_id, **kwargs):
+        prod = request.env["vscreens.odoo.remote.product"].with_context(bin_size=False).sudo().browse(prod_id).exists()
+        if not prod or not prod.image_128:
+            return request.not_found()
+        return self._serve_binary_image(base64.b64decode(prod.image_128), "product.png")

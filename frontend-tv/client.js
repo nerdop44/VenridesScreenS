@@ -360,7 +360,8 @@
         root.style.setProperty("--vs-highlight", data.secondary_color || "#c8ff00");
 
         if (app) {
-            app.className = "tv-app " + (data.layout_type || "layout-a");
+            var preset = (design.theme_preset && design.theme_preset !== "default") ? " theme-" + design.theme_preset : "";
+            app.className = "tv-app " + (data.layout_type || "layout-a") + preset;
         }
 
         if (design.safety_margin !== undefined && design.safety_margin !== null && design.safety_margin !== "") {
@@ -379,7 +380,15 @@
 
         var bottomBar = $("bottom-bar");
         if (bottomBar) {
-            bottomBar.style.background = design.bottom_bar_bg || "";
+            var bbImg = design.bottom_bar_bg_image ? driveToImage(design.bottom_bar_bg_image) : "";
+            if (bbImg) {
+                bottomBar.style.backgroundImage = "linear-gradient(90deg, rgba(4,8,15,0.72), rgba(4,8,15,0.82)), url(\"" + bbImg + "\")";
+                bottomBar.style.backgroundSize = "cover";
+                bottomBar.style.backgroundPosition = "center";
+            } else {
+                bottomBar.style.backgroundImage = "";
+                bottomBar.style.background = design.bottom_bar_bg || "";
+            }
             bottomBar.style.color = design.bottom_bar_text || "";
             bottomBar.style.borderTop = design.bottom_bar_border === false ? "none" : "";
         }

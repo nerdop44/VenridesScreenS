@@ -180,8 +180,15 @@ class VScreenSCompany(models.Model):
         "company_id",
         string="Catálogo Remoto (Odoo)",
     )
+    show_odoo_products_in_sidebar = fields.Boolean(
+        string="Mostrar Productos Odoo en Barra Lateral",
+        default=False,
+    )
 
     # Accesos directos editables por pestaña hacia design_id
+    ds_theme_preset = fields.Selection(related="design_id.theme_preset", readonly=False)
+    ds_sidebar_bg_image = fields.Char(related="design_id.sidebar_bg_image", readonly=False)
+    ds_bottom_bar_bg_image = fields.Char(related="design_id.bottom_bar_bg_image", readonly=False)
     ds_title_font = fields.Selection(related="design_id.title_font", readonly=False)
     ds_title_color = fields.Char(related="design_id.title_color", readonly=False)
     ds_title_size = fields.Char(related="design_id.title_size", readonly=False)
@@ -537,6 +544,20 @@ class VScreenSCompany(models.Model):
                     "color": item.color or "#ffffff",
                     "image_url": img_url,
                 })
+            if self.show_odoo_products_in_sidebar:
+                for prod in self.odoo_remote_product_ids.filtered("selected"):
+                    price_txt = f"${prod.list_price:,.2f}" if prod.list_price else ""
+                    prod_img = False
+                    if prod.image_128:
+                        prod_img = f"https://vscreens-api.inverpave.com/companies/odoo-product/{prod.id}/image"
+                    result.append({
+                        "type": "text",
+                        "label": prod.name or "Producto",
+                        "value": f"{prod.name} · {price_txt}" if price_txt else (prod.name or "Producto"),
+                        "icon": False,
+                        "color": "#ffffff",
+                        "image_url": prod_img,
+                    })
             return result
         if field_name == "bottom_bar_items":
             content = dict(self.bottom_bar_content) if isinstance(self.bottom_bar_content, dict) else {}
@@ -908,6 +929,9 @@ class VScreenSCompany(models.Model):
                         m_anim = "rotate"
                     safe_create(Design, {
                         "company_id": company.id,
+                        "theme_preset": data.get("theme_preset") if data.get("theme_preset") in ("default", "christmas", "new_year", "carnival", "easter", "valentine", "halloween", "black_friday", "cafe_wood", "marble_luxury", "neon_tech") else "default",
+                        "sidebar_bg_image": data.get("sidebar_bg_image") or "",
+                        "bottom_bar_bg_image": data.get("bottom_bar_bg_image") or "",
                         "title_font": data.get("name_font") or "inherit",
                         "title_color": data.get("name_color") or "#ffffff",
                         "title_size": data.get("name_size") or "1.2rem",
@@ -981,6 +1005,8 @@ class VScreenSCompany(models.Model):
         touched = [f for f in self._VISUAL_JSON_MAP if f in vals]
         if ds_touched and "design_settings_id" not in touched:
             touched.append("design_settings_id")
+        if ("show_odoo_products_in_sidebar" in vals or "odoo_remote_product_ids" in vals) and "sidebar_items" not in touched:
+            touched.append("sidebar_items")
         if touched:
             self._sync_visual_to_json(touched)
         if any(field in vals for field in self._NOTIFICATION_FIELDS):

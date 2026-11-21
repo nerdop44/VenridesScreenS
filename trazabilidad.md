@@ -69,6 +69,10 @@
 - [x] **YouTube TV Nativo Embebido y Estabilidad de MainActivity (2026-11-20):**
   - `MainActivity.java`: eliminada apertura automática de `ACTION_MANAGE_OVERLAY_PERMISSION` en `onCreate()` que sacaba al usuario de la app; integrado `WebView` nativo de `https://www.youtube.com/tv` (`VScreenSNative.openYouTubeTV`) posicionado en el área de video `#main-stage` con User-Agent Smart TV (búsqueda nativa, voz y reproducción continua sin salir de VScreenS), con retorno automático por `Back` o timeout.
   - `frontend-tv`: conectado `showYoutubeControl()` con `VScreenSNative.openYouTubeTV` en Android TV.
+- [x] **Temas Alegóricos/Texturas, Productos Odoo en Lista Separada y Navegación Back en YouTube TV (2026-11-20):**
+  - `frontend-tv` + `odoo-addons` + `frontend-admin`: 10 temas visuales con texturas y marcos en barras y área de video (`christmas`, `new_year`, `carnival`, `easter`, `valentine`, `halloween`, `black_friday`, `cafe_wood`, `marble_luxury`, `neon_tech`) + `sidebar_bg_image` y `bottom_bar_bg_image`.
+  - `odoo-addons`: switch `show_odoo_products_in_sidebar` + endpoint `/companies/odoo-product/<id>/image` para mostrar/ocultar los productos de `odoo_remote_product_ids` sin mezclarlos con la lista manual `sidebar_items`.
+  - `app-tv/android`: `MainActivity.java` envía `Escape` / `history.back()` dentro de la SPA de YouTube TV con 1 pulsación de `Back` (volviendo al buscador/lista) y sale a la playlist con doble `Back` rápido.
 
 ### Pendientes Operativos (Requieren acción en VPS / Entorno Android)
 1. **Rotar credenciales externas:** contraseña `admin` de Odoo, App Password SMTP (`info.vscreens@inverpave.com`), tokens de Uptime Kuma (y cargarlos en `/opt/vscreens/.env`).

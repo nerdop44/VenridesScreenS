@@ -144,8 +144,11 @@
                         </page>
 
                         <page string="🎨 Diseño y Marca" name="branding">
-                            <group string="Apariencia y Colores" col="4">
+                            <group string="Tema Visual y Motivos Alegóricos" col="4">
+                                <field name="ds_theme_preset" string="Tema / Motivo"/>
                                 <field name="layout_type"/>
+                            </group>
+                            <group string="Apariencia y Colores" col="4">
                                 <field name="primary_color" widget="color"/>
                                 <field name="secondary_color" widget="color"/>
                                 <field name="accent_color" widget="color"/>
@@ -228,6 +231,7 @@
                                 <field name="ds_show_slide_counter" widget="boolean_toggle" string="Mostrar Contador (01/03)"/>
                                 <field name="ds_sidebar_bg" widget="color" string="Color Fondo Lateral"/>
                                 <field name="ds_sidebar_text" widget="color" string="Color Texto Lateral"/>
+                                <field name="ds_sidebar_bg_image" string="Imagen/Textura Fondo (URL)" placeholder="https://..." colspan="4"/>
                             </group>
                             <group string="Menú / Precios y Pie Lateral" col="4">
                                 <field name="ds_show_side_menu" widget="boolean_toggle" string="Mostrar Menú / Precios"/>
@@ -264,6 +268,7 @@
                                 <field name="ds_bottom_bar_text" widget="color" string="Color de Texto"/>
                                 <field name="ds_ticker_color" widget="color" string="Color Marquesina"/>
                                 <field name="ds_ticker_font" string="Fuente Marquesina"/>
+                                <field name="ds_bottom_bar_bg_image" string="Imagen/Textura Fondo (URL)" placeholder="https://..." colspan="4"/>
                             </group>
                             <group string="Elementos Visibles y Tasa BCV" col="4">
                                 <field name="ds_show_bcv" widget="boolean_toggle" string="Mostrar Tasa BCV"/>
@@ -297,13 +302,14 @@
                                 <field name="odoo_link_last_sync" readonly="1"/>
                                 <field name="odoo_link_error" readonly="1" invisible="not odoo_link_error"/>
                             </group>
+                            <group string="Visualización en TV (Lista Separada)" col="2">
+                                <field name="show_odoo_products_in_sidebar" widget="boolean_toggle" string="Activar Productos Odoo en Barra Lateral"/>
+                            </group>
                             <div class="d-flex gap-2 mb-3">
                                 <button name="action_test_odoo_link" type="object"
                                         string="🔗 Probar Conexión" class="btn btn-secondary"/>
                                 <button name="action_fetch_odoo_products" type="object"
                                         string="📦 Traer Catálogo de Productos" class="btn btn-primary"/>
-                                <button name="action_send_odoo_products_to_sidebar" type="object"
-                                        string="➕ Enviar Seleccionados a Barra Lateral" class="btn btn-success"/>
                             </div>
                             <field name="odoo_remote_product_ids">
                                 <list editable="bottom" create="0" string="Productos del Odoo Externo">

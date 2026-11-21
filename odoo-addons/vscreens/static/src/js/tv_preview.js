@@ -245,6 +245,9 @@ export class VscreensTvPreviewField extends Component {
         };
         draft.design_settings = {
             ...(this.baseConfig.design_settings || {}),
+            theme_preset: pick("ds_theme_preset", "theme_preset", "default") || "default",
+            sidebar_bg_image: pick("ds_sidebar_bg_image", "sidebar_bg_image", "") || "",
+            bottom_bar_bg_image: pick("ds_bottom_bar_bg_image", "bottom_bar_bg_image", "") || "",
             name_font: pick("ds_title_font", "title_font", "inherit") || "inherit",
             name_color: pick("ds_title_color", "title_color", "#ffffff") || "#ffffff",
             name_size: pick("ds_title_size", "title_size", "1.2rem") || "1.2rem",

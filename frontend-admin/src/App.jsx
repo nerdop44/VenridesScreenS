@@ -2515,6 +2515,22 @@ const BrandingEditor = ({ company, onChange }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+                <label style={{ fontSize: '0.75rem' }}>Tema Visual / Motivo Alegórico</label>
+                <select value={ds.theme_preset || 'default'} onChange={e => update('theme_preset', e.target.value)}>
+                    <option value="default">VScreenS Clásico</option>
+                    <option value="christmas">🎄 Navidad</option>
+                    <option value="new_year">🎆 Año Nuevo / Nochevieja</option>
+                    <option value="carnival">🎭 Carnavales</option>
+                    <option value="easter">✝️ Semana Santa</option>
+                    <option value="valentine">❤️ San Valentín</option>
+                    <option value="halloween">🎃 Halloween</option>
+                    <option value="black_friday">🏷️ Black Friday / Ofertas</option>
+                    <option value="cafe_wood">☕ Madera / Café Artesanal</option>
+                    <option value="marble_luxury">✨ Mármol / Lujo</option>
+                    <option value="neon_tech">⚡ Neón / Tecnológico</option>
+                </select>
+            </div>
             <div className="grid-2">
                 <div>
                     <label style={{ fontSize: '0.75rem' }}>Fuente del Título</label>
@@ -3924,6 +3940,10 @@ const SidebarEditor = ({ company, onChange, disabled }) => {
                     <div><label>Fondo</label><input type="color" value={ds.sidebar_bg || '#1e293b'} onChange={e => updateDesign('sidebar_bg', e.target.value)} /></div>
                     <div><label>Texto</label><input type="color" value={ds.sidebar_text || '#ffffff'} onChange={e => updateDesign('sidebar_text', e.target.value)} /></div>
                 </div>
+                <div style={{ marginTop: '0.8rem' }}>
+                    <label>Imagen / Textura de Fondo (URL)</label>
+                    <input value={ds.sidebar_bg_image || ''} onChange={e => updateDesign('sidebar_bg_image', e.target.value)} placeholder="https://... (opcional)" />
+                </div>
                 <div className="grid-2" style={{ marginTop: '1rem' }}>
                     <div>
                         <label>Animación de Bloques</label>
@@ -4141,6 +4161,10 @@ const BottomBarEditor = ({ company, onChange, disabled }) => {
                         <label style={{ fontSize: '0.75rem' }}>Borde Sup.</label>
                         <div className="toggle-container" onClick={() => updateDesign('bottom_bar_border', !ds.bottom_bar_border)}><div className={`toggle-switch ${ds.bottom_bar_border ? 'on' : 'off'}`}></div></div>
                     </div>
+                </div>
+                <div style={{ marginTop: '0.8rem' }}>
+                    <label>Imagen / Textura de Fondo Barra Inferior (URL)</label>
+                    <input value={ds.bottom_bar_bg_image || ''} onChange={e => updateDesign('bottom_bar_bg_image', e.target.value)} placeholder="https://... (opcional)" />
                 </div>
                 <div className="grid-2" style={{ marginTop: '0.8rem', gap: '0.5rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.78rem', cursor: 'pointer' }}>
